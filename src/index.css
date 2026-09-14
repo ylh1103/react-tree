@@ -1,0 +1,126 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { width: 100%; height: 100%; margin: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #263842; background: #f4f6f8; -webkit-font-smoothing: antialiased; }
+.parameter-demo { width: 340px; max-width: 100%; height: 100dvh; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e3e9ed; box-shadow: 4px 0 20px #20384604; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 24px 22px 22px; border-bottom: 1px solid #edf1f4; }
+.brand-icon { color: var(--accent); font-size: 25px; flex-shrink: 0; }
+.parameter-demo h1 { margin: 0; font-size: 19px; line-height: 28px; letter-spacing: .5px; font-weight: 650; }
+.brand p { margin: 3px 0 0; color: #77858e; font-size: 12px; letter-spacing: 1px; }
+.application-tree { flex: 1; min-height: 0; border: 0; border-radius: 0; }
+.application-toolbar { display: flex; align-items: center; gap: 8px; padding: 18px 20px 10px; }
+.application-toolbar h2 { margin: 0; font-size: 14px; font-weight: 650; line-height: 28px; }
+.info-icon { display: inline-flex; color: #8a98a1; font-size: 14px; cursor: help; border-radius: 3px; }
+.toolbar-actions { display: flex; gap: 6px; margin-left: auto; }
+.toolbar-actions .ant-btn { width: 28px; height: 28px; color: #6d7d86; border-color: #e1e8ec; box-shadow: none; }
+.toolbar-actions .ant-btn:last-child { color: var(--accent); border-color: var(--accent-border); background: var(--accent-bg); }
+.editing-toolbar { display: flex; gap: 8px; padding: 6px 20px 10px; }
+.application-tree .tree-search { padding: 0 20px 14px; border: 0; }
+.application-tree .tree-search .ant-input-search { max-width: none; }
+.application-tree .tree-search .ant-input-affix-wrapper { min-height: 36px; background: #f9fbfc; border-color: #e1e8ec; }
+.application-tree .tree-search .ant-input-search-button { height: 36px; border-color: #e1e8ec; color: #7d8e98; box-shadow: none; }
+.application-tree .tree-search input { font-size: 12px; }
+.application-tree .tree-row { background: transparent; padding-right: 20px !important; }
+.application-tree .tree-row > .tree-node-icon { display: none; }
+.application-tree .tree-row > .tree-node-card { min-width: 0; height: 44px; display: flex; align-items: center; padding: 7px 10px; border: 1px solid #e3e9ed; border-radius: 6px; background: #fff; transition: background .15s, border-color .15s, box-shadow .15s; }
+.application-tree [data-node-type="leaf"] .tree-row > .tree-node-card { height: 46px; padding-block: 4px; border-left: 2px solid var(--accent); }
+.application-tree .tree-row > .tree-switcher { width: 12px; min-width: 12px; margin-right: 4px; color: #8a9aa3; }
+.application-tree .tree-row:hover > .tree-node-card { border-color: var(--accent-border); background: var(--accent-bg); }
+.application-tree .tree-row.tree-row-selected > .tree-node-card { border-color: var(--accent); background: var(--accent-bg); box-shadow: 0 0 0 1px transparent; }
+.application-tree .tree-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.group-content { display: flex; align-items: center; gap: 9px; min-width: 0; width: 100%; }
+.group-content > [aria-hidden] { color: #77939e; font-size: 16px; flex-shrink: 0; }
+.group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; font-weight: 500; }
+.group-count { margin-left: auto; flex-shrink: 0; color: #7d8e98; background: #f1f5f7; border-radius: 4px; padding: 0 6px; font-size: 11px; line-height: 19px; font-variant-numeric: tabular-nums; }
+.application-content { display: flex; align-items: center; gap: 9px; min-width: 0; width: 100%; }
+.application-gear { flex-shrink: 0; color: var(--accent); font-size: 18px; }
+.application-copy { min-width: 0; display: flex; flex-direction: column; gap: 0; }
+.application-name { font-size: 13px; font-weight: 550; line-height: 18px; overflow: hidden; text-overflow: ellipsis; }
+.application-description { color: #75838d; font-size: 11px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; }
+.application-tree mark { background: #ffefb4; color: inherit; border-radius: 2px; }
+.tree-empty { padding: 40px 16px; text-align: center; font-size: 13px; color: #75838d; }
+.list-footer { display: flex; align-items: center; gap: 7px; min-height: 42px; padding: 10px 20px; border-top: 1px solid #edf1f4; color: #798993; font-size: 11px; }
+.list-footer > span { color: #6c9f94; flex-shrink: 0; }
+/* 保留滚动条槽位，展开、搜索及拖拽改变行数时不挤压节点。 */
+.tree-scroll-viewport {
+  min-height: 0;
+  min-width: 0;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #dce5e9 transparent;
+}
+@supports not (scrollbar-gutter: stable) {
+  .tree-scroll-viewport { overflow-y: scroll; }
+}
+@media (max-width: 400px) { .parameter-demo { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .application-tree .tree-row > .tree-node-card { transition: none; } }
+
+/* 定位提示贴合节点内容，保留缩进、展开箭头及行间留白。 */
+.tree-node-card[data-locate-highlighted] {
+  outline: 2px solid #f0a33a;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.application-tree .tree-node-card[data-locate-highlighted] {
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+/* Tooltip 渲染在 portal 中，全文允许换行，不继承列表省略规则。 */
+.application-search-tooltip { max-width: min(320px, calc(100vw - 48px)); white-space: normal; overflow-wrap: anywhere; line-height: 1.6; }
+.application-search-tooltip .tooltip-name { font-weight: 600; }
+.application-search-tooltip .tooltip-description { margin-top: 4px; font-size: 12px; }
+.application-search-tooltip mark { color: #3c2d08; background: #ffdf80; border-radius: 2px; }
+.application-content:focus-visible, .group-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+.tree-drop-line { position: absolute; right: 20px; height: 2px; background: var(--accent); pointer-events: none; z-index: 5; }
+.tree-drop-dot { position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border: 2px solid var(--accent); background: white; border-radius: 50%; }
+.tree-node-card[data-drop-inside] { outline: 2px solid var(--accent); outline-offset: -2px; }
+.application-tree .tree-node-card[data-drop-inside] { background: var(--accent-bg-hover); border-color: var(--accent); }
+
+.tree-drag-hint { position: absolute; bottom: calc(100% + 5px); left: 0; width: 208px; max-width: calc(100vw - 24px); padding: 5px 8px; border: 1px solid var(--accent-border); border-radius: 5px; color: var(--accent-text); background: var(--accent-bg); font-size: 11px; line-height: 17px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; pointer-events: none; }
+.tree-drag-preview { position: relative; display: flex; align-items: center; gap: 7px; width: 208px; max-width: calc(100vw - 24px); height: 30px; padding: 0 9px; border: 1px solid var(--accent-border); border-radius: 5px; background: #ffffffe6; color: #536873; box-shadow: 0 2px 6px #2038460d; font-size: 12px; pointer-events: none; user-select: none; }
+.tree-drag-preview-icon { display: flex; flex-shrink: 0; color: var(--accent); font-size: 14px; }
+.tree-drag-preview-count { flex-shrink: 0; padding: 1px 5px; border-radius: 3px; background: #edf3f5; color: #70838c; font-size: 10px; line-height: 16px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+
+.virtual-tree:not(.application-tree) .tree-row-selected { background: var(--accent-bg); }
+
+
+
+/* 内容和操作共享节点边框，操作区固定宽度，长标题自然省略。 */
+.tree-node-card { display: flex; align-items: center; min-width: 0; gap: 6px; }
+.tree-node-content { min-width: 0; }
+.tree-node-actions { display: flex; align-items: center; flex-shrink: 0; cursor: default; }
+.tree-node-actions .ant-btn { width: 24px; height: 28px; padding: 0; flex-shrink: 0; }
+.tree-node-actions .ant-btn:not(.ant-btn-dangerous) { color: #77858e; }
+.tree-node-actions .ant-btn:not(.ant-btn-dangerous):hover { color: var(--accent); background: var(--accent-bg-hover); }
+.application-tree .tree-node-card:focus-within { border-color: var(--accent); }
+
+
+/* 隐藏时保留占位，避免悬停造成标题宽度变化；触屏仍可直接操作。 */
+@media (hover: hover) and (pointer: fine) {
+  .tree-node-actions { opacity: 0; pointer-events: none; }
+  .tree-row:hover .tree-node-actions,
+  .tree-row:focus-within .tree-node-actions,
+  [data-node-key]:focus-visible .tree-node-actions,
+  .tree-node-actions[data-menu-open] { opacity: 1; pointer-events: auto; }
+}
+/* 目录的数量与更多操作共用右侧位置，不额外预留按钮宽度。 */
+@media (hover: hover) and (pointer: fine) {
+  .application-tree [data-node-type="branch"] .tree-node-card:has(.tree-node-actions) { position: relative; }
+  .application-tree [data-node-type="branch"] .tree-node-card:has(.tree-node-actions) .group-count { min-width: 24px; text-align: center; }
+  .application-tree [data-node-type="branch"] .tree-node-actions { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+  .application-tree [data-node-type="branch"] .tree-row:hover .tree-node-card:has(.tree-node-actions) .group-count,
+  .application-tree [data-node-type="branch"] .tree-row:focus-within .tree-node-card:has(.tree-node-actions) .group-count,
+  .application-tree [data-node-type="branch"]:focus-visible .tree-node-card:has(.tree-node-actions) .group-count,
+  .application-tree [data-node-type="branch"] .tree-node-card:has(.tree-node-actions[data-menu-open]) .group-count { opacity: 0; }
+}
+
+/* 两种模式共用扩展箭头热区，负边距保持节点原有缩进及内容宽度。 */
+.tree-switcher-button { padding: 0; border: 0; background: transparent; font: inherit; cursor: pointer; border-radius: 4px; flex-shrink: 0; }
+.virtual-tree .tree-row > .tree-switcher-button { width: 28px; min-width: 28px; height: min(44px, 100%); margin-left: -6px; margin-right: -2px; }
+.application-tree .tree-row > .tree-switcher-button { margin-left: -8px; margin-right: -4px; }
+.virtual-tree .tree-switcher-button:hover { color: var(--accent); background: var(--accent-bg); }
+.tree-switcher-button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { .tree-switcher-button > span { transition: none !important; } }
+
