@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client';
+import { RouterProvider } from 'react-router/dom';
 import 'virtual:uno.css';
 import './index.css';
-import App from './App.tsx';
+import { router } from './router';
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(<RouterProvider router={router} />);

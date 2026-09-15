@@ -21,7 +21,7 @@ interface State {
 
 type Action =
   | { type: 'ENTER_EDIT' }
-  | { type: 'ADD_BRANCH' }
+  | { type: 'ADD_BRANCH'; title?: string }
   | { type: 'START_RENAME'; key: string }
   | { type: 'RENAME_BRANCH'; key: string; title: string }
   | { type: 'CANCEL_RENAME' }
@@ -40,11 +40,22 @@ function reducer(state: State, action: Action): State {
 function applyAction(state: State, action: Action): State {
   switch (action.type) {
     case 'ENTER_EDIT':
-      return { ...state, isEditing: true, draft: state.committed, isDirty: false, editingKey: null };
+      return {
+        ...state,
+        isEditing: true,
+        draft: state.committed,
+        isDirty: false,
+        editingKey: null,
+      };
 
     case 'ADD_BRANCH': {
       const key = generateKey('branch');
-      const newBranch: TreeNode = { key, type: 'branch', title: '应用分组', children: [] };
+      const newBranch: TreeNode = {
+        key,
+        type: 'branch',
+        title: action.title ?? '新分组',
+        children: [],
+      };
       return {
         ...state,
         draft: [newBranch, ...state.draft],
@@ -111,10 +122,22 @@ function applyAction(state: State, action: Action): State {
     }
 
     case 'SAVE':
-      return { ...state, committed: state.draft, isEditing: false, isDirty: false, editingKey: null };
+      return {
+        ...state,
+        committed: state.draft,
+        isEditing: false,
+        isDirty: false,
+        editingKey: null,
+      };
 
     case 'CANCEL':
-      return { ...state, draft: state.committed, isEditing: false, isDirty: false, editingKey: null };
+      return {
+        ...state,
+        draft: state.committed,
+        isEditing: false,
+        isDirty: false,
+        editingKey: null,
+      };
 
     default:
       return state;

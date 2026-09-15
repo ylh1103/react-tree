@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay, type Modifier } from '@dnd-kit/core';
-import { Button, Input, Modal, Space, TreeSelect } from 'antd';
+import { Alert, Button, Input, Modal, Space, TreeSelect } from 'antd';
 import type { LeafNode, TreeNode, VirtualTreeProps } from './types';
 import {
   flattenTree,
@@ -67,10 +67,15 @@ export function VirtualTree({
   onCancel,
   height,
   rowHeight = 36,
+  emptyText = '暂无数据',
+  newGroupTitle = '新分组',
 }: VirtualTreeProps) {
   const treeTheme = useTreeTheme();
   const { state, dispatch } = useTreeReducer(defaultTreeData);
   const { draft, isEditing, isDirty, editingKey } = state;
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const savingRef = useRef(false);
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -244,7 +249,7 @@ export function VirtualTree({
   }, [flat, selectedKey, virtualizer]);
 
   const handleEnterEdit = () => dispatch({ type: 'ENTER_EDIT' });
-  const handleAddBranch = () => dispatch({ type: 'ADD_BRANCH' });
+  const handleAddBranch = () => dispatch({ type: 'ADD_BRANCH', title: newGroupTitle });
 
   const handleQuickMove = (key: string) => {
     const node = findNode(draft, key);
@@ -383,12 +388,25 @@ export function VirtualTree({
     }
   };
 
-  const handleSave = () => {
-    dispatch({ type: 'SAVE' });
-    onSave?.(draft);
+  const handleSave = async () => {
+    if (savingRef.current || !isEditing) return;
+    savingRef.current = true;
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      await onSave?.(draft);
+      dispatch({ type: 'SAVE' });
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : '保存失败，请重试');
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
+    if (savingRef.current) return;
+    setSaveError('');
     if (isDirty) {
       Modal.confirm({
         title: '放弃更改',
@@ -428,8 +446,12 @@ export function VirtualTree({
     <div
       className={`virtual-tree flex flex-col border border-gray-200 rounded-md overflow-hidden ${className}`}
       style={{ ...treeTheme, height: height ?? '100%' }}
+      aria-busy={isSaving}
+      inert={isSaving}
     >
+      {saveError && <Alert type="error" showIcon title={saveError} />}
       {renderToolbar?.({
+        isSaving,
         selectedKey,
         locateSelected: handleLocate,
         isEditing,
@@ -473,6 +495,7 @@ export function VirtualTree({
                 </Button>
                 <Button
                   type="primary"
+                  loading={isSaving}
                   icon={<span aria-hidden="true" className="i-lucide-save" />}
                   onClick={handleSave}
                 >
@@ -500,7 +523,7 @@ export function VirtualTree({
       <div ref={parentScrollRef} className="tree-scroll-viewport flex-1 overflow-auto relative">
         {flat.length === 0 && (
           <div className="tree-empty" role="status">
-            未找到匹配的应用
+            {normalizedSearchQuery ? '未找到匹配的结果' : emptyText}
           </div>
         )}
         <DndContext
@@ -581,4 +604,3 @@ export function VirtualTree({
     </div>
   );
 }
-

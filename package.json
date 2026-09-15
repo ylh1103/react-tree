@@ -10,7 +10,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test scripts/grouped-list.test.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.3.4",
@@ -20,12 +21,15 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-virtual": "^3.14.9",
     "antd": "^6.6.1",
+    "mockjs": "^1.1.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@iconify-json/lucide": "^1.2.130",
+    "@types/mockjs": "^1.0.10",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

@@ -60,7 +60,11 @@ export function findNode(tree: TreeNode[], key: string): TreeNode | null {
   return null;
 }
 
-export function isDescendant(tree: TreeNode[], ancestorKey: string, maybeDescendantKey: string): boolean {
+export function isDescendant(
+  tree: TreeNode[],
+  ancestorKey: string,
+  maybeDescendantKey: string,
+): boolean {
   const ancestor = findNode(tree, ancestorKey);
   if (!ancestor || ancestor.type !== 'branch') return false;
 
@@ -86,7 +90,10 @@ export function getAncestorKeys(tree: TreeNode[], targetKey: string): string[] {
   return ancestors;
 }
 
-export function removeNode(tree: TreeNode[], key: string): { tree: TreeNode[]; removed: TreeNode | null } {
+export function removeNode(
+  tree: TreeNode[],
+  key: string,
+): { tree: TreeNode[]; removed: TreeNode | null } {
   let removed: TreeNode | null = null;
 
   const walk = (nodes: TreeNode[]): TreeNode[] => {
@@ -152,25 +159,30 @@ export function insertNode(
 
 // 快速移动保留整个子树，追加到目标末尾；null 表示根节点。
 export function moveNodeToDirectory(
-  tree: TreeNode[], key: string, destinationKey: string | null,
+  tree: TreeNode[],
+  key: string,
+  destinationKey: string | null,
 ): TreeNode[] {
   if (!findNode(tree, key)) return tree;
-  if (destinationKey !== null && (
-    destinationKey === key ||
-    isDescendant(tree, key, destinationKey) ||
-    findNode(tree, destinationKey)?.type !== 'branch'
-  )) return tree;
+  if (
+    destinationKey !== null &&
+    (destinationKey === key ||
+      isDescendant(tree, key, destinationKey) ||
+      findNode(tree, destinationKey)?.type !== 'branch')
+  )
+    return tree;
 
   const { tree: remaining, removed } = removeNode(tree, key);
   if (!removed) return tree;
   if (destinationKey === null) return [...remaining, removed];
-  const append = (nodes: TreeNode[]): TreeNode[] => nodes.map((node) => {
-    if (node.type !== 'branch') return node;
-    return {
-      ...node,
-      children: node.key === destinationKey ? [...node.children, removed] : append(node.children),
-    };
-  });
+  const append = (nodes: TreeNode[]): TreeNode[] =>
+    nodes.map((node) => {
+      if (node.type !== 'branch') return node;
+      return {
+        ...node,
+        children: node.key === destinationKey ? [...node.children, removed] : append(node.children),
+      };
+    });
   return append(remaining);
 }
 
@@ -194,11 +206,13 @@ export function deleteBranchAndPromoteChildren(
   if (!target || target.type !== 'branch') return tree;
 
   // 目标不能是自身、子孙或叶子节点，避免成环或丢失子树。
-  if (destinationKey !== null && (
-    destinationKey === key ||
-    isDescendant(tree, key, destinationKey) ||
-    findNode(tree, destinationKey)?.type !== 'branch'
-  )) return tree;
+  if (
+    destinationKey !== null &&
+    (destinationKey === key ||
+      isDescendant(tree, key, destinationKey) ||
+      findNode(tree, destinationKey)?.type !== 'branch')
+  )
+    return tree;
 
   const { tree: withoutTarget } = removeNode(tree, key);
 
@@ -208,13 +222,14 @@ export function deleteBranchAndPromoteChildren(
 
   if (destinationKey === null) return [...withoutTarget, ...target.children];
 
-  const appendChildren = (nodes: TreeNode[]): TreeNode[] => nodes.map((node) => {
-    if (node.type !== 'branch') return node;
-    if (node.key === destinationKey) {
-      return { ...node, children: [...node.children, ...target.children] };
-    }
-    return { ...node, children: appendChildren(node.children) };
-  });
+  const appendChildren = (nodes: TreeNode[]): TreeNode[] =>
+    nodes.map((node) => {
+      if (node.type !== 'branch') return node;
+      if (node.key === destinationKey) {
+        return { ...node, children: [...node.children, ...target.children] };
+      }
+      return { ...node, children: appendChildren(node.children) };
+    });
   return appendChildren(withoutTarget);
 }
 
@@ -239,7 +254,11 @@ export function highlightText(text: string, query: string): { text: string; matc
   return parts;
 }
 
-export function collectMatchingLeafAncestors(tree: TreeNode[], query: string, getSearchText: (node: LeafNode) => string = (node) => node.title): Set<string> {
+export function collectMatchingLeafAncestors(
+  tree: TreeNode[],
+  query: string,
+  getSearchText: (node: LeafNode) => string = (node) => node.title,
+): Set<string> {
   const ancestorKeys = new Set<string>();
   if (!query) return ancestorKeys;
   const lowerQuery = query.toLowerCase();
@@ -262,7 +281,11 @@ export function collectMatchingLeafAncestors(tree: TreeNode[], query: string, ge
 
 // 搜索时只保留命中的叶子节点，以及通往这些叶子节点的目录路径。
 // 返回新目录对象以免修改原始树；叶子节点本身可安全复用。
-export function filterTreeByMatchingLeaves(tree: TreeNode[], query: string, getSearchText: (node: LeafNode) => string = (node) => node.title): TreeNode[] {
+export function filterTreeByMatchingLeaves(
+  tree: TreeNode[],
+  query: string,
+  getSearchText: (node: LeafNode) => string = (node) => node.title,
+): TreeNode[] {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return tree;
 
@@ -285,8 +308,6 @@ export function filterTreeByMatchingLeaves(tree: TreeNode[], query: string, getS
   return walk(tree);
 }
 
-let uidCounter = 0;
 export function generateKey(prefix: string): string {
-  uidCounter += 1;
-  return `${prefix}-${Date.now()}-${uidCounter}`;
+  return `${prefix}-${crypto.randomUUID()}`;
 }

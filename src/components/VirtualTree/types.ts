@@ -11,6 +11,7 @@ export interface LeafNode extends BaseNode {
 }
 
 export interface BranchNode extends BaseNode {
+  desc?: string;
   type: 'branch';
   children: TreeNode[];
 }
@@ -31,6 +32,7 @@ export interface DropIndicator {
 }
 
 export interface TreeToolbarContext {
+  isSaving: boolean;
   selectedKey: string | null;
   locateSelected: () => void;
   isEditing: boolean;
@@ -46,10 +48,18 @@ export interface VirtualTreeProps {
   getSearchText?: (node: LeafNode) => string;
   renderToolbar?: (context: TreeToolbarContext) => React.ReactNode;
   defaultTreeData: TreeNode[];
-  renderLeafContent?: (node: LeafNode, ctx: { selected: boolean; searchQuery: string; isDragActive: boolean }) => React.ReactNode;
-  renderBranchContent?: (node: BranchNode, ctx: { expanded: boolean; isDragActive: boolean }) => React.ReactNode;
+  renderLeafContent?: (
+    node: LeafNode,
+    ctx: { selected: boolean; searchQuery: string; isDragActive: boolean },
+  ) => React.ReactNode;
+  renderBranchContent?: (
+    node: BranchNode,
+    ctx: { expanded: boolean; isDragActive: boolean },
+  ) => React.ReactNode;
   onSelect?: (key: string | null, node: LeafNode | null) => void;
-  onSave?: (tree: TreeNode[]) => void;
+  onSave?: (tree: TreeNode[]) => void | Promise<void>;
+  emptyText?: string;
+  newGroupTitle?: string;
   onCancel?: () => void;
   height?: number;
   rowHeight?: number;

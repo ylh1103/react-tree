@@ -1,11 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #263842; background: #f4f6f8; -webkit-font-smoothing: antialiased; }
-.parameter-demo { width: 340px; max-width: 100%; height: 100dvh; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e3e9ed; box-shadow: 4px 0 20px #20384604; }
-.brand { display: flex; align-items: center; gap: 12px; padding: 24px 22px 22px; border-bottom: 1px solid #edf1f4; }
-.brand-icon { color: var(--accent); font-size: 25px; flex-shrink: 0; }
-.parameter-demo h1 { margin: 0; font-size: 19px; line-height: 28px; letter-spacing: .5px; font-weight: 650; }
-.brand p { margin: 3px 0 0; color: #77858e; font-size: 12px; letter-spacing: 1px; }
+.parameter-demo { width: 340px; max-width: 100%; height: 100%; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e3e9ed; box-shadow: 4px 0 20px #20384604; }
 .application-tree { flex: 1; min-height: 0; border: 0; border-radius: 0; }
 .application-toolbar { display: flex; align-items: center; gap: 8px; padding: 18px 20px 10px; }
 .application-toolbar h2 { margin: 0; font-size: 14px; font-weight: 650; line-height: 28px; }
@@ -124,3 +120,21 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft Ya
 .tree-switcher-button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { .tree-switcher-button > span { transition: none !important; } }
 
+
+.list-error-page { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px; }
+
+/* 顶部品牌栏与左侧导航属于全局布局，业务列表只显示自己的工具栏。 */
+.app-shell { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.app-header { height: 50px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #fff; border-bottom: 1px solid #edf0f2; }
+.app-logo { width: 30px; height: 30px; flex-shrink: 0; }
+.app-header h1 { margin: 0; color: #262626; font-size: 20px; line-height: 28px; font-weight: 650; letter-spacing: 1px; }
+.app-body { display: flex; flex: 1; min-height: 0; }
+.app-sidebar { width: 64px; flex-shrink: 0; background: #001529; padding: 4px 3px; }
+.app-sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+.sidebar-link { min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 6px; color: #aebcca; text-decoration: none; font-size: 12px; line-height: 18px; }
+.sidebar-link > .anticon { font-size: 20px; }
+.sidebar-link:hover { background: #102d47; color: #fff; }
+.sidebar-link[aria-current="page"] { color: #fff; background: #1677ff; }
+.sidebar-link:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.app-content { flex: 1; min-width: 0; min-height: 0; padding: 10px; background: #f5f5f5; }
+.app-content .parameter-demo { border: 1px solid #edf0f2; border-radius: 6px; overflow: hidden; box-shadow: none; }

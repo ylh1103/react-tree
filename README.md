@@ -8,6 +8,59 @@ pnpm dev
 pnpm build
 ```
 
+## 业务列表与路由
+
+- `/applications`：应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
+- `/parameters`：参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
+- `/` 和原 `/tree` 自动跳转到应用列表。
+- 使用 React Router Data 模式，路由 loader 同时查询清单和分组；刷新按钮也会重新查询两者。
+- 生产部署需将页面路由回退到 `index.html`，以支持直接访问或刷新各路由。
+
+### 页面结构
+
+- `src/pages/ApplicationListPage.tsx`：独立管理应用页面的状态、刷新、保存和节点展示。
+- `src/pages/ParameterListPage.tsx`：独立管理参数页面的状态、刷新、保存和节点展示。
+- 两条路由分别绑定各自的页面和 loader；不再通过业务类型切换共用页面。
+- 底层 `VirtualTree`、纯数据转换和请求工具继续复用。
+
+### 数据约定与合并
+
+分组节点带 `children`（空数组也是目录），叶子不带 `children`。新增目录使用 `branch-` + UUID 生成唯一 key。目录 key 不应与业务名称重复。
+
+分组初始值是 `null`；编辑保存后变为 JSON 数组字符串。清单是叶子名称与描述的唯一来源，分组记录负责结构和顺序：
+
+1. 清单和分组都为空：展示空列表。
+2. 清单为空：递归删除所有叶子，保留分组层级及空目录。
+3. 分组为空：按清单顺序展示所有叶子。
+4. 两者非空：剔除下线叶子，交集保留分组位置并使用最新描述，新增项按清单顺序追加根节点尾部。
+
+重复叶子仅保留首次出现的位置；无效 JSON、非法节点或重复目录 key 会明确报错，刷新失败保留当前列表。保存成功才退出编辑，失败保留草稿供重试。分组的 `desc` 会保留。
+
+### Mock.js 接口
+
+默认使用 Mock.js 拦截 XMLHttpRequest，模拟 200–500ms 延迟。应用清单和接口位于 `src/features/applications/api.ts`，参数清单和接口位于 `src/features/parameters/api.ts`。
+
+| 方法 | URL                             | 响应或请求体                                   |
+| ---- | ------------------------------- | ---------------------------------------------- |
+| GET  | `/mock-api/applications`        | `[{ appName, appDesc }]`                       |
+| GET  | `/mock-api/applications/groups` | `{ appGroupInfo: null 或 JSON字符串 }`         |
+| PUT  | `/mock-api/applications/groups` | `{ appGroupInfo: JSON字符串 }`                 |
+| GET  | `/mock-api/parameters`          | `[{ paramTypeName, paramTypeDesc }]`           |
+| GET  | `/mock-api/parameters/groups`   | `{ paramDbTypeGroupInfo: null 或 JSON字符串 }` |
+| PUT  | `/mock-api/parameters/groups`   | `{ paramDbTypeGroupInfo: JSON字符串 }`         |
+
+Mock 保存使用 localStorage 模拟后端持久化，分别存储于 `react-tree:mock:appGroupInfo` 和 `react-tree:mock:paramDbTypeGroupInfo`。删除对应存储项可恢复初始无分组状态。
+
+设置 `VITE_LIST_API_BASE_URL=/api` 后，业务请求改用真实 HTTP 接口（上表 URL 前缀替换为 `/api`）；根据实际后端在 `api.ts` / `service.ts` 调整地址、方法和响应包装。
+
+### 验证
+
+```sh
+pnpm test  # Node 24+，覆盖两类列表的合并规则、异常输入、接口调用和保存数据
+pnpm build
+pnpm lint
+```
+
 ## ESLint + Prettier
 
 使用 ESLint 9 Flat Config：JavaScript、TypeScript、React 组件和 JSX 推荐规则，React Hooks 推荐规则，以及 Vite Fast Refresh 检查。浏览器代码与 Node 配置文件分别设置全局变量。
