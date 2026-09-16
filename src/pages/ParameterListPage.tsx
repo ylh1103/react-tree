@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Tooltip } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, Segmented, Tooltip } from 'antd';
 import { useLoaderData } from 'react-router';
 import { useTreeTheme } from '../components/VirtualTree/useTreeTheme';
 import { VirtualTree } from '../components/VirtualTree';
@@ -31,7 +31,12 @@ function ParameterLeaf({
   const nameRef = useRef<HTMLSpanElement>(null);
   const descriptionRef = useRef<HTMLSpanElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
-  const description = (node.data as ListNode).desc ?? '';
+  const data = node.data as ListNode;
+  const description = data.desc ?? '';
+  const kind = data.maintType;
+  const typeLabel = kind === '0' ? '增量维护' : kind === '1' ? '全量维护' : '未标注';
+  const typeColor = kind === '0' ? 'cyan' : kind === '1' ? 'orange' : undefined;
+  const typeShortLabel = kind === '0' ? '增' : kind === '1' ? '全' : '?';
 
   useEffect(() => {
     const measure = () => {
@@ -73,11 +78,28 @@ function ParameterLeaf({
         ) : null
       }
     >
-      <span className="application-content" tabIndex={showTooltip ? 0 : undefined}>
+      <span
+        className="application-content"
+        data-leaf-type-color={typeColor}
+        tabIndex={showTooltip ? 0 : undefined}
+      >
         <span aria-hidden="true" className="application-gear i-lucide-settings" />
         <span className="application-copy">
-          <span ref={nameRef} className="application-name">
-            <Highlight text={node.title} query={searchQuery} />
+          <span className="application-title-line">
+            <span ref={nameRef} className="application-name">
+              <Highlight text={node.title} query={searchQuery} />
+            </span>
+            {kind === '0' && (
+              <span
+                className="leaf-type-badge"
+                data-color={typeColor}
+                title={typeLabel}
+                role="img"
+                aria-label={typeLabel}
+              >
+                {typeShortLabel}
+              </span>
+            )}
           </span>
           <span ref={descriptionRef} className="application-description">
             <Highlight text={description} query={searchQuery} />
@@ -137,6 +159,11 @@ export default function ParameterListPage() {
   const treeTheme = useTreeTheme();
   const [nodes, setNodes] = useState(initialNodes);
   const treeData = useMemo(() => toTreeData(nodes), [nodes]);
+  const [typeFilter, setTypeFilter] = useState<'all' | '0' | '1'>('all');
+  const matchesType = useCallback(
+    (node: LeafNode) => (node.data as ListNode).maintType === typeFilter,
+    [typeFilter],
+  );
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -200,9 +227,17 @@ export default function ParameterListPage() {
         newGroupTitle={`参数分组`}
         searchPlaceholder={`请输入参数名称或描述`}
         getSearchText={getSearchText}
+        filterLeaf={typeFilter === 'all' ? undefined : matchesType}
+        onClearFilter={() => setTypeFilter('all')}
         renderToolbar={({
+          totalLeafCount,
+          filteredLeafCount,
+          isFiltered,
           selectedKey,
           locateSelected,
+          allExpanded,
+          hasGroups,
+          toggleAllExpanded,
           isEditing,
           isSaving,
           enterEdit,
@@ -212,12 +247,28 @@ export default function ParameterListPage() {
         }) => (
           <>
             <header className="application-toolbar">
-              <h2>参数列表</h2>
-              <Tooltip title={`按参数名称或描述搜索，点击分组展开参数`}>
-                <span tabIndex={0} aria-label={`参数列表说明`} className="info-icon">
-                  <span aria-hidden="true" className="i-lucide-info" />
-                </span>
-              </Tooltip>
+              <h2 className="list-heading">
+                <span>参数列表</span>
+                <Tooltip
+                  title={
+                    isFiltered
+                      ? `当前匹配 ${filteredLeafCount} 个，共 ${totalLeafCount} 个参数`
+                      : `共 ${totalLeafCount} 个参数`
+                  }
+                >
+                  <span
+                    className="list-heading-count"
+                    role="status"
+                    aria-label={
+                      isFiltered
+                        ? `当前匹配 ${filteredLeafCount} 个，共 ${totalLeafCount} 个参数`
+                        : `共 ${totalLeafCount} 个参数`
+                    }
+                  >
+                    {isFiltered ? `${filteredLeafCount} / ${totalLeafCount}` : totalLeafCount}
+                  </span>
+                </Tooltip>
+              </h2>
               <div className="toolbar-actions">
                 <Tooltip title={selectedKey ? `定位选中参数` : `请先选择一个参数`}>
                   <Button
@@ -226,6 +277,22 @@ export default function ParameterListPage() {
                     disabled={!selectedKey || busy}
                     onClick={locateSelected}
                     icon={<span aria-hidden="true" className="i-lucide-locate-fixed" />}
+                  />
+                </Tooltip>
+                <Tooltip title={allExpanded ? '全部折叠' : '全部展开'}>
+                  <Button
+                    size="small"
+                    aria-label={allExpanded ? '全部折叠' : '全部展开'}
+                    disabled={!hasGroups || busy}
+                    onClick={toggleAllExpanded}
+                    icon={
+                      <span
+                        aria-hidden="true"
+                        className={
+                          allExpanded ? 'i-lucide:chevrons-down-up' : 'i-lucide:chevrons-up-down'
+                        }
+                      />
+                    }
                   />
                 </Tooltip>
                 <Tooltip title={`刷新参数列表`}>
@@ -241,15 +308,37 @@ export default function ParameterListPage() {
                 <Tooltip title={isEditing ? '正在编辑分组' : '打开分组编辑模式'}>
                   <Button
                     size="small"
+                    type={isEditing ? 'primary' : 'default'}
                     aria-label="打开分组编辑模式"
                     aria-pressed={isEditing}
-                    onClick={enterEdit}
-                    disabled={isEditing || busy}
-                    icon={<span aria-hidden="true" className="i-lucide-list" />}
+                    onClick={() => {
+                      if (!isEditing) enterEdit();
+                    }}
+                    disabled={busy}
+                    icon={
+                      <span
+                        aria-hidden="true"
+                        className="i-lucide:list-chevrons-up-down rotate-180"
+                      />
+                    }
                   />
                 </Tooltip>
               </div>
             </header>
+            <div className="list-type-filter" role="group" aria-label="维护方式筛选">
+              <Segmented<'all' | '0' | '1'>
+                block
+                size="small"
+                value={typeFilter}
+                onChange={setTypeFilter}
+                disabled={busy}
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '全量维护', value: '1' },
+                  { label: '增量维护', value: '0' },
+                ]}
+              />
+            </div>
             {isEditing && (
               <div className="editing-toolbar">
                 <Button size="small" onClick={addBranch} disabled={busy}>
@@ -271,6 +360,22 @@ export default function ParameterListPage() {
         renderLeafContent={(node, { searchQuery, isDragActive }) => (
           <ParameterLeaf node={node} searchQuery={searchQuery} isDragActive={isDragActive} />
         )}
+        getLeafMenuItems={() => [
+          // 后续接入业务编辑/删除时启用，并通过回调参数 node 获取参数数据。
+          {
+            key: 'edit-parameter',
+            label: '编辑参数',
+            icon: <span aria-hidden="true" className="i-lucide-pencil" />,
+            disabled: true,
+          },
+          {
+            key: 'delete-parameter',
+            label: '删除参数',
+            icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
+            danger: true,
+            disabled: true,
+          },
+        ]}
         onSelect={(_, node) => setStatus(node ? `已选择参数：${node.title}` : '')}
         onSave={save}
         onCancel={() => setStatus('已取消分组编辑')}

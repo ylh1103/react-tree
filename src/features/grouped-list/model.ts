@@ -4,6 +4,8 @@ export interface ListNode {
   key: string;
   title: string;
   desc?: string;
+  appType?: '0' | '1';
+  maintType?: '0' | '1';
   // 存在 children 即为分组，空数组表示空分组；叶子不带 children。
   children?: ListNode[];
 }
@@ -11,10 +13,12 @@ export interface ListNode {
 export interface ApplicationItem {
   appName: string;
   appDesc: string;
+  appType: '0' | '1';
 }
 export interface ParameterItem {
   paramTypeName: string;
   paramTypeDesc: string;
+  maintType: '0' | '1';
 }
 
 export function parseGroups(value: string | null): ListNode[] {
@@ -75,17 +79,23 @@ export function mergeGroups(items: ListNode[], groupInfo: string | null): ListNo
 
 export function mergeApplications(items: ApplicationItem[], groups: string | null): ListNode[] {
   return mergeGroups(
-    items.map(({ appName, appDesc }) => ({ key: appName, title: appName, desc: appDesc })),
+    items.map(({ appName, appDesc, appType }) => ({
+      key: appName,
+      title: appName,
+      desc: appDesc,
+      ...(appType !== undefined ? { appType } : {}),
+    })),
     groups,
   );
 }
 
 export function mergeParameters(items: ParameterItem[], groups: string | null): ListNode[] {
   return mergeGroups(
-    items.map(({ paramTypeName, paramTypeDesc }) => ({
+    items.map(({ paramTypeName, paramTypeDesc, maintType }) => ({
       key: paramTypeName,
       title: paramTypeName,
       desc: paramTypeDesc,
+      ...(maintType !== undefined ? { maintType } : {}),
     })),
     groups,
   );
@@ -114,6 +124,6 @@ export function fromTreeData(nodes: TreeNode[]): ListNode[] {
           ...(node.desc !== undefined ? { desc: node.desc } : {}),
           children: fromTreeData(node.children),
         }
-      : { key: node.key, title: node.title, desc: (node.data as ListNode).desc },
+      : { ...(node.data as ListNode), key: node.key, title: node.title },
   );
 }

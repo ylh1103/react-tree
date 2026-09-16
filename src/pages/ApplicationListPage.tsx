@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Button, Tooltip } from 'antd';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, Segmented, Tooltip } from 'antd';
 import { useLoaderData } from 'react-router';
 import { useTreeTheme } from '../components/VirtualTree/useTreeTheme';
 import { VirtualTree } from '../components/VirtualTree';
@@ -31,7 +31,12 @@ function ApplicationLeaf({
   const nameRef = useRef<HTMLSpanElement>(null);
   const descriptionRef = useRef<HTMLSpanElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
-  const description = (node.data as ListNode).desc ?? '';
+  const data = node.data as ListNode;
+  const description = data.desc ?? '';
+  const kind = data.appType;
+  const typeLabel = kind === '0' ? '业务应用' : kind === '1' ? '公共应用' : '未标注';
+  const typeColor = kind === '0' ? 'blue' : kind === '1' ? 'purple' : undefined;
+  const typeShortLabel = kind === '0' ? '业' : kind === '1' ? '公' : '?';
 
   useEffect(() => {
     const measure = () => {
@@ -73,11 +78,28 @@ function ApplicationLeaf({
         ) : null
       }
     >
-      <span className="application-content" tabIndex={showTooltip ? 0 : undefined}>
+      <span
+        className="application-content"
+        data-leaf-type-color={typeColor}
+        tabIndex={showTooltip ? 0 : undefined}
+      >
         <span aria-hidden="true" className="application-gear i-lucide-settings" />
         <span className="application-copy">
-          <span ref={nameRef} className="application-name">
-            <Highlight text={node.title} query={searchQuery} />
+          <span className="application-title-line">
+            <span ref={nameRef} className="application-name">
+              <Highlight text={node.title} query={searchQuery} />
+            </span>
+            {kind === '1' && (
+              <span
+                className="leaf-type-badge"
+                data-color={typeColor}
+                title={typeLabel}
+                role="img"
+                aria-label={typeLabel}
+              >
+                {typeShortLabel}
+              </span>
+            )}
           </span>
           <span ref={descriptionRef} className="application-description">
             <Highlight text={description} query={searchQuery} />
@@ -134,10 +156,14 @@ function ApplicationBranch({
 
 export default function ApplicationListPage() {
   const initialNodes = useLoaderData<typeof applicationLoader>();
-  console.log('🚀 ~ ApplicationListPage ~ initialNodes:', initialNodes);
   const treeTheme = useTreeTheme();
   const [nodes, setNodes] = useState(initialNodes);
   const treeData = useMemo(() => toTreeData(nodes), [nodes]);
+  const [typeFilter, setTypeFilter] = useState<'all' | '0' | '1'>('all');
+  const matchesType = useCallback(
+    (node: LeafNode) => (node.data as ListNode).appType === typeFilter,
+    [typeFilter],
+  );
   const [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -201,9 +227,17 @@ export default function ApplicationListPage() {
         newGroupTitle={`应用分组`}
         searchPlaceholder={`请输入应用名称或描述`}
         getSearchText={getSearchText}
+        filterLeaf={typeFilter === 'all' ? undefined : matchesType}
+        onClearFilter={() => setTypeFilter('all')}
         renderToolbar={({
+          totalLeafCount,
+          filteredLeafCount,
+          isFiltered,
           selectedKey,
           locateSelected,
+          allExpanded,
+          hasGroups,
+          toggleAllExpanded,
           isEditing,
           isSaving,
           enterEdit,
@@ -213,12 +247,28 @@ export default function ApplicationListPage() {
         }) => (
           <>
             <header className="application-toolbar">
-              <h2>应用列表</h2>
-              <Tooltip title={`按应用名称或描述搜索，点击分组展开应用`}>
-                <span tabIndex={0} aria-label={`应用列表说明`} className="info-icon">
-                  <span aria-hidden="true" className="i-lucide-info" />
-                </span>
-              </Tooltip>
+              <h2 className="list-heading">
+                <span>应用列表</span>
+                <Tooltip
+                  title={
+                    isFiltered
+                      ? `当前匹配 ${filteredLeafCount} 个，共 ${totalLeafCount} 个应用`
+                      : `共 ${totalLeafCount} 个应用`
+                  }
+                >
+                  <span
+                    className="list-heading-count"
+                    role="status"
+                    aria-label={
+                      isFiltered
+                        ? `当前匹配 ${filteredLeafCount} 个，共 ${totalLeafCount} 个应用`
+                        : `共 ${totalLeafCount} 个应用`
+                    }
+                  >
+                    {isFiltered ? `${filteredLeafCount} / ${totalLeafCount}` : totalLeafCount}
+                  </span>
+                </Tooltip>
+              </h2>
               <div className="toolbar-actions">
                 <Tooltip title={selectedKey ? `定位选中应用` : `请先选择一个应用`}>
                   <Button
@@ -227,6 +277,22 @@ export default function ApplicationListPage() {
                     disabled={!selectedKey || busy}
                     onClick={locateSelected}
                     icon={<span aria-hidden="true" className="i-lucide-locate-fixed" />}
+                  />
+                </Tooltip>
+                <Tooltip title={allExpanded ? '全部折叠' : '全部展开'}>
+                  <Button
+                    size="small"
+                    aria-label={allExpanded ? '全部折叠' : '全部展开'}
+                    disabled={!hasGroups || busy}
+                    onClick={toggleAllExpanded}
+                    icon={
+                      <span
+                        aria-hidden="true"
+                        className={
+                          allExpanded ? 'i-lucide:chevrons-down-up' : 'i-lucide:chevrons-up-down'
+                        }
+                      />
+                    }
                   />
                 </Tooltip>
                 <Tooltip title={`刷新应用列表`}>
@@ -242,15 +308,37 @@ export default function ApplicationListPage() {
                 <Tooltip title={isEditing ? '正在编辑分组' : '打开分组编辑模式'}>
                   <Button
                     size="small"
+                    type={isEditing ? 'primary' : 'default'}
                     aria-label="打开分组编辑模式"
                     aria-pressed={isEditing}
-                    onClick={enterEdit}
-                    disabled={isEditing || busy}
-                    icon={<span aria-hidden="true" className="i-lucide-list" />}
+                    onClick={() => {
+                      if (!isEditing) enterEdit();
+                    }}
+                    disabled={busy}
+                    icon={
+                      <span
+                        aria-hidden="true"
+                        className="i-lucide:list-chevrons-up-down rotate-180"
+                      />
+                    }
                   />
                 </Tooltip>
               </div>
             </header>
+            <div className="list-type-filter" role="group" aria-label="应用类型筛选">
+              <Segmented<'all' | '0' | '1'>
+                block
+                size="small"
+                value={typeFilter}
+                onChange={setTypeFilter}
+                disabled={busy}
+                options={[
+                  { label: '全部', value: 'all' },
+                  { label: '业务应用', value: '0' },
+                  { label: '公共应用', value: '1' },
+                ]}
+              />
+            </div>
             {isEditing && (
               <div className="editing-toolbar">
                 <Button size="small" onClick={addBranch} disabled={busy}>

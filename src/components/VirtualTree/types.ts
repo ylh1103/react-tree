@@ -1,3 +1,5 @@
+import type { MenuProps } from 'antd';
+
 export type NodeType = 'leaf' | 'branch';
 
 interface BaseNode {
@@ -32,9 +34,15 @@ export interface DropIndicator {
 }
 
 export interface TreeToolbarContext {
+  totalLeafCount: number;
+  filteredLeafCount: number;
+  isFiltered: boolean;
   isSaving: boolean;
   selectedKey: string | null;
   locateSelected: () => void;
+  allExpanded: boolean;
+  hasGroups: boolean;
+  toggleAllExpanded: () => void;
   isEditing: boolean;
   enterEdit: () => void;
   addBranch: () => void;
@@ -46,8 +54,12 @@ export interface VirtualTreeProps {
   className?: string;
   searchPlaceholder?: string;
   getSearchText?: (node: LeafNode) => string;
+  filterLeaf?: (node: LeafNode) => boolean;
+  onClearFilter?: () => void;
   renderToolbar?: (context: TreeToolbarContext) => React.ReactNode;
   defaultTreeData: TreeNode[];
+  /** 追加到快速移动之后的业务叶子菜单，由页面提供处理逻辑。 */
+  getLeafMenuItems?: (node: LeafNode) => MenuProps['items'];
   renderLeafContent?: (
     node: LeafNode,
     ctx: { selected: boolean; searchQuery: string; isDragActive: boolean },

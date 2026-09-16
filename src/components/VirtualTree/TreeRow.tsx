@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Button, Dropdown, Input, type InputRef } from 'antd';
-import type { BranchNode, DropIndicator, FlatNode, LeafNode } from './types';
+import type { BranchNode, DropIndicator, FlatNode, LeafNode, VirtualTreeProps } from './types';
 import { highlightText } from './utils';
 
 const INDENT = 20;
@@ -20,11 +20,15 @@ interface TreeRowProps {
   dropIndicator: DropIndicator | null;
   rowHeight: number;
   dropAfterOffset: number;
+  getLeafMenuItems?: VirtualTreeProps['getLeafMenuItems'];
   renderLeafContent?: (
     node: LeafNode,
     ctx: { selected: boolean; searchQuery: string; isDragActive: boolean },
   ) => React.ReactNode;
-  renderBranchContent?: (node: BranchNode, ctx: { expanded: boolean; isDragActive: boolean }) => React.ReactNode;
+  renderBranchContent?: (
+    node: BranchNode,
+    ctx: { expanded: boolean; isDragActive: boolean },
+  ) => React.ReactNode;
   onToggleExpand: (key: string) => void;
   onSelect: (key: string, node: LeafNode) => void;
   onStartRename: (key: string) => void;
@@ -49,6 +53,7 @@ export function TreeRow({
   rowHeight,
   dropAfterOffset,
   renderLeafContent,
+  getLeafMenuItems,
   renderBranchContent,
   onToggleExpand,
   onSelect,
@@ -94,11 +99,8 @@ export function TreeRow({
       // 用来在拖拽过程中识别指针当前悬停在哪一行上。
       data-node-key={node.key}
       data-node-type={node.type}
+      className="absolute top-0 left-0 w-full"
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
         height: rowHeight,
         transform: `translateY(${virtualStart}px)`,
         opacity: isDragging ? 0.4 : 1,
@@ -132,11 +134,11 @@ export function TreeRow({
       >
         {(showBefore || showAfter) && (
           <div
-            className="tree-drop-line"
+            className="tree-drop-line absolute right-5 h-0.5 bg-[var(--accent)] pointer-events-none z-5"
             style={{ left: depth * INDENT + 24, top: showBefore ? 0 : dropAfterOffset }}
             aria-hidden="true"
           >
-            <span className="tree-drop-dot" />
+            <span className="tree-drop-dot absolute -left-1 -top-0.75 w-2 h-2 border-2 border-solid border-[var(--accent)] bg-white rounded-full" />
           </div>
         )}
 
@@ -151,7 +153,7 @@ export function TreeRow({
               event.stopPropagation();
               onToggleExpand(node.key);
             }}
-            className="tree-switcher tree-switcher-button mr-1 flex items-center justify-center w-4 h-4 text-gray-500"
+            className="tree-switcher tree-switcher-button mr-1 flex items-center justify-center w-4 h-4 text-gray-500 p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded shrink-0"
           >
             <span
               aria-hidden="true"
@@ -171,7 +173,7 @@ export function TreeRow({
         </span>
 
         <div
-          className="tree-node-card flex-1"
+          className="tree-node-card flex-1 flex items-center min-w-0 gap-1.5"
           data-drop-inside={showInside || undefined}
           data-locate-highlighted={isHighlighted || undefined}
         >
@@ -183,7 +185,7 @@ export function TreeRow({
               onCancel={onCancelRename}
             />
           ) : (
-            <span className="tree-node-content flex-1 truncate text-sm">
+            <span className="tree-node-content flex-1 truncate text-sm min-w-0">
               {isBranch
                 ? renderBranchContent
                   ? renderBranchContent(node as BranchNode, {
@@ -209,9 +211,9 @@ export function TreeRow({
             </span>
           )}
 
-          {isEditing && !isRenaming && (
+          {!isRenaming && (
             <div
-              className="tree-node-actions"
+              className="tree-node-actions flex items-center shrink-0 cursor-default"
               data-menu-open={isMenuOpen || undefined}
               onPointerDown={(event) => event.stopPropagation()}
               onKeyDown={(event) => event.stopPropagation()}
@@ -243,13 +245,13 @@ export function TreeRow({
                             icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
                           },
                         ]
-                      : []),
+                      : (getLeafMenuItems?.(node as LeafNode) ?? [])),
                   ],
                   onClick: ({ key, domEvent }) => {
                     domEvent.stopPropagation();
                     if (key === 'move') onQuickMove(node.key);
-                    if (key === 'rename') onStartRename(node.key);
-                    if (key === 'delete') onDelete(node.key);
+                    if (isBranch && key === 'rename') onStartRename(node.key);
+                    if (isBranch && key === 'delete') onDelete(node.key);
                   },
                 }}
               >

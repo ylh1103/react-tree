@@ -1,19 +1,25 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay, type Modifier } from '@dnd-kit/core';
-import { Alert, Button, Input, Modal, Space, TreeSelect } from 'antd';
+import { Alert, Button, Input, Modal, Space, Tooltip, TreeSelect } from 'antd';
 import type { LeafNode, TreeNode, VirtualTreeProps } from './types';
 import {
   flattenTree,
+  countLeafNodes,
   collectMatchingLeafAncestors,
   filterTreeByMatchingLeaves,
   getAncestorKeys,
   findNode,
+  moveNodeToDirectory,
+  areTreesEqual,
+  updateNodeTitle,
+  deleteBranchAndPromoteChildren,
 } from './utils';
 import { useTreeReducer } from './useTreeReducer';
 import { useDragDrop } from './useDragDrop';
 import { TreeRow } from './TreeRow';
 import { useTreeTheme } from './useTreeTheme';
+import './VirtualTree.css';
 
 // translateY 是虚拟行的布局位置，测量时必须保留，不能作为拖拽位移扣除。
 const dragMeasuring = {
@@ -58,9 +64,12 @@ export function VirtualTree({
   className = '',
   searchPlaceholder = '搜索叶子节点',
   getSearchText,
+  filterLeaf,
+  onClearFilter,
   renderToolbar,
   defaultTreeData,
   renderLeafContent,
+  getLeafMenuItems,
   renderBranchContent,
   onSelect,
   onSave,
@@ -103,13 +112,27 @@ export function VirtualTree({
   const normalizedSearchQuery = searchQuery.trim();
 
   const filteredTree = useMemo(
-    () => filterTreeByMatchingLeaves(draft, normalizedSearchQuery, getSearchText),
-    [draft, normalizedSearchQuery, getSearchText],
+    () =>
+      filterTreeByMatchingLeaves(
+        draft,
+        normalizedSearchQuery,
+        getSearchText,
+        filterLeaf,
+        isEditing,
+      ),
+    [draft, normalizedSearchQuery, getSearchText, filterLeaf, isEditing],
   );
 
+  const totalLeafCount = useMemo(() => countLeafNodes(draft), [draft]);
+  const filteredLeafCount = useMemo(
+    () => (filteredTree === draft ? totalLeafCount : countLeafNodes(filteredTree)),
+    [filteredTree, draft, totalLeafCount],
+  );
+  const isFiltered = Boolean(normalizedSearchQuery || filterLeaf);
+
   const searchAncestorKeys = useMemo(
-    () => collectMatchingLeafAncestors(draft, normalizedSearchQuery, getSearchText),
-    [draft, normalizedSearchQuery, getSearchText],
+    () => collectMatchingLeafAncestors(filteredTree, normalizedSearchQuery, getSearchText),
+    [filteredTree, normalizedSearchQuery, getSearchText],
   );
 
   // 搜索命中的祖先分组叠加展示，但不写回 expandedKeys 本身，
@@ -130,6 +153,42 @@ export function VirtualTree({
     if (activeDragKey !== null) merged.delete(activeDragKey);
     return merged;
   }, [expandedKeys, searchAncestorKeys, normalizedSearchQuery, searchCollapse, activeDragKey]);
+
+  const visibleBranchKeys = useMemo(() => {
+    const keys = new Set<string>();
+    const visit = (nodes: TreeNode[]) => {
+      for (const node of nodes) {
+        if (node.type !== 'branch') continue;
+        keys.add(node.key);
+        visit(node.children);
+      }
+    };
+    visit(filteredTree);
+    return keys;
+  }, [filteredTree]);
+
+  const allExpanded =
+    visibleBranchKeys.size > 0 &&
+    [...visibleBranchKeys].every((key) => effectiveExpandedKeys.has(key));
+
+  const setAllExpanded = (expand: boolean) => {
+    if (normalizedSearchQuery) {
+      // 搜索内的批量操作与单组折叠一致，不覆盖搜索前的展开状态。
+      setSearchCollapse({
+        query: normalizedSearchQuery,
+        keys: expand ? new Set() : new Set(visibleBranchKeys),
+      });
+      return;
+    }
+    setExpandedKeys((previous) => {
+      const next = new Set(previous);
+      visibleBranchKeys.forEach((key) => {
+        if (expand) next.add(key);
+        else next.delete(key);
+      });
+      return next;
+    });
+  };
 
   const hoverExpandKey =
     activeDragKey !== null &&
@@ -219,7 +278,13 @@ export function VirtualTree({
   const handleLocate = () => {
     if (!selectedKey || !findNode(draft, selectedKey)) return;
     // 被过滤的选中节点需要先恢复可见；命中节点则仅重新展开路径。
-    if (!findNode(filteredTree, selectedKey)) setSearchQuery('');
+    if (!findNode(filteredTree, selectedKey)) {
+      setSearchQuery('');
+      const selectedNode = findNode(draft, selectedKey);
+      if (selectedNode?.type === 'leaf' && filterLeaf && !filterLeaf(selectedNode)) {
+        onClearFilter?.();
+      }
+    }
     const ancestors = getAncestorKeys(draft, selectedKey);
     setSearchCollapse((prev) => {
       const keys = new Set(prev.keys);
@@ -251,9 +316,88 @@ export function VirtualTree({
   const handleEnterEdit = () => dispatch({ type: 'ENTER_EDIT' });
   const handleAddBranch = () => dispatch({ type: 'ADD_BRANCH', title: newGroupTitle });
 
+  const commitImmediateChange = async (
+    nextTree: TreeNode[],
+    dialog: ReturnType<typeof Modal.confirm>,
+    renderContent: () => ReactNode,
+  ) => {
+    if (savingRef.current) throw new Error('正在保存，请稍候');
+    if (areTreesEqual(draft, nextTree)) return;
+    savingRef.current = true;
+    setIsSaving(true);
+    setSaveError('');
+    dialog.update({
+      cancelButtonProps: { disabled: true },
+      keyboard: false,
+      content: <div inert>{renderContent()}</div>,
+    });
+    try {
+      await onSave?.(nextTree);
+      dispatch({ type: 'COMMIT_TREE', tree: nextTree });
+    } catch (error) {
+      dialog.update({
+        content: (
+          <>
+            <Alert
+              type="error"
+              showIcon
+              title={error instanceof Error ? error.message : '保存失败，请重试'}
+            />
+            {renderContent()}
+          </>
+        ),
+      });
+      throw error;
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+      dialog.update({ cancelButtonProps: { disabled: false }, keyboard: true });
+    }
+  };
+
+  const handleStartRename = (key: string) => {
+    const node = findNode(draft, key);
+    if (node?.type !== 'branch' || savingRef.current) return;
+    if (isEditing) {
+      dispatch({ type: 'START_RENAME', key });
+      return;
+    }
+    let title = node.title;
+    const renderContent = () => (
+      <div className="pt-3">
+        <Input
+          aria-label="分组名称"
+          autoFocus
+          defaultValue={title}
+          placeholder="请输入分组名称"
+          onChange={(event) => {
+            title = event.target.value;
+            renameModal.update({ okButtonProps: { disabled: !title.trim() } });
+          }}
+        />
+      </div>
+    );
+    const renameModal = Modal.confirm({
+      title: '重命名分组',
+      centered: true,
+      content: renderContent(),
+      okText: '保存名称',
+      cancelText: '取消',
+      okButtonProps: { disabled: !title.trim() },
+      onOk: async () => {
+        if (!title.trim()) throw new Error('分组名称不能为空');
+        await commitImmediateChange(
+          updateNodeTitle(draft, key, title.trim()),
+          renameModal,
+          renderContent,
+        );
+      },
+    });
+  };
+
   const handleQuickMove = (key: string) => {
     const node = findNode(draft, key);
-    if (!node || !isEditing) return;
+    if (!node || savingRef.current) return;
     const ancestors = getAncestorKeys(draft, key);
     let destinationKey: string | null = ancestors[0] ?? null;
     const { destinationKeys, treeData } = buildDirectoryDestinations(draft, key);
@@ -263,29 +407,132 @@ export function VirtualTree({
         .reverse()
         .map((ancestor) => findNode(draft, ancestor)?.title || '未命名分组'),
     ].join(' / ');
-    Modal.confirm({
+    const renderMoveContent = () => (
+      <div className="flex min-w-0 flex-col gap-4 pt-3 text-sm">
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
+            <span
+              aria-hidden="true"
+              className={node.type === 'branch' ? 'i-lucide-folder' : 'i-lucide-file'}
+            />{' '}
+            {node.title}
+          </div>
+          <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs text-gray-500 [overflow-wrap:anywhere]">
+            当前位置：{currentPath}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="font-medium text-gray-900">移动到</span>
+          <TreeSelect
+            aria-label="移动到"
+            className="w-full"
+            size="large"
+            treeData={treeData}
+            defaultValue={destinationKeys.indexOf(destinationKey)}
+            treeDefaultExpandedKeys={[0]}
+            showSearch
+            treeNodeFilterProp="title"
+            onChange={(value: number) => {
+              destinationKey = destinationKeys[value];
+            }}
+          />
+          <p className="m-0 text-xs leading-5 text-gray-500">
+            移动到所选位置的末尾。分组内的所有内容将一起移动。
+          </p>
+        </div>
+      </div>
+    );
+    const moveModal = Modal.confirm({
       title: '快速移动',
       icon: <span aria-hidden="true" className="i-lucide-folder text-5.5 mr-3" />,
       width: 560,
       centered: true,
-      content: (
-        <div className="flex min-w-0 flex-col gap-4 pt-3 text-sm">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
-              <span
-                aria-hidden="true"
-                className={node.type === 'branch' ? 'i-lucide-folder' : 'i-lucide-file'}
-              />{' '}
-              {node.title}
-            </div>
-            <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs text-gray-500 [overflow-wrap:anywhere]">
-              当前位置：{currentPath}
+      content: renderMoveContent(),
+      okText: isEditing ? '确认移动' : '移动并保存',
+      cancelText: '取消',
+      onOk: async () => {
+        if (savingRef.current) throw new Error('正在保存，请稍候');
+        if (isEditing) {
+          dispatch({ type: 'QUICK_MOVE', key, destinationKey });
+        } else {
+          const nextTree = moveNodeToDirectory(draft, key, destinationKey);
+          if (areTreesEqual(draft, nextTree)) return;
+          savingRef.current = true;
+          setIsSaving(true);
+          setSaveError('');
+          moveModal.update({ cancelButtonProps: { disabled: true }, keyboard: false });
+          try {
+            await onSave?.(nextTree);
+            dispatch({ type: 'COMMIT_TREE', tree: nextTree });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : '保存失败，请重试';
+            moveModal.update({
+              content: (
+                <>
+                  <Alert type="error" showIcon title={message} />
+                  {renderMoveContent()}
+                </>
+              ),
+            });
+            throw error;
+          } finally {
+            savingRef.current = false;
+            setIsSaving(false);
+            moveModal.update({ cancelButtonProps: { disabled: false }, keyboard: true });
+          }
+        }
+        // 展开目标及其祖先，让移动后的节点可见。
+        if (destinationKey !== null) {
+          const targetKeys = [destinationKey, ...getAncestorKeys(draft, destinationKey)];
+          setExpandedKeys((prev) => new Set([...prev, ...targetKeys]));
+          setSearchCollapse((prev) => {
+            const keys = new Set(prev.keys);
+            targetKeys.forEach((targetKey) => keys.delete(targetKey));
+            return { ...prev, keys };
+          });
+        }
+      },
+    });
+  };
+
+  const handleDelete = (key: string) => {
+    const node = findNode(draft, key);
+    if (node?.type !== 'branch' || savingRef.current) return;
+    if (node.children.length > 0) {
+      const ancestors = getAncestorKeys(draft, key);
+      let destinationKey: string | null = ancestors[0] ?? null;
+      const { destinationKeys, treeData } = buildDirectoryDestinations(draft, key);
+      const directoryPath = [...ancestors]
+        .reverse()
+        .map((ancestor) => findNode(draft, ancestor)?.title || '未命名分组');
+      directoryPath.push(node.title || '未命名分组');
+      const renderDeleteContent = () => (
+        <div className="flex min-w-0 flex-col gap-5 pt-3 text-sm">
+          <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg text-gray-500">
+              <span aria-hidden="true" className="i-lucide-folder" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="mb-1 text-xs text-gray-500">即将删除的分组</div>
+              <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
+                {node.title || '未命名分组'}
+              </div>
+              <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs leading-5 text-gray-500 [overflow-wrap:anywhere]">
+                <span className="sr-only">分组路径：</span>
+                根节点 / {directoryPath.join(' / ')}
+              </div>
             </div>
           </div>
+
           <div className="flex flex-col gap-2">
-            <span className="font-medium text-gray-900">移动到</span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-medium text-gray-900">子节点移动到</span>
+              <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                {node.children.length} 个直接子节点
+              </span>
+            </div>
             <TreeSelect
-              aria-label="移动到"
+              aria-label="子节点移动到"
               className="w-full"
               size="large"
               treeData={treeData}
@@ -298,93 +545,62 @@ export function VirtualTree({
               }}
             />
             <p className="m-0 text-xs leading-5 text-gray-500">
-              移动到所选位置的末尾。分组内的所有内容将一起移动。
+              默认选择父分组，可搜索并选择其他分组或根节点。
             </p>
           </div>
-        </div>
-      ),
-      okText: '确认移动',
-      cancelText: '取消',
-      onOk: () => {
-        dispatch({ type: 'QUICK_MOVE', key, destinationKey });
-        // 展开目标及其祖先，让移动后的节点可见。
-        if (destinationKey !== null) {
-          const targetKeys = [destinationKey, ...getAncestorKeys(draft, destinationKey)];
-          setExpandedKeys((prev) => new Set([...prev, ...targetKeys]));
-        }
-      },
-    });
-  };
 
-  const handleDelete = (key: string) => {
-    const node = findNode(draft, key);
-    if (node && node.type === 'branch' && node.children.length > 0) {
-      const ancestors = getAncestorKeys(draft, key);
-      let destinationKey: string | null = ancestors[0] ?? null;
-      const { destinationKeys, treeData } = buildDirectoryDestinations(draft, key);
-      const directoryPath = [...ancestors]
-        .reverse()
-        .map((ancestor) => findNode(draft, ancestor)?.title || '未命名分组');
-      directoryPath.push(node.title || '未命名分组');
-      Modal.confirm({
+          <div className="rounded-md border-l-2 border-amber-400 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900">
+            仅删除该分组，子节点及其内容会保留，并按原顺序追加到目标末尾。
+          </div>
+        </div>
+      );
+      const deleteModal = Modal.confirm({
         title: '删除分组',
         width: 560,
         centered: true,
-        content: (
-          <div className="flex min-w-0 flex-col gap-5 pt-3 text-sm">
-            <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg text-gray-500">
-                <span aria-hidden="true" className="i-lucide-folder" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 text-xs text-gray-500">即将删除的分组</div>
-                <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
-                  {node.title || '未命名分组'}
-                </div>
-                <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs leading-5 text-gray-500 [overflow-wrap:anywhere]">
-                  <span className="sr-only">分组路径：</span>
-                  根节点 / {directoryPath.join(' / ')}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium text-gray-900">子节点移动到</span>
-                <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                  {node.children.length} 个直接子节点
-                </span>
-              </div>
-              <TreeSelect
-                aria-label="子节点移动到"
-                className="w-full"
-                size="large"
-                treeData={treeData}
-                defaultValue={destinationKeys.indexOf(destinationKey)}
-                treeDefaultExpandedKeys={[0]}
-                showSearch
-                treeNodeFilterProp="title"
-                onChange={(value: number) => {
-                  destinationKey = destinationKeys[value];
-                }}
-              />
-              <p className="m-0 text-xs leading-5 text-gray-500">
-                默认选择父分组，可搜索并选择其他分组或根节点。
-              </p>
-            </div>
-
-            <div className="rounded-md border-l-2 border-amber-400 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900">
-              仅删除该分组，子节点及其内容会保留，并按原顺序追加到目标末尾。
-            </div>
-          </div>
-        ),
-        okText: '删除并移动',
+        content: renderDeleteContent(),
+        okText: isEditing ? '删除并移动' : '删除并保存',
         okType: 'danger',
         cancelText: '取消',
-        onOk: () => dispatch({ type: 'DELETE_BRANCH', key, destinationKey }),
+        onOk: async () => {
+          if (isEditing) {
+            dispatch({ type: 'DELETE_BRANCH', key, destinationKey });
+          } else {
+            await commitImmediateChange(
+              deleteBranchAndPromoteChildren(draft, key, destinationKey),
+              deleteModal,
+              renderDeleteContent,
+            );
+          }
+          if (destinationKey !== null) {
+            const targetKeys = [destinationKey, ...getAncestorKeys(draft, destinationKey)];
+            setExpandedKeys((prev) => new Set([...prev, ...targetKeys]));
+            setSearchCollapse((prev) => {
+              const keys = new Set(prev.keys);
+              targetKeys.forEach((targetKey) => keys.delete(targetKey));
+              return { ...prev, keys };
+            });
+          }
+        },
       });
-    } else {
+    } else if (isEditing) {
       dispatch({ type: 'DELETE_BRANCH', key });
+    } else {
+      const renderContent = () => <p>确定删除空分组「{node.title || '未命名分组'}」？</p>;
+      const deleteModal = Modal.confirm({
+        title: '删除分组',
+        centered: true,
+        content: renderContent(),
+        okText: '删除并保存',
+        okType: 'danger',
+        cancelText: '取消',
+        onOk: () =>
+          commitImmediateChange(
+            deleteBranchAndPromoteChildren(draft, key),
+            deleteModal,
+            renderContent,
+          ),
+      });
     }
   };
 
@@ -451,9 +667,15 @@ export function VirtualTree({
     >
       {saveError && <Alert type="error" showIcon title={saveError} />}
       {renderToolbar?.({
+        totalLeafCount,
+        filteredLeafCount,
+        isFiltered,
         isSaving,
         selectedKey,
         locateSelected: handleLocate,
+        allExpanded,
+        hasGroups: visibleBranchKeys.size > 0,
+        toggleAllExpanded: () => setAllExpanded(!allExpanded),
         isEditing,
         enterEdit: handleEnterEdit,
         addBranch: handleAddBranch,
@@ -484,6 +706,21 @@ export function VirtualTree({
             >
               定位
             </Button>
+            <Tooltip title={allExpanded ? '全部折叠' : '全部展开'}>
+              <Button
+                aria-label={allExpanded ? '全部折叠' : '全部展开'}
+                disabled={visibleBranchKeys.size === 0}
+                onClick={() => setAllExpanded(!allExpanded)}
+                icon={
+                  <span
+                    aria-hidden="true"
+                    className={
+                      allExpanded ? 'i-lucide:chevrons-down-up' : 'i-lucide:chevrons-up-down'
+                    }
+                  />
+                }
+              />
+            </Tooltip>
             <div className="flex-1" />
             {isEditing ? (
               <Space>
@@ -520,10 +757,16 @@ export function VirtualTree({
         )}
       </div>
 
-      <div ref={parentScrollRef} className="tree-scroll-viewport flex-1 overflow-auto relative">
+      <div
+        ref={parentScrollRef}
+        className="tree-scroll-viewport min-h-0 min-w-0 flex-1 overflow-auto relative"
+      >
         {flat.length === 0 && (
-          <div className="tree-empty" role="status">
-            {normalizedSearchQuery ? '未找到匹配的结果' : emptyText}
+          <div
+            className="tree-empty px-4 py-10 text-center text-[13px] text-[#75838d]"
+            role="status"
+          >
+            {normalizedSearchQuery || filterLeaf ? '未找到匹配的结果' : emptyText}
           </div>
         )}
         <DndContext
@@ -533,7 +776,7 @@ export function VirtualTree({
           onDragEnd={handleDragEnd}
           onDragCancel={handleDragCancel}
         >
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+          <div className="relative" style={{ height: virtualizer.getTotalSize() }}>
             {virtualizer.getVirtualItems().map((virtualItem) => {
               const flatNode = flat[virtualItem.index];
               const { node } = flatNode;
@@ -561,10 +804,11 @@ export function VirtualTree({
                   rowHeight={rowHeight}
                   dropAfterOffset={(afterIndex - virtualItem.index) * rowHeight}
                   renderLeafContent={renderLeafContent}
+                  getLeafMenuItems={getLeafMenuItems}
                   renderBranchContent={renderBranchContent}
                   onToggleExpand={toggleExpand}
                   onSelect={handleSelect}
-                  onStartRename={(key) => dispatch({ type: 'START_RENAME', key })}
+                  onStartRename={handleStartRename}
                   onCommitRename={(key, title) => dispatch({ type: 'RENAME_BRANCH', key, title })}
                   onCancelRename={() => dispatch({ type: 'CANCEL_RENAME' })}
                   onDelete={handleDelete}
@@ -579,9 +823,14 @@ export function VirtualTree({
             style={{ pointerEvents: 'none', width: 'max-content' }}
           >
             {activeDragNode ? (
-              <div aria-hidden="true" className="tree-drag-preview">
-                <div className="tree-drag-hint">{dropDescription}</div>
-                <span className="tree-drag-preview-icon">
+              <div
+                aria-hidden="true"
+                className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-[5px] bg-[#ffffffe6] text-[#536873] shadow-[0_2px_6px_#2038460d] text-[12px] pointer-events-none select-none"
+              >
+                <div className="tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)] px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-[5px] text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2 [overflow-wrap:anywhere] pointer-events-none">
+                  {dropDescription}
+                </div>
+                <span className="tree-drag-preview-icon flex shrink-0 text-[var(--accent)] text-[14px]">
                   {activeDragNode.type === 'branch' ? (
                     <span aria-hidden="true" className="i-lucide-folder" />
                   ) : (
@@ -592,7 +841,7 @@ export function VirtualTree({
                   {activeDragNode.title || '未命名分组'}
                 </span>
                 {activeDragNode.type === 'branch' && (
-                  <span className="tree-drag-preview-count">
+                  <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-[3px] bg-[#edf3f5] text-[#70838c] text-[10px] leading-4 whitespace-nowrap tabular-nums">
                     {activeDragNode.children.length} 项
                   </span>
                 )}

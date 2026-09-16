@@ -285,21 +285,29 @@ export function filterTreeByMatchingLeaves(
   tree: TreeNode[],
   query: string,
   getSearchText: (node: LeafNode) => string = (node) => node.title,
+  filterLeaf?: (node: LeafNode) => boolean,
+  keepEmptyBranches = false,
 ): TreeNode[] {
   const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return tree;
+  if (!normalizedQuery && !filterLeaf) return tree;
 
   const walk = (nodes: TreeNode[]): TreeNode[] => {
     const filtered: TreeNode[] = [];
 
     for (const node of nodes) {
       if (node.type === 'leaf') {
-        if (getSearchText(node).toLowerCase().includes(normalizedQuery)) filtered.push(node);
+        if (
+          (!filterLeaf || filterLeaf(node)) &&
+          (!normalizedQuery || getSearchText(node).toLowerCase().includes(normalizedQuery))
+        )
+          filtered.push(node);
         continue;
       }
 
       const children = walk(node.children);
-      if (children.length > 0) filtered.push({ ...node, children });
+      if (children.length > 0 || (keepEmptyBranches && node.children.length === 0)) {
+        filtered.push({ ...node, children });
+      }
     }
 
     return filtered;
@@ -310,4 +318,13 @@ export function filterTreeByMatchingLeaves(
 
 export function generateKey(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
+}
+
+/** 统计完整层级中的叶子，分组和空分组不计入数量。 */
+export function countLeafNodes(tree: TreeNode[]): number {
+  let count = 0;
+  for (const node of tree) {
+    count += node.type === 'leaf' ? 1 : countLeafNodes(node.children);
+  }
+  return count;
 }

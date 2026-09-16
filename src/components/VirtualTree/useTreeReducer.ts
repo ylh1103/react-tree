@@ -28,6 +28,7 @@ type Action =
   | { type: 'DELETE_BRANCH'; key: string; destinationKey?: string | null }
   | { type: 'MOVE_NODE'; dragKey: string; overKey: string; position: DropPosition }
   | { type: 'QUICK_MOVE'; key: string; destinationKey: string | null }
+  | { type: 'COMMIT_TREE'; tree: TreeNode[] }
   | { type: 'SAVE' }
   | { type: 'CANCEL' };
 
@@ -120,6 +121,16 @@ function applyAction(state: State, action: Action): State {
       const newDraft = insertNode(withoutDrag, removed, overKey, position);
       return { ...state, draft: newDraft };
     }
+
+    case 'COMMIT_TREE':
+      return {
+        ...state,
+        committed: action.tree,
+        draft: action.tree,
+        isEditing: false,
+        isDirty: false,
+        editingKey: null,
+      };
 
     case 'SAVE':
       return {

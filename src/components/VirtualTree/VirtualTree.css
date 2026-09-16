@@ -1,0 +1,250 @@
+.application-tree {
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.application-tree .tree-search {
+  padding: 0 20px 14px;
+  border: 0;
+}
+
+.application-tree .tree-search .ant-input-search {
+  max-width: none;
+}
+
+.application-tree .tree-row {
+  background: transparent;
+  padding-right: 20px !important;
+}
+
+.application-tree .tree-row > .tree-node-icon {
+  display: none;
+}
+
+.application-tree .tree-row > .tree-node-card {
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid #e3e9ed;
+  border-radius: 6px;
+  background: #fff;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.application-tree [data-node-type='leaf'] .tree-row > .tree-node-card {
+  height: 46px;
+  padding-block: 4px;
+  border-left: 2px solid var(--accent);
+}
+
+.application-tree .tree-row > .tree-switcher {
+  width: 12px;
+  min-width: 12px;
+  margin-right: 4px;
+  color: #8a9aa3;
+}
+
+.application-tree .tree-row:hover > .tree-node-card {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.application-tree .tree-row.tree-row-selected > .tree-node-card {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  box-shadow: 0 0 0 1px transparent;
+}
+
+.application-tree .tree-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.application-tree mark {
+  background: #ffefb4;
+  color: inherit;
+  border-radius: 2px;
+}
+
+/* 保留滚动条槽位，展开、搜索及拖拽改变行数时不挤压节点。 */
+.tree-scroll-viewport {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #dce5e9 transparent;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  .tree-scroll-viewport {
+    overflow-y: scroll;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .application-tree .tree-row > .tree-node-card {
+    transition: none;
+  }
+}
+
+/* 定位提示贴合节点内容，保留缩进、展开箭头及行间留白。 */
+.tree-node-card[data-locate-highlighted] {
+  outline: 2px solid #f0a33a;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.application-tree .tree-node-card[data-locate-highlighted] {
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
+.tree-node-card[data-drop-inside] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.application-tree .tree-node-card[data-drop-inside] {
+  background: var(--accent-bg-hover);
+  border-color: var(--accent);
+}
+
+.virtual-tree:not(.application-tree) .tree-row-selected {
+  background: var(--accent-bg);
+}
+
+/* 内容和操作共享节点边框，操作区固定宽度，长标题自然省略。 */
+.tree-node-actions .ant-btn {
+  width: 24px;
+  height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.tree-node-actions .ant-btn:not(.ant-btn-dangerous) {
+  color: #77858e;
+}
+
+.tree-node-actions .ant-btn:not(.ant-btn-dangerous):hover {
+  color: var(--accent);
+  background: var(--accent-bg-hover);
+}
+
+.application-tree .tree-node-card:focus-within {
+  border-color: var(--accent);
+}
+
+/* 隐藏时保留占位，避免悬停造成标题宽度变化；触屏仍可直接操作。 */
+@media (hover: hover) and (pointer: fine) {
+  .tree-node-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .tree-row:hover .tree-node-actions,
+  .tree-row:focus-within .tree-node-actions,
+  [data-node-key]:focus-visible .tree-node-actions,
+  .tree-node-actions[data-menu-open] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* 目录的数量与更多操作共用右侧位置，不额外预留按钮宽度。 */
+@media (hover: hover) and (pointer: fine) {
+  .application-tree [data-node-type='branch'] .tree-node-card:has(.tree-node-actions) {
+    position: relative;
+  }
+  .application-tree [data-node-type='branch'] .tree-node-card:has(.tree-node-actions) .group-count {
+    min-width: 24px;
+    text-align: center;
+  }
+  .application-tree [data-node-type='branch'] .tree-node-actions {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .application-tree
+    [data-node-type='branch']
+    .tree-row:hover
+    .tree-node-card:has(.tree-node-actions)
+    .group-count,
+  .application-tree
+    [data-node-type='branch']
+    .tree-row:focus-within
+    .tree-node-card:has(.tree-node-actions)
+    .group-count,
+  .application-tree
+    [data-node-type='branch']:focus-visible
+    .tree-node-card:has(.tree-node-actions)
+    .group-count,
+  .application-tree
+    [data-node-type='branch']
+    .tree-node-card:has(.tree-node-actions[data-menu-open])
+    .group-count {
+    opacity: 0;
+  }
+}
+
+/* 两种模式共用扩展箭头热区，负边距保持节点原有缩进及内容宽度。 */
+.virtual-tree .tree-row > .tree-switcher-button {
+  width: 28px;
+  min-width: 28px;
+  height: min(44px, 100%);
+  margin-left: -6px;
+  margin-right: -2px;
+}
+
+.application-tree .tree-row > .tree-switcher-button {
+  margin-left: -8px;
+  margin-right: -4px;
+}
+
+.virtual-tree .tree-switcher-button:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.tree-switcher-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-switcher-button > span {
+    transition: none !important;
+  }
+}
+
+.application-tree .tree-node-card:has(.leaf-type-badge) {
+  position: relative;
+  --leaf-type-color: #8c959f;
+  --leaf-type-text: #59636e;
+  --leaf-type-bg: #f0f2f4;
+}
+
+.application-tree .tree-node-card:has(.application-content[data-leaf-type-color='purple']) {
+  --leaf-type-color: #fa8c16;
+  --leaf-type-text: #fff;
+  --leaf-type-bg: var(--leaf-type-color);
+}
+
+.application-tree .tree-node-card:has(.application-content[data-leaf-type-color='cyan']) {
+  --leaf-type-color: #13c2c2;
+  --leaf-type-text: #fff;
+  --leaf-type-bg: #087f8c;
+}
+
+.application-tree [data-node-type='leaf'] .tree-row > .tree-node-card:has(.leaf-type-badge) {
+  border-left-color: var(--leaf-type-color);
+}
+
+.application-tree .tree-node-card:has(.leaf-type-badge) {
+  padding-right: 24px;
+}
