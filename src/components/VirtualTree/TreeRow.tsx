@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Button, Dropdown, Input, type InputRef } from 'antd';
 import type { BranchNode, DropIndicator, FlatNode, LeafNode, VirtualTreeProps } from './types';
@@ -8,7 +8,6 @@ const INDENT = 20;
 
 interface TreeRowProps {
   flatNode: FlatNode;
-  index: number;
   isExpanded: boolean;
   isSelected: boolean;
   isRenaming: boolean;
@@ -39,7 +38,7 @@ interface TreeRowProps {
   virtualStart: number;
 }
 
-export function TreeRow({
+export const TreeRow = memo(function TreeRow({
   flatNode,
   isExpanded,
   isSelected,
@@ -270,7 +269,7 @@ export function TreeRow({
       </div>
     </div>
   );
-}
+});
 
 // 每次进入重命名时挂载，草稿通过初始值创建，无需在 effect 中同步。
 function RenameInput({

@@ -1,4 +1,9 @@
 import {
+  buildTreeIndex,
+  deriveTreeView,
+  moveNode,
+  removeNode,
+  insertNode,
   countLeafNodes,
   filterTreeByMatchingLeaves,
   moveNodeToDirectory,
@@ -376,3 +381,188 @@ test('快速移动：叶子和整个分组可移动，完整树保持不可变�
   await service.save(fromTreeData(branchMoved));
   assert.equal(JSON.parse(payload.appGroupInfo)[1].children[0].children[0].appType, '1');
 });
+
+const sharedLeaf = (key) => ({ key, title: key, type: 'leaf', data: { desc: key } });
+function referenceFixture() {
+  return [
+    { key: 'a', title: 'A', type: 'branch', children: [sharedLeaf('one'), sharedLeaf('two')] },
+    {
+      key: 'b',
+      title: 'B',
+      type: 'branch',
+      children: [
+        { key: 'nested', title: 'Nested', type: 'branch', children: [sharedLeaf('three')] },
+      ],
+    },
+    { key: 'empty', title: 'Empty', type: 'branch', children: [] },
+  ];
+}
+
+test('结构共享：重命名、删除、插入及移动仅替换受影响路径', () => {
+  const tree = referenceFixture();
+  const before = structuredClone(tree);
+  const renamed = updateNodeTitle(tree, 'nested', 'Renamed');
+  assert.equal(renamed[0], tree[0]);
+  assert.notEqual(renamed[1], tree[1]);
+  assert.equal(renamed[1].children[0].children, tree[1].children[0].children);
+  assert.equal(renamed[2], tree[2]);
+  const removed = removeNode(tree, 'one');
+  assert.equal(removed.removed, tree[0].children[0]);
+  assert.equal(removed.tree[1], tree[1]);
+  const inserted = insertNode(tree, sharedLeaf('four'), 'nested', 'inside');
+  assert.equal(inserted[0], tree[0]);
+  assert.equal(inserted[2], tree[2]);
+  const moved = moveNode(tree, 'one', 'three', 'after');
+  assert.equal(moved[1].children[0].children[1], tree[0].children[0]);
+  assert.equal(moved[2], tree[2]);
+  const deleted = deleteBranchAndPromoteChildren(tree, 'nested', 'a');
+  assert.equal(deleted[2], tree[2]);
+  assert.deepEqual(tree, before);
+});
+
+test('无效和无变化操作保留根引用；无效拖拽目标不会丢失源节点', () => {
+  const tree = referenceFixture();
+  assert.equal(updateNodeTitle(tree, 'a', 'A'), tree);
+  assert.equal(updateNodeTitle(tree, 'missing', 'A'), tree);
+  assert.equal(removeNode(tree, 'missing').tree, tree);
+  assert.equal(insertNode(tree, sharedLeaf('x'), 'missing', 'before'), tree);
+  assert.equal(moveNode(tree, 'one', 'missing', 'before'), tree);
+  assert.equal(moveNode(tree, 'one', 'three', 'inside'), tree);
+  assert.equal(moveNode(tree, 'b', 'nested', 'inside'), tree);
+  assert.equal(moveNode(tree, 'one', 'two', 'before'), tree);
+  assert.equal(moveNodeToDirectory(tree, 'two', 'a'), tree);
+});
+
+test('树索引覆盖父子关系、叶子数量与移动后的祖先路径', () => {
+  const tree = referenceFixture();
+  const index = buildTreeIndex(tree);
+  assert.equal(index.nodeByKey.get('three'), tree[1].children[0].children[0]);
+  assert.equal(index.leafCount, 3);
+  assert.deepEqual(index.ancestors('three'), ['nested', 'b']);
+  assert.deepEqual(index.ancestors('missing'), []);
+  const moved = buildTreeIndex(moveNodeToDirectory(tree, 'nested', 'a'));
+  assert.deepEqual(moved.ancestors('three'), ['nested', 'a']);
+  assert.deepEqual(index.ancestors('three'), ['nested', 'b']);
+});
+
+test('搜索一次匹配每个叶子，同时生成计数、可见分组和命中祖先', () => {
+  const tree = referenceFixture();
+  let calls = 0;
+  const view = deriveTreeView(
+    tree,
+    'THREE',
+    (node) => {
+      calls++;
+      return node.title;
+    },
+    undefined,
+    true,
+  );
+  assert.equal(calls, 3);
+  assert.equal(view.leafCount, 1);
+  assert.deepEqual([...view.ancestorKeys], ['nested', 'b']);
+  assert.deepEqual([...view.branchKeys], ['nested', 'b']);
+  assert.equal(view.filteredTree[0], tree[1]);
+  assert.equal(view.filteredTree.length, 1);
+  const none = deriveTreeView(tree, 'missing', undefined, undefined, true);
+  assert.equal(none.leafCount, 0);
+  assert.equal(none.ancestorKeys.size, 0);
+  assert.deepEqual(none.filteredTree, []);
+  const all = deriveTreeView(tree, '');
+  assert.equal(all.filteredTree, tree);
+  assert.equal(all.leafCount, 3);
+  assert.equal(all.branchKeys.size, 4);
+  assert.equal(all.ancestorKeys.size, 0);
+});
+
+test('编辑态搜索排除空分组及仅包含空分组的祖先，清空搜索后恢复', () => {
+  const tree = referenceFixture();
+  tree.push({
+    key: 'empty-parent',
+    title: 'THREE',
+    type: 'branch',
+    children: [{ key: 'nested-empty', title: 'THREE', type: 'branch', children: [] }],
+  });
+  for (const filter of [undefined, (node) => node.key === 'three']) {
+    const editing = deriveTreeView(tree, ' THREE ', undefined, filter, true);
+    const browsing = deriveTreeView(tree, ' THREE ', undefined, filter, false);
+    assert.deepEqual(editing, browsing);
+    assert.deepEqual([...editing.branchKeys], ['nested', 'b']);
+    assert.deepEqual(editing.filteredTree, [tree[1]]);
+    const noMatch = deriveTreeView(tree, 'missing', undefined, filter, true);
+    assert.deepEqual(noMatch.filteredTree, []);
+    assert.equal(noMatch.branchKeys.size, 0);
+  }
+  const cleared = deriveTreeView(tree, '   ', undefined, undefined, true);
+  assert.equal(cleared.filteredTree, tree);
+  assert.equal(cleared.branchKeys.has('nested-empty'), true);
+  // 仅类型筛选时仍允许编辑空分组，避免改变原有分组管理行为。
+  const typeOnly = deriveTreeView(tree, '', undefined, () => false, true);
+  assert.equal(typeOnly.branchKeys.has('empty'), true);
+  assert.equal(typeOnly.branchKeys.has('empty-parent'), true);
+});
+
+for (const typeField of ['appType', 'maintType']) {
+  test(`${typeField}：分类数量覆盖嵌套叶子、忽略分组，并随搜索筛选变化`, () => {
+    const leaf = (key, kind) => ({ key, title: key, type: 'leaf', data: { [typeField]: kind } });
+    const tree = [
+      {
+        key: 'group',
+        title: 'Group',
+        type: 'branch',
+        children: [
+          leaf('match-0', '0'),
+          {
+            key: 'nested',
+            title: 'Nested',
+            type: 'branch',
+            children: [leaf('match-1', '1'), leaf('other-1', '1')],
+          },
+          { key: 'empty', title: 'Empty', type: 'branch', children: [] },
+        ],
+      },
+      leaf('other-0', '0'),
+      leaf('unknown', undefined),
+    ];
+    const category = (node) => node.data[typeField] ?? 'unknown';
+    const total = buildTreeIndex(tree, category);
+    assert.equal(total.leafCount, 5);
+    assert.deepEqual(
+      total.leafCountsByCategory,
+      new Map([
+        ['0', 2],
+        ['1', 2],
+        ['unknown', 1],
+      ]),
+    );
+    const search = deriveTreeView(tree, 'match', undefined, undefined, false, category);
+    assert.equal(search.leafCount, 2);
+    assert.deepEqual(
+      search.leafCountsByCategory,
+      new Map([
+        ['0', 1],
+        ['1', 1],
+      ]),
+    );
+    const filtered = deriveTreeView(
+      tree,
+      'match',
+      undefined,
+      (node) => category(node) === '1',
+      true,
+      category,
+    );
+    assert.equal(filtered.leafCount, 1);
+    assert.deepEqual(filtered.leafCountsByCategory, new Map([['1', 1]]));
+    assert.equal(
+      deriveTreeView(tree, 'absent', undefined, undefined, true, category).leafCountsByCategory
+        .size,
+      0,
+    );
+    assert.equal(buildTreeIndex([], category).leafCountsByCategory.size, 0);
+    assert.deepEqual(
+      buildTreeIndex(moveNodeToDirectory(tree, 'match-1', null), category).leafCountsByCategory,
+      total.leafCountsByCategory,
+    );
+  });
+}

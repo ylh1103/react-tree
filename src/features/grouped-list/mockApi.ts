@@ -57,6 +57,7 @@ export function createMockListApi<Item, Field extends string>(
           if (signal?.aborted) return;
           if (xhr.status < 200 || xhr.status >= 300) throw new Error(`请求失败（${xhr.status}）`);
           const result = JSON.parse(xhr.responseText);
+          // 模拟接口用响应体表达业务失败，HTTP 成功状态本身不足以判定保存成功。
           if (result?.error) throw new Error(result.error);
           resolve(result);
         } catch (error) {

@@ -140,14 +140,15 @@
   border-color: var(--accent);
 }
 
-/* 隐藏时保留占位，避免悬停造成标题宽度变化；触屏仍可直接操作。 */
+/* 隐藏时保留占位；仅键盘焦点保留操作入口，鼠标点击后的焦点不使按钮常驻。触屏仍可直接操作。 */
 @media (hover: hover) and (pointer: fine) {
   .tree-node-actions {
     opacity: 0;
     pointer-events: none;
   }
   .tree-row:hover .tree-node-actions,
-  .tree-row:focus-within .tree-node-actions,
+  .tree-row:is(:focus-visible, :has(:focus-visible)) .tree-node-actions,
+  .tree-row-editing:focus-within .tree-node-actions,
   [data-node-key]:focus-visible .tree-node-actions,
   .tree-node-actions[data-menu-open] {
     opacity: 1;
@@ -177,7 +178,7 @@
     .group-count,
   .application-tree
     [data-node-type='branch']
-    .tree-row:focus-within
+    .tree-row:is(:focus-visible, :has(:focus-visible), .tree-row-editing:focus-within)
     .tree-node-card:has(.tree-node-actions)
     .group-count,
   .application-tree
@@ -229,22 +230,59 @@
   --leaf-type-bg: #f0f2f4;
 }
 
+/* 公共应用沿用相同的交互规则，仅将节点内的强调色切换为角标对应的橙色。 */
+.application-tree .tree-row:has(.application-content[data-leaf-type-color='purple']) {
+  --accent: #fa8c16;
+  --accent-hover: #ffa940;
+  --accent-border: #ffd591;
+  --accent-bg: #fff7e6;
+  --accent-bg-hover: #ffe7ba;
+  --accent-text: #d46b08;
+}
 .application-tree .tree-node-card:has(.application-content[data-leaf-type-color='purple']) {
-  --leaf-type-color: #fa8c16;
+  --leaf-type-color: var(--accent);
   --leaf-type-text: #fff;
   --leaf-type-bg: var(--leaf-type-color);
 }
 
+/* 增量维护复用应用节点的交互规则，使用自身的青色主题。 */
+.application-tree .tree-row:has(.application-content[data-leaf-type-color='cyan']) {
+  --accent: #13c2c2;
+  --accent-hover: #36cfc9;
+  --accent-border: #87e8de;
+  --accent-bg: #e6fffb;
+  --accent-bg-hover: #b5f5ec;
+  --accent-text: #087f8c;
+}
+
 .application-tree .tree-node-card:has(.application-content[data-leaf-type-color='cyan']) {
-  --leaf-type-color: #13c2c2;
+  --leaf-type-color: var(--accent);
   --leaf-type-text: #fff;
-  --leaf-type-bg: #087f8c;
+  --leaf-type-bg: var(--leaf-type-color);
 }
 
-.application-tree [data-node-type='leaf'] .tree-row > .tree-node-card:has(.leaf-type-badge) {
-  border-left-color: var(--leaf-type-color);
+/* 两类列表的角标均保持原位，重叠时显示在操作按钮上层。 */
+.application-tree .leaf-type-badge {
+  z-index: 1;
+}
+/* 名称和描述各自省略，外层不裁切设置按钮的悬停背景与焦点轮廓。 */
+.application-tree .tree-node-content:has(.application-settings-button) {
+  overflow: visible;
+}
+.application-settings-button.ant-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin-inline: -5px;
+  padding: 0;
+  color: var(--accent);
 }
 
-.application-tree .tree-node-card:has(.leaf-type-badge) {
-  padding-right: 24px;
+.application-settings-button.ant-btn:not(:disabled):hover {
+  background: var(--accent-bg-hover);
+}
+
+.application-settings-button.ant-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }

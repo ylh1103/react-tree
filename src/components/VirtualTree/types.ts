@@ -36,6 +36,8 @@ export interface DropIndicator {
 export interface TreeToolbarContext {
   totalLeafCount: number;
   filteredLeafCount: number;
+  totalLeafCountsByCategory: ReadonlyMap<string, number>;
+  filteredLeafCountsByCategory: ReadonlyMap<string, number>;
   isFiltered: boolean;
   isSaving: boolean;
   selectedKey: string | null;
@@ -54,10 +56,16 @@ export interface VirtualTreeProps {
   className?: string;
   searchPlaceholder?: string;
   getSearchText?: (node: LeafNode) => string;
+  /** 业务侧提供分类标识，统计覆盖完整层级的叶子节点。 */
+  getLeafCategory?: (node: LeafNode) => string | undefined;
   filterLeaf?: (node: LeafNode) => boolean;
   onClearFilter?: () => void;
   renderToolbar?: (context: TreeToolbarContext) => React.ReactNode;
   defaultTreeData: TreeNode[];
+  /** 已提交的数据更新；编辑期间保留草稿，浏览状态不重置。 */
+  treeData?: TreeNode[];
+  /** 外部刷新期间阻止修改。 */
+  disabled?: boolean;
   /** 追加到快速移动之后的业务叶子菜单，由页面提供处理逻辑。 */
   getLeafMenuItems?: (node: LeafNode) => MenuProps['items'];
   renderLeafContent?: (

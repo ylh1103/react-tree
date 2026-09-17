@@ -66,11 +66,13 @@ export function mergeGroups(items: ListNode[], groupInfo: string | null): ListNo
         return [{ ...node, children: walk(node.children) }];
       }
       const item = catalog.get(node.key);
+      // 忽略清单中已删除的叶子，重复引用仅保留首次出现的位置。
       if (!item || seenLeaves.has(node.key)) return [];
       seenLeaves.add(node.key);
       return [{ ...item }];
     });
   const result = walk(groups);
+  // 新增且尚未分组的清单项按接口顺序追加到根级，避免被旧分组结构遗漏。
   for (const item of items) {
     if (!seenLeaves.has(item.key)) result.push({ ...item });
   }
@@ -101,6 +103,7 @@ export function mergeParameters(items: ParameterItem[], groups: string | null): 
   );
 }
 
+/** 叶子业务字段保存在 data 中，供展示及保存时还原；空 children 仍转换为分组。 */
 export function toTreeData(nodes: ListNode[]): TreeNode[] {
   return nodes.map((node) =>
     node.children !== undefined

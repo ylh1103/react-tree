@@ -20,6 +20,7 @@ export function createListService<Item, Field extends string>(
       return merge(items, response[field]);
     },
     async save(nodes: ListNode[]) {
+      // 接口字段承载 JSON 字符串；HTTP 层还会序列化外层对象，这是约定的双层编码。
       await api.saveGroups({ [field]: JSON.stringify(nodes) } as Record<Field, string>);
     },
   };

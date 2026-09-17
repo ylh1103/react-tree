@@ -3,15 +3,16 @@ import type { TreeNode, DropPosition } from './types';
 import {
   deleteBranchAndPromoteChildren,
   generateKey,
-  insertNode,
+  moveNode,
   moveNodeToDirectory,
-  isDescendant,
-  removeNode,
   updateNodeTitle,
   areTreesEqual,
 } from './utils';
 
 interface State {
+  // 最近接收的外部数据引用，用于区分父组件重渲染与真正的数据替换。
+  sourceTree: TreeNode[];
+  // committed 是取消编辑的回退基线；draft 通过不可变操作承载未保存修改。
   committed: TreeNode[];
   draft: TreeNode[];
   isEditing: boolean;
@@ -20,6 +21,7 @@ interface State {
 }
 
 type Action =
+  | { type: 'REPLACE_TREE'; tree: TreeNode[] }
   | { type: 'ENTER_EDIT' }
   | { type: 'ADD_BRANCH'; title?: string }
   | { type: 'START_RENAME'; key: string }
@@ -29,17 +31,26 @@ type Action =
   | { type: 'MOVE_NODE'; dragKey: string; overKey: string; position: DropPosition }
   | { type: 'QUICK_MOVE'; key: string; destinationKey: string | null }
   | { type: 'COMMIT_TREE'; tree: TreeNode[] }
-  | { type: 'SAVE' }
   | { type: 'CANCEL' };
 
 function reducer(state: State, action: Action): State {
   const next = applyAction(state, action);
   if (next.draft === state.draft && next.committed === state.committed) return next;
+  // 按最终内容判断脏状态，允许用户将节点移回原位后恢复为无修改。
   return { ...next, isDirty: !areTreesEqual(next.draft, next.committed) };
 }
 
 function applyAction(state: State, action: Action): State {
   switch (action.type) {
+    case 'REPLACE_TREE':
+      return {
+        ...state,
+        sourceTree: action.tree,
+        committed: action.tree,
+        draft: action.tree,
+        isDirty: false,
+        editingKey: null,
+      };
     case 'ENTER_EDIT':
       return {
         ...state,
@@ -97,29 +108,9 @@ function applyAction(state: State, action: Action): State {
     }
 
     case 'MOVE_NODE': {
-      const { dragKey, overKey, position } = action;
-      if (dragKey === overKey) return state;
-
-      if (position === 'inside') {
-        const overNode = findNodeInDraft(state.draft, overKey);
-        if (!overNode || overNode.type !== 'branch') return state;
-      }
-
-      const dragNode = findNodeInDraft(state.draft, dragKey);
-      if (!dragNode) return state;
-
-      if (dragNode.type === 'branch') {
-        if (dragKey === overKey) return state;
-        // 成环校验必须在移除节点之前做：一旦先从树里摘掉 dragNode，
-        // 它自己的子树结构就丢了，再判断 overKey 是不是它的子孙就无从判断。
-        if (isDescendant(state.draft, dragKey, overKey)) return state;
-      }
-
-      const { tree: withoutDrag, removed } = removeNode(state.draft, dragKey);
-      if (!removed) return state;
-
-      const newDraft = insertNode(withoutDrag, removed, overKey, position);
-      return { ...state, draft: newDraft };
+      if (!state.isEditing) return state;
+      const draft = moveNode(state.draft, action.dragKey, action.overKey, action.position);
+      return draft === state.draft ? state : { ...state, draft };
     }
 
     case 'COMMIT_TREE':
@@ -127,15 +118,6 @@ function applyAction(state: State, action: Action): State {
         ...state,
         committed: action.tree,
         draft: action.tree,
-        isEditing: false,
-        isDirty: false,
-        editingKey: null,
-      };
-
-    case 'SAVE':
-      return {
-        ...state,
-        committed: state.draft,
         isEditing: false,
         isDirty: false,
         editingKey: null,
@@ -155,25 +137,20 @@ function applyAction(state: State, action: Action): State {
   }
 }
 
-function findNodeInDraft(tree: TreeNode[], key: string): TreeNode | null {
-  for (const node of tree) {
-    if (node.key === key) return node;
-    if (node.type === 'branch') {
-      const found = findNodeInDraft(node.children, key);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
-export function useTreeReducer(defaultTreeData: TreeNode[]) {
+export function useTreeReducer(defaultTreeData: TreeNode[], treeData?: TreeNode[]) {
   const [state, dispatch] = useReducer(reducer, {
-    committed: defaultTreeData,
-    draft: defaultTreeData,
+    sourceTree: treeData ?? defaultTreeData,
+    committed: treeData ?? defaultTreeData,
+    draft: treeData ?? defaultTreeData,
     isEditing: false,
     isDirty: false,
     editingKey: null,
   });
 
+  // 在同一组件的下一次渲染前更新数据，避免 effect 带来一帧过时内容。
+  // 编辑态保留草稿；取消或提交后再接收外部数据。
+  if (treeData && treeData !== state.sourceTree && !state.isEditing) {
+    dispatch({ type: 'REPLACE_TREE', tree: treeData });
+  }
   return { state, dispatch };
 }
