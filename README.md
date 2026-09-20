@@ -18,10 +18,14 @@ pnpm build
 
 ### 页面结构
 
-- `src/pages/ApplicationListPage.tsx`：独立管理应用页面的状态、刷新、保存和节点展示。
-- `src/pages/ParameterListPage.tsx`：独立管理参数页面的状态、刷新、保存和节点展示。
-- 两条路由分别绑定各自的页面和 loader；不再通过业务类型切换共用页面。
-- 底层 `VirtualTree`、纯数据转换和请求工具继续复用。
+- `src/pages/ApplicationListPage.tsx`、`ParameterListPage.tsx`：绑定各自的 loader、服务和业务配置。
+- `src/features/grouped-list/GroupedListPage.tsx`：共用列表容器，负责筛选与树组件的业务接入；`useGroupedList.ts` 管理刷新、保存和请求状态。
+- `GroupedListToolbar.tsx`：工具栏和编辑操作；`GroupedListHeading.tsx`：列表标题、分类计数和统计提示；`GroupedListContent.tsx`：分组与叶子内容。
+- `src/components/VirtualTree/VirtualTree.tsx`：组合树状态、虚拟行渲染和选中定位。
+- `useTreeReducer.ts`：编辑草稿与提交基线；`useTreeActions.tsx`：保存、取消以及重命名、移动、删除弹窗。
+- `useTreeExpansion.ts`：手动展开、搜索折叠覆盖、路径展开和拖拽悬停展开。
+- `useDragDrop.ts`：拖拽命中与移动；`TreeDragPreview.tsx`：拖拽预览；`TreeRow.tsx`：单行交互。
+- `utils.ts` 与业务 `model.ts` 保持纯数据处理，供组件与回归测试复用。
 
 ### 数据约定与合并
 

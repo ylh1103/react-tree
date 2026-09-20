@@ -1,6 +1,9 @@
 import { useId, useState } from 'react';
 import { Button, Tooltip } from 'antd';
-import { ListTypeFilter } from '../../components/ListTypeFilter';
+import { PlusOutlined, CheckOutlined } from '@ant-design/icons';
+import './GroupedListToolbar.css';
+import { GroupedListHeading } from './GroupedListHeading';
+import { ApplicationTypeFilter } from '../../components/ApplicationTypeFilter';
 import type { TreeToolbarContext } from '../../components/VirtualTree/types';
 import type { GroupedListConfig } from './types';
 
@@ -23,10 +26,7 @@ export function GroupedListToolbar({
   const filterPanelId = useId();
   const {
     totalLeafCount,
-    filteredLeafCount,
     totalLeafCountsByCategory,
-    filteredLeafCountsByCategory,
-    isFiltered,
     selectedKey,
     locateSelected,
     allExpanded,
@@ -39,55 +39,10 @@ export function GroupedListToolbar({
     save,
     cancel,
   } = context;
-  const categories = config.options
-    .filter((option) => option.value !== 'all')
-    .map((option) => ({ key: String(option.value), label: option.label }));
-  if ((totalLeafCountsByCategory.get('unknown') ?? 0) > 0) {
-    categories.push({ key: 'unknown', label: '未标注' });
-  }
-  const typeCounts = categories.map(({ key, label }) => {
-    const total = totalLeafCountsByCategory.get(key) ?? 0;
-    const matched = filteredLeafCountsByCategory.get(key) ?? 0;
-    return {
-      key,
-      label,
-      value: isFiltered ? `${matched} / ${total}` : String(total),
-      description: isFiltered
-        ? `${label}：当前匹配 ${matched} 个，共 ${total} 个`
-        : `${label}：${total} 个`,
-    };
-  });
-  const countLines = [
-    isFiltered
-      ? `当前匹配 ${filteredLeafCount} 个，共 ${totalLeafCount} 个${config.label}`
-      : `共 ${totalLeafCount} 个${config.label}`,
-    ...typeCounts.map((item) => item.description),
-  ];
-  const countDescription = countLines.join('；');
   return (
     <>
       <header className="application-toolbar">
-        <h2 className="list-heading">
-          <span>{config.label}列表</span>
-          <Tooltip
-            title={
-              <div className="flex flex-col gap-1">
-                {countLines.map((line, index) => (
-                  <div key={index}>{line}</div>
-                ))}
-              </div>
-            }
-          >
-            <span
-              className="list-heading-count"
-              role="status"
-              aria-atomic="true"
-              aria-label={countDescription}
-            >
-              {isFiltered ? `${filteredLeafCount} / ${totalLeafCount}` : totalLeafCount}
-            </span>
-          </Tooltip>
-        </h2>
+        <GroupedListHeading context={context} config={config} showDetails={typeFilter === 'all'} />
         <div className="toolbar-actions">
           <Tooltip title={filtersExpanded ? '收起' : '展开'}>
             <Button
@@ -135,15 +90,13 @@ export function GroupedListToolbar({
               icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
             />
           </Tooltip>
-          <Tooltip title={isEditing ? '正在编辑分组' : '打开分组编辑模式'}>
+          <Tooltip title={isEditing ? '关闭分组编辑模式' : '打开分组编辑模式'}>
             <Button
               size="small"
               type={isEditing ? 'primary' : 'default'}
-              aria-label="打开分组编辑模式"
+              aria-label={isEditing ? '关闭分组编辑模式' : '打开分组编辑模式'}
               aria-pressed={isEditing}
-              onClick={() => {
-                if (!isEditing) enterEdit();
-              }}
+              onClick={isEditing ? cancel : enterEdit}
               disabled={busy}
               icon={
                 <span aria-hidden="true" className="i-lucide:list-chevrons-up-down rotate-180" />
@@ -152,26 +105,44 @@ export function GroupedListToolbar({
           </Tooltip>
         </div>
       </header>
-      <ListTypeFilter
+      <ApplicationTypeFilter
         id={filterPanelId}
-        expanded={filtersExpanded}
         label={config.filterLabel}
+        expanded={filtersExpanded}
         value={typeFilter}
-        onChange={setTypeFilter}
-        disabled={busy}
         options={config.options}
+        counts={totalLeafCountsByCategory}
+        total={totalLeafCount}
+        disabled={busy}
+        onChange={setTypeFilter}
       />
       {isEditing && (
-        <div className="editing-toolbar">
-          <Button size="small" onClick={addBranch} disabled={busy}>
+        <div
+          className="editing-toolbar grouped-editing-toolbar"
+          role="group"
+          aria-label="分组编辑操作"
+        >
+          <Button
+            className="editing-add-button"
+            icon={<PlusOutlined aria-hidden="true" />}
+            onClick={addBranch}
+            disabled={busy}
+          >
             新增分组
           </Button>
-          <Button size="small" type="primary" onClick={save} loading={isSaving}>
-            保存
-          </Button>
-          <Button size="small" onClick={cancel} disabled={busy}>
-            取消
-          </Button>
+          <div className="editing-confirm-actions">
+            <Button type="text" onClick={cancel} disabled={busy}>
+              取消
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined aria-hidden="true" />}
+              onClick={save}
+              loading={isSaving}
+            >
+              保存
+            </Button>
+          </div>
         </div>
       )}
     </>

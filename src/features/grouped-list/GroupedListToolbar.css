@@ -1,0 +1,34 @@
+.editing-toolbar.grouped-editing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+  margin: 2px 20px 12px;
+  padding: 8px;
+  border: 1px solid #e3e9ed;
+  border-radius: 8px;
+  background: #f7f9fb;
+}
+.grouped-editing-toolbar .ant-btn {
+  height: 32px;
+  padding-inline: 10px;
+  font-size: 13px;
+  box-shadow: none;
+}
+.grouped-editing-toolbar .editing-add-button:not(:disabled) {
+  color: var(--accent-text);
+  border-color: var(--accent-border);
+}
+.editing-confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+@media (pointer: coarse) {
+  .grouped-editing-toolbar .ant-btn {
+    min-height: 44px;
+  }
+}
