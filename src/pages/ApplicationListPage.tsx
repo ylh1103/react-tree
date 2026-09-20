@@ -1,7 +1,7 @@
-import { useLoaderData } from 'react-router';
+import { useGroupedList } from '../features/grouped-list/useGroupedList';
 import { GroupedListPage } from '../features/grouped-list/GroupedListPage';
 import type { GroupedListConfig } from '../features/grouped-list/types';
-import { applicationService, applicationLoader } from '../features/applications/api';
+import { applicationService } from '../features/applications/api';
 
 const config: GroupedListConfig = {
   label: '应用',
@@ -20,8 +20,6 @@ const config: GroupedListConfig = {
 };
 
 export default function ApplicationListPage() {
-  const initialNodes = useLoaderData<typeof applicationLoader>();
-  return (
-    <GroupedListPage initialNodes={initialNodes} service={applicationService} config={config} />
-  );
+  const list = useGroupedList(applicationService);
+  return <GroupedListPage list={list} config={config} />;
 }

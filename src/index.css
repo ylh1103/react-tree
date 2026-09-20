@@ -1,7 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body, #root { width: 100%; height: 100%; margin: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #263842; background: #f4f6f8; -webkit-font-smoothing: antialiased; }
-.parameter-demo { width: 340px; max-width: 100%; height: 100%; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e3e9ed; box-shadow: 4px 0 20px #20384604; }
+.parameter-demo { position: relative; width: 340px; max-width: 100%; height: 100%; display: flex; flex-direction: column; background: #fff; border-right: 1px solid #e3e9ed; box-shadow: 4px 0 20px #20384604; }
 .application-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 18px 20px 10px; }
 .application-toolbar h2 { margin: 0; font-size: 16px; font-weight: 650; line-height: 28px; }
 .toolbar-actions { display: flex; flex-shrink: 0; gap: 6px; margin-left: auto; }
@@ -16,8 +16,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft Ya
 .application-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0; }
 .application-name { font-size: 13px; font-weight: 550; line-height: 18px; overflow: hidden; text-overflow: ellipsis; }
 .application-description { color: #75838d; font-size: 11px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; }
-.list-footer { display: flex; align-items: center; gap: 7px; min-height: 42px; padding: 10px 20px; border-top: 1px solid #edf1f4; color: #798993; font-size: 11px; }
-.list-footer > span { color: #6c9f94; flex-shrink: 0; }
 @media (max-width: 400px) { .parameter-demo { width: 100%; } }
 /* Tooltip 渲染在 portal 中，全文允许换行，不继承列表省略规则。 */
 .application-search-tooltip { max-width: min(320px, calc(100vw - 48px)); white-space: normal; overflow-wrap: anywhere; line-height: 1.6; }
@@ -25,7 +23,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft Ya
 .application-search-tooltip .tooltip-description { margin-top: 4px; font-size: 12px; }
 .application-search-tooltip mark { color: #3c2d08; background: #ffdf80; border-radius: 2px; }
 .application-content:focus-visible, .group-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-.list-error-page { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; padding: 24px; }
 /* 顶部品牌栏与左侧导航属于全局布局，业务列表只显示自己的工具栏。 */
 .app-shell { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 .app-header { height: 50px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 14px; background: #fff; border-bottom: 1px solid #edf0f2; }
@@ -66,3 +63,5 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft Ya
 /* 标题计数包含折叠分组中的叶子，筛选后展示匹配数 / 总数。 */
 .list-heading { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .list-heading-count { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; padding: 0 6px; border-radius: 5px; background: var(--accent-bg); color: var(--accent-text); font-size: 12px; font-weight: 600; line-height: 22px; font-variant-numeric: tabular-nums; }
+
+.list-loading { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: rgb(255 255 255 / 65%); }

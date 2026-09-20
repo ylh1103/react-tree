@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'antd';
+import { Alert, Button, Spin } from 'antd';
 import { VirtualTree, type LeafNode, type VirtualTreeProps } from '../../components/VirtualTree';
 import { useTreeTheme } from '../../components/VirtualTree/useTreeTheme';
 import type { ListNode } from './model';
 import type { GroupedListConfig } from './types';
-import { useGroupedList, type GroupedListService } from './useGroupedList';
+import type { useGroupedList } from './useGroupedList';
 import { GroupedLeaf, GroupContent } from './GroupedListContent';
 import { GroupedListToolbar } from './GroupedListToolbar';
 
@@ -16,20 +16,14 @@ const renderBranch: NonNullable<VirtualTreeProps['renderBranchContent']> = (node
 );
 
 export function GroupedListPage({
-  initialNodes,
-  service,
+  list,
   config,
 }: {
-  initialNodes: ListNode[];
-  service: GroupedListService;
+  list: ReturnType<typeof useGroupedList>;
   config: GroupedListConfig;
 }) {
   const theme = useTreeTheme();
-  const { treeData, busy, status, error, refresh, save, setStatus } = useGroupedList(
-    initialNodes,
-    service,
-    config.label,
-  );
+  const { treeData, ready, busy, loading, error, refresh, save } = list;
   const [typeFilter, setTypeFilter] = useState<'all' | '0' | '1'>('all');
   const matchesType = useCallback(
     (node: LeafNode) => (node.data as ListNode)[config.typeField] === typeFilter,
@@ -47,11 +41,29 @@ export function GroupedListPage({
     (node, context) => <GroupedLeaf node={node} config={config} {...context} />,
     [config],
   );
-  const onSelect = useCallback<NonNullable<VirtualTreeProps['onSelect']>>(
-    (_, node) => setStatus(node ? `已选择${config.label}：${node.title}` : ''),
-    [config.label, setStatus],
-  );
-  const onCancel = useCallback(() => setStatus('已取消分组编辑'), [setStatus]);
+  if (!ready) {
+    return (
+      <main className="parameter-demo" style={theme} aria-busy={busy}>
+        {error ? (
+          <Alert
+            type="error"
+            showIcon
+            title="列表加载失败"
+            description={error}
+            action={
+              <Button onClick={refresh} disabled={busy}>
+                重试
+              </Button>
+            }
+          />
+        ) : (
+          <div className="list-loading" aria-label={`正在加载${config.label}列表`}>
+            <Spin />
+          </div>
+        )}
+      </main>
+    );
+  }
   return (
     <main className="parameter-demo" style={theme} aria-busy={busy}>
       {error && <Alert type="error" showIcon title={error} />}
@@ -81,14 +93,13 @@ export function GroupedListPage({
         renderBranchContent={renderBranch}
         renderLeafContent={renderLeaf}
         getLeafMenuItems={config.getLeafMenuItems}
-        onSelect={onSelect}
         onSave={save}
-        onCancel={onCancel}
       />
-      <footer className="list-footer" role="status">
-        <span aria-hidden="true" className="i-lucide-circle-check" />
-        {status || `选择${config.label}，查看参数配置`}
-      </footer>
+      {loading && (
+        <div className="list-loading" aria-label={`正在加载${config.label}列表`}>
+          <Spin />
+        </div>
+      )}
     </main>
   );
 }

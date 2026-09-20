@@ -13,13 +13,13 @@ pnpm build
 - `/applications`：应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
 - `/parameters`：参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
 - `/` 和原 `/tree` 自动跳转到应用列表。
-- 使用 React Router Data 模式，路由 loader 同时查询清单和分组；刷新按钮也会重新查询两者。
+- 路由只负责页面匹配；应用和参数页面通过 `useGroupedList` 在挂载时同时查询清单和分组，刷新按钮也会重新查询两者。切换页面会取消未完成的查询，初次加载失败可在页面内重试。
 - 生产部署需将页面路由回退到 `index.html`，以支持直接访问或刷新各路由。
 
 ### 页面结构
 
-- `src/pages/ApplicationListPage.tsx`、`ParameterListPage.tsx`：绑定各自的 loader、服务和业务配置。
-- `src/features/grouped-list/GroupedListPage.tsx`：共用列表容器，负责筛选与树组件的业务接入；`useGroupedList.ts` 管理刷新、保存和请求状态。
+- `src/pages/ApplicationListPage.tsx`、`ParameterListPage.tsx`：绑定各自的服务和业务配置，并调用 `useGroupedList` 管理页面查询生命周期。
+- `src/features/grouped-list/GroupedListPage.tsx`：共用列表容器，负责筛选与树组件的业务接入；页面传入的 `useGroupedList.ts` 状态统一管理初始加载、刷新、保存和错误重试。
 - `GroupedListToolbar.tsx`：工具栏和编辑操作；`GroupedListHeading.tsx`：列表标题、分类计数和统计提示；`GroupedListContent.tsx`：分组与叶子内容。
 - `src/components/VirtualTree/VirtualTree.tsx`：组合树状态、虚拟行渲染和选中定位。
 - `useTreeReducer.ts`：编辑草稿与提交基线；`useTreeActions.tsx`：保存、取消以及重命名、移动、删除弹窗。

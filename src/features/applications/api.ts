@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from 'react-router';
 import { mergeApplications } from '../grouped-list/model';
 import type { ApplicationItem } from '../grouped-list/model';
 import { createHttpListApi, createListService } from '../grouped-list/service';
@@ -27,7 +26,3 @@ const api = baseUrl
   : createMockListApi('/mock-api/applications', applications, 'appGroupInfo');
 
 export const applicationService = createListService(api, 'appGroupInfo', mergeApplications);
-
-export function applicationLoader({ request }: LoaderFunctionArgs) {
-  return applicationService.load(request.signal);
-}

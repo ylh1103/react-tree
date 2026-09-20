@@ -1,4 +1,3 @@
-import type { LoaderFunctionArgs } from 'react-router';
 import { mergeParameters } from '../grouped-list/model';
 import type { ParameterItem } from '../grouped-list/model';
 import { createHttpListApi, createListService } from '../grouped-list/service';
@@ -26,7 +25,3 @@ const api = baseUrl
   : createMockListApi('/mock-api/parameters', parameters, 'paramDbTypeGroupInfo');
 
 export const parameterService = createListService(api, 'paramDbTypeGroupInfo', mergeParameters);
-
-export function parameterLoader({ request }: LoaderFunctionArgs) {
-  return parameterService.load(request.signal);
-}

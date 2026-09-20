@@ -1,7 +1,7 @@
-import { useLoaderData } from 'react-router';
+import { useGroupedList } from '../features/grouped-list/useGroupedList';
 import { GroupedListPage } from '../features/grouped-list/GroupedListPage';
 import type { GroupedListConfig } from '../features/grouped-list/types';
-import { parameterService, parameterLoader } from '../features/parameters/api';
+import { parameterService } from '../features/parameters/api';
 
 const config: GroupedListConfig = {
   label: '参数',
@@ -35,6 +35,6 @@ const config: GroupedListConfig = {
 };
 
 export default function ParameterListPage() {
-  const initialNodes = useLoaderData<typeof parameterLoader>();
-  return <GroupedListPage initialNodes={initialNodes} service={parameterService} config={config} />;
+  const list = useGroupedList(parameterService);
+  return <GroupedListPage list={list} config={config} />;
 }
