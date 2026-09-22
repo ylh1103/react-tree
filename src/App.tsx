@@ -1,5 +1,5 @@
 import { ConfigProvider } from 'antd';
-import { AppstoreOutlined, ApartmentOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, ApartmentOutlined, CodeOutlined } from '@ant-design/icons';
 import { NavLink, Outlet } from 'react-router';
 
 export default function App() {
@@ -24,6 +24,10 @@ export default function App() {
               <NavLink to="/parameters" className="sidebar-link">
                 <ApartmentOutlined aria-hidden="true" />
                 <span>参数</span>
+              </NavLink>
+              <NavLink to="/workspace" className="sidebar-link">
+                <CodeOutlined aria-hidden="true" />
+                <span>工作台</span>
               </NavLink>
             </nav>
           </aside>
