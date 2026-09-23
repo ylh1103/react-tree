@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { TreeNode, DropIndicator } from './types';
-import type { buildTreeIndex } from './utils';
+import type { buildTreeIndex } from './treeUtils';
 
 const DRAG_EXPAND_DELAY = 600;
 

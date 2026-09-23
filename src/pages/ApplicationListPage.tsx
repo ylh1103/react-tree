@@ -1,4 +1,3 @@
-import { useGroupedList } from '../features/grouped-list/useGroupedList';
 import { GroupedListPage } from '../features/grouped-list/GroupedListPage';
 import type { GroupedListConfig } from '../features/grouped-list/types';
 import { applicationService } from '../features/applications/api';
@@ -20,6 +19,5 @@ const config: GroupedListConfig = {
 };
 
 export default function ApplicationListPage() {
-  const list = useGroupedList(applicationService);
-  return <GroupedListPage list={list} config={config} />;
+  return <GroupedListPage service={applicationService} config={config} />;
 }

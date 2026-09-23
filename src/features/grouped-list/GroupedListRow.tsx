@@ -1,8 +1,8 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Button, Dropdown, Input, type InputRef } from 'antd';
-import type { BranchNode, DropIndicator, FlatNode, LeafNode, VirtualTreeProps } from './types';
-import { highlightText } from './utils';
+import { Button, Dropdown, Input, Tooltip, type InputRef } from 'antd';
+import type { BranchNode, DropIndicator, FlatNode, LeafNode, GroupedListConfig } from './types';
+import { highlightText } from './treeUtils';
 
 const INDENT = 20;
 
@@ -19,17 +19,11 @@ interface TreeRowProps {
   dropIndicator: DropIndicator | null;
   rowHeight: number;
   dropAfterOffset: number;
-  getLeafMenuItems?: VirtualTreeProps['getLeafMenuItems'];
-  renderLeafContent?: (
-    node: LeafNode,
-    ctx: { selected: boolean; searchQuery: string; isDragActive: boolean },
-  ) => React.ReactNode;
-  renderBranchContent?: (
-    node: BranchNode,
-    ctx: { expanded: boolean; isDragActive: boolean },
-  ) => React.ReactNode;
+  config: GroupedListConfig;
+  onSettings?: (node: LeafNode) => void;
+  onDeleteLeaf?: (node: LeafNode) => void;
   onToggleExpand: (key: string) => void;
-  onSelect: (key: string, node: LeafNode) => void;
+  onSelect: (key: string) => void;
   onStartRename: (key: string) => void;
   onCommitRename: (key: string, title: string) => void;
   onCancelRename: () => void;
@@ -38,7 +32,7 @@ interface TreeRowProps {
   virtualStart: number;
 }
 
-export const TreeRow = memo(function TreeRow({
+export const GroupedListRow = memo(function GroupedListRow({
   flatNode,
   isExpanded,
   isSelected,
@@ -51,9 +45,9 @@ export const TreeRow = memo(function TreeRow({
   dropIndicator,
   rowHeight,
   dropAfterOffset,
-  renderLeafContent,
-  getLeafMenuItems,
-  renderBranchContent,
+  config,
+  onSettings,
+  onDeleteLeaf,
   onToggleExpand,
   onSelect,
   onStartRename,
@@ -81,7 +75,7 @@ export const TreeRow = memo(function TreeRow({
     // 所以点击不再触发选中/展开，避免和拖拽手势冲突；展开箭头单独处理，见下方图标的 onClick。
     if (isEditing) return;
     if (node.type === 'leaf') {
-      onSelect(node.key, node);
+      onSelect(node.key);
     } else {
       onToggleExpand(node.key);
     }
@@ -167,10 +161,6 @@ export const TreeRow = memo(function TreeRow({
           <span className="tree-switcher mr-1 w-4 h-4 inline-block" />
         )}
 
-        <span className="tree-node-icon mr-1.5 text-gray-400 flex items-center">
-          <span aria-hidden="true" className={isBranch ? 'i-lucide-folder' : 'i-lucide-file'} />
-        </span>
-
         <div
           className="tree-node-card flex-1 flex items-center min-w-0 gap-1.5"
           data-drop-inside={showInside || undefined}
@@ -185,28 +175,17 @@ export const TreeRow = memo(function TreeRow({
             />
           ) : (
             <span className="tree-node-content flex-1 truncate text-sm min-w-0">
-              {isBranch
-                ? renderBranchContent
-                  ? renderBranchContent(node as BranchNode, {
-                      expanded: isExpanded,
-                      isDragActive,
-                    })
-                  : node.title
-                : renderLeafContent
-                  ? renderLeafContent(node as LeafNode, {
-                      selected: isSelected,
-                      isDragActive,
-                      searchQuery,
-                    })
-                  : highlightText(node.title, searchQuery).map((part, i) =>
-                      part.match ? (
-                        <mark key={i} className="bg-yellow-200 text-inherit rounded-sm px-0.5">
-                          {part.text}
-                        </mark>
-                      ) : (
-                        <span key={i}>{part.text}</span>
-                      ),
-                    )}
+              {node.type === 'branch' ? (
+                <GroupContent node={node} expanded={isExpanded} isDragActive={isDragActive} />
+              ) : (
+                <GroupedLeaf
+                  node={node}
+                  config={config}
+                  searchQuery={searchQuery}
+                  isDragActive={isDragActive}
+                  onSettings={onSettings}
+                />
+              )}
             </span>
           )}
 
@@ -244,13 +223,29 @@ export const TreeRow = memo(function TreeRow({
                             icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
                           },
                         ]
-                      : (getLeafMenuItems?.(node as LeafNode) ?? [])),
+                      : [
+                          {
+                            key: 'settings',
+                            label: `设置${config.label}`,
+                            disabled: !onSettings,
+                            icon: <span aria-hidden="true" className="i-lucide-settings" />,
+                          },
+                          {
+                            key: 'delete-leaf',
+                            label: `删除${config.label}`,
+                            disabled: !onDeleteLeaf,
+                            danger: true,
+                            icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
+                          },
+                        ]),
                   ],
                   onClick: ({ key, domEvent }) => {
                     domEvent.stopPropagation();
                     if (key === 'move') onQuickMove(node.key);
                     if (isBranch && key === 'rename') onStartRename(node.key);
                     if (isBranch && key === 'delete') onDelete(node.key);
+                    if (node.type === 'leaf' && key === 'settings') onSettings?.(node);
+                    if (node.type === 'leaf' && key === 'delete-leaf') onDeleteLeaf?.(node);
                   },
                 }}
               >
@@ -322,4 +317,159 @@ function RenameInput({
       className="flex-1 max-w-xs"
     />
   );
+}
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  return highlightText(text, query).map((part, index) =>
+    part.match ? <mark key={index}>{part.text}</mark> : <span key={index}>{part.text}</span>,
+  );
+}
+
+const GroupedLeaf = memo(function GroupedLeaf({
+  node,
+  searchQuery,
+  isDragActive,
+  config,
+  onSettings,
+}: {
+  config: GroupedListConfig;
+  onSettings?: (node: LeafNode) => void;
+  node: LeafNode;
+  searchQuery: string;
+  isDragActive: boolean;
+}) {
+  const nameRef = useRef<HTMLSpanElement>(null);
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const isOverflowing = useOverflow(
+    [nameRef, descriptionRef],
+    [node.title, searchQuery, node.data.desc],
+  );
+  const data = node.data;
+  const description = data.desc ?? '';
+  const kind = data[config.typeField];
+  const metadata = kind === undefined ? undefined : config.types[kind];
+  const typeLabel = metadata?.label ?? '未标注';
+  const typeColor = metadata?.color;
+  const typeShortLabel = metadata?.shortLabel ?? '?';
+
+  const showTooltip = isOverflowing && !isDragActive;
+  return (
+    <Tooltip
+      trigger={['hover', 'focus']}
+      placement="right"
+      open={showTooltip ? undefined : false}
+      title={
+        showTooltip ? (
+          <div className="application-search-tooltip">
+            <div className="tooltip-name">
+              <Highlight text={node.title} query={searchQuery} />
+            </div>
+            {description && (
+              <div className="tooltip-description">
+                <Highlight text={description} query={searchQuery} />
+              </div>
+            )}
+          </div>
+        ) : null
+      }
+    >
+      <span
+        className="application-content"
+        data-leaf-type-color={typeColor}
+        tabIndex={showTooltip ? 0 : undefined}
+      >
+        <Button
+          type="text"
+          size="small"
+          className="application-settings-button"
+          aria-label={`设置 ${node.title}`}
+          title="设置"
+          disabled={isDragActive || !onSettings}
+          onPointerDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSettings?.(node);
+          }}
+          icon={<span aria-hidden="true" className="application-gear i-lucide-settings" />}
+        />
+        <span className="application-copy">
+          <span className="application-title-line">
+            <span ref={nameRef} className="application-name">
+              <Highlight text={node.title} query={searchQuery} />
+            </span>
+            {kind === config.badgeType && (
+              <span
+                className="leaf-type-badge"
+                data-color={typeColor}
+                title={typeLabel}
+                role="img"
+                aria-label={typeLabel}
+              >
+                {typeShortLabel}
+              </span>
+            )}
+          </span>
+          <span ref={descriptionRef} className="application-description">
+            <Highlight text={description} query={searchQuery} />
+          </span>
+        </span>
+      </span>
+    </Tooltip>
+  );
+});
+
+const GroupContent = memo(function GroupContent({
+  node,
+  expanded,
+  isDragActive,
+}: {
+  node: BranchNode;
+  expanded: boolean;
+  isDragActive: boolean;
+}) {
+  const nameRef = useRef<HTMLSpanElement>(null);
+  const isOverflowing = useOverflow([nameRef], [node.title]);
+
+  const showTooltip = isOverflowing && !isDragActive;
+  return (
+    <span className="group-content">
+      <span aria-hidden="true" className={expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'} />
+      <Tooltip
+        trigger={['hover', 'focus']}
+        placement="right"
+        open={showTooltip ? undefined : false}
+        title={showTooltip ? <div className="application-search-tooltip">{node.title}</div> : null}
+      >
+        <span ref={nameRef} className="group-name" tabIndex={showTooltip ? 0 : undefined}>
+          {node.title}
+        </span>
+      </Tooltip>
+      <span className="group-count">{node.children.length}</span>
+    </span>
+  );
+});
+
+/** 仅对挂载的虚拟行测量；每次提交后测量内容，观察器仅跟踪元素宽度变化。 */
+function useOverflow(refs: RefObject<HTMLSpanElement | null>[], content: unknown[]) {
+  const [overflowing, setOverflowing] = useState(false);
+  // 用内容签名稳定 effect 依赖，避免行重渲染时反复重建观察器。
+  const signature = JSON.stringify(content);
+  const first = refs[0];
+  const second = refs[1];
+  useEffect(() => {
+    const elements = [first.current, second?.current].filter(
+      (element): element is HTMLSpanElement => element != null,
+    );
+    const measure = () =>
+      setOverflowing(elements.some((element) => element.scrollWidth > element.clientWidth));
+    const frame = requestAnimationFrame(measure);
+    const observer = new ResizeObserver(measure);
+    elements.forEach((element) => observer.observe(element));
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [first, second, signature]);
+  return overflowing;
 }

@@ -1,13 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { TreeNode } from '../../components/VirtualTree';
-import { fromTreeData, toTreeData, type ListNode } from './model';
+import { fromTreeData, toTreeData } from './model';
+import type { TreeNode, ListNode, ListNodeAction, GroupedListService } from './types';
 
-export interface GroupedListService {
-  load: (signal?: AbortSignal) => Promise<ListNode[]>;
-  save: (nodes: ListNode[]) => Promise<void>;
-}
-
-/** 由业务页面调用，在挂载时查询，并统一管理刷新与保存状态。 */
+/** 统一管理两个列表的查询、保存及节点操作状态。 */
 export function useGroupedList(service: GroupedListService) {
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
   const [ready, setReady] = useState(false);
@@ -87,5 +82,30 @@ export function useGroupedList(service: GroupedListService) {
     [service],
   );
 
-  return { treeData, ready, busy, loading, error, refresh, save };
+  const runNodeAction = useCallback(
+    async (action: ListNodeAction, node: ListNode) => {
+      if (busyRef.current) return;
+      busyRef.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        const result = await action(node);
+        if (result !== false && mountedRef.current) {
+          // 释放互斥锁后立即刷新，重新合并清单与分组；删除不走分组保存接口。
+          busyRef.current = false;
+          await refresh();
+        }
+      } catch (reason) {
+        if (mountedRef.current) {
+          setError(reason instanceof Error ? reason.message : '操作失败，请重试');
+        }
+      } finally {
+        busyRef.current = false;
+        if (mountedRef.current) setBusy(false);
+      }
+    },
+    [refresh],
+  );
+
+  return { treeData, ready, busy, loading, error, refresh, save, runNodeAction };
 }

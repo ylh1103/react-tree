@@ -1,4 +1,4 @@
-import type { ListNode } from './model';
+import type { ListNode } from './types';
 
 export interface ListApi<Item, Field extends string> {
   getItems: (signal?: AbortSignal) => Promise<Item[]>;

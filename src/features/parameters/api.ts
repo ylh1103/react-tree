@@ -1,5 +1,5 @@
 import { mergeParameters } from '../grouped-list/model';
-import type { ParameterItem } from '../grouped-list/model';
+import type { ParameterItem } from '../grouped-list/types';
 import { createHttpListApi, createListService } from '../grouped-list/service';
 import { createMockListApi } from '../grouped-list/mockApi';
 

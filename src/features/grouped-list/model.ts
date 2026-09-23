@@ -1,25 +1,4 @@
-import type { TreeNode } from '../../components/VirtualTree/types';
-
-export interface ListNode {
-  key: string;
-  title: string;
-  desc?: string;
-  appType?: '0' | '1';
-  maintType?: '0' | '1';
-  // 存在 children 即为分组，空数组表示空分组；叶子不带 children。
-  children?: ListNode[];
-}
-
-export interface ApplicationItem {
-  appName: string;
-  appDesc: string;
-  appType: '0' | '1';
-}
-export interface ParameterItem {
-  paramTypeName: string;
-  paramTypeDesc: string;
-  maintType: '0' | '1';
-}
+import type { ApplicationItem, ParameterItem, ListNode, TreeNode } from './types';
 
 export function parseGroups(value: string | null): ListNode[] {
   if (value === null) return [];
@@ -127,6 +106,6 @@ export function fromTreeData(nodes: TreeNode[]): ListNode[] {
           ...(node.desc !== undefined ? { desc: node.desc } : {}),
           children: fromTreeData(node.children),
         }
-      : { ...(node.data as ListNode), key: node.key, title: node.title },
+      : { ...node.data, key: node.key, title: node.title },
   );
 }

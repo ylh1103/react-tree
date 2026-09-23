@@ -1,5 +1,5 @@
 import { mergeApplications } from '../grouped-list/model';
-import type { ApplicationItem } from '../grouped-list/model';
+import type { ApplicationItem } from '../grouped-list/types';
 import { createHttpListApi, createListService } from '../grouped-list/service';
 import { createMockListApi } from '../grouped-list/mockApi';
 
@@ -16,6 +16,24 @@ const applications: ApplicationItem[] = [
     appDesc: '开发、测试、预发布及生产环境的配置同步与版本管理，末尾搜索关键词：尾部命中LW641',
   },
 ];
+
+const mockApplicationCount = 500;
+const initialApplicationCount = applications.length;
+applications.push(
+  ...Array.from(
+    { length: mockApplicationCount - initialApplicationCount },
+    (_, index): ApplicationItem => {
+      const number = String(index + initialApplicationCount + 1).padStart(3, '0');
+      const appType = index % 3 === 0 ? '1' : '0';
+      const category = appType === '1' ? '公共应用' : '业务应用';
+      return {
+        appName: `${category}-${number}`,
+        appDesc: `${category} ${number} 的参数配置、服务管理与发布设置`,
+        appType,
+      };
+    },
+  ),
+);
 
 const baseUrl = import.meta.env.VITE_LIST_API_BASE_URL?.replace(/\/$/, '');
 const api = baseUrl

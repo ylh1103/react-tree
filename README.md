@@ -13,19 +13,48 @@ pnpm build
 - `/applications`：应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
 - `/parameters`：参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
 - `/` 和原 `/tree` 自动跳转到应用列表。
-- 路由只负责页面匹配；应用和参数页面通过 `useGroupedList` 在挂载时同时查询清单和分组，刷新按钮也会重新查询两者。切换页面会取消未完成的查询，初次加载失败可在页面内重试。
+- 路由只负责页面匹配；共用列表容器通过 `useGroupedList` 在挂载时同时查询清单和分组，刷新按钮也会重新查询两者。切换页面会取消未完成的查询，初次加载失败可在页面内重试。
 - 生产部署需将页面路由回退到 `index.html`，以支持直接访问或刷新各路由。
 
-### 页面结构
+### 页面结构与维护入口
 
-- `src/pages/ApplicationListPage.tsx`、`ParameterListPage.tsx`：绑定各自的服务和业务配置，并调用 `useGroupedList` 管理页面查询生命周期。
-- `src/features/grouped-list/GroupedListPage.tsx`：共用列表容器，负责筛选与树组件的业务接入；页面传入的 `useGroupedList.ts` 状态统一管理初始加载、刷新、保存和错误重试。
-- `GroupedListToolbar.tsx`：工具栏和编辑操作；`GroupedListHeading.tsx`：列表标题、分类计数和统计提示；`GroupedListContent.tsx`：分组与叶子内容。
-- `src/components/VirtualTree/VirtualTree.tsx`：组合树状态、虚拟行渲染和选中定位。
-- `useTreeReducer.ts`：编辑草稿与提交基线；`useTreeActions.tsx`：保存、取消以及重命名、移动、删除弹窗。
-- `useTreeExpansion.ts`：手动展开、搜索折叠覆盖、路径展开和拖拽悬停展开。
-- `useDragDrop.ts`：拖拽命中与移动；`TreeDragPreview.tsx`：拖拽预览；`TreeRow.tsx`：单行交互。
-- `utils.ts` 与业务 `model.ts` 保持纯数据处理，供组件与回归测试复用。
+树列表是参数/应用专用业务模块，所有实现集中在 `src/features/grouped-list/`，页面仅绑定各自的服务、业务配置和节点操作。原独立树组件目录及导出入口已移除。
+
+| 修改内容                                               | 文件                       |
+| ------------------------------------------------------ | -------------------------- |
+| 列表整体流程、搜索、选中定位、虚拟滚动、拖拽预览和主题 | `GroupedListPage.tsx`      |
+| 节点行、分组/叶子展示、重命名输入、节点菜单和溢出提示  | `GroupedListRow.tsx`       |
+| 工具栏、标题统计、类型筛选和编辑按钮                   | `GroupedListToolbar.tsx`   |
+| 查询、刷新、保存接口调用及业务节点操作的状态           | `useGroupedList.ts`        |
+| 编辑草稿、提交/回退、分组重命名/移动/删除弹窗          | `useGroupEditing.tsx`      |
+| 搜索展开、手动折叠、拖拽悬停展开                       | `useTreeExpansion.ts`      |
+| 拖拽命中、落点计算和拖拽事件                           | `useDragDrop.ts`           |
+| 不依赖 React 的树操作、索引、搜索与统计                | `treeUtils.ts`             |
+| 接口数据合并与树格式转换                               | `model.ts`                 |
+| 业务配置、节点、服务及回调类型                         | `types.ts`                 |
+| HTTP 与 Mock 接口实现                                  | `service.ts`、`mockApi.ts` |
+| 列表、节点和工具栏的全部样式                           | `GroupedList.css`          |
+
+排查一次操作时，从 `GroupedListPage.tsx` 的事件绑定进入；节点入口看 `GroupedListRow.tsx`，分组编辑看 `useGroupEditing.tsx`，接口请求看 `useGroupedList.ts`。标题、节点内容、预览等只在一处使用的组件保留为对应文件内的私有组件。
+
+### 设置与删除的业务接入
+
+两个页面使用同一个业务列表入口，分别传入自己的接口与操作：
+
+```tsx
+<GroupedListPage
+  config={config}
+  service={parameterService}
+  onSettings={handleParameterSettings}
+  onDelete={handleParameterDelete}
+/>
+```
+
+- `service.load(signal)` 和 `service.save(nodes)` 对接清单/分组的获取与保存；应用和参数保留各自的响应转换和保存字段。
+- `onSettings` / `onDelete` 接收业务节点 `ListNode`，类型为 `ListNodeAction`。业务页面负责弹窗、确认、校验和实际接口，请返回等待整个操作结束的 Promise；取消时 resolve `false`，成功时 resolve `undefined`，失败时 reject。
+- 列表在操作期间统一防重复点击，成功后重新查询清单和分组，取消不刷新，失败展示错误并保留当前数据。业务节点删除不调用分组删除或分组保存逻辑。
+- 分组编辑期间禁用叶子设置/删除，以保护尚未保存的草稿；分组重命名、移动和删除仍走共用逻辑。
+- 当前示例只提供清单/分组接口，尚未实现真实节点设置和删除；未传入回调的按钮和菜单保持禁用。
 
 ### 数据约定与合并
 

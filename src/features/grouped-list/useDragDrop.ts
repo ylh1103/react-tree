@@ -3,11 +3,12 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
 import type { DropIndicator, DropPosition } from './types';
-import { buildTreeIndex } from './utils';
+import { buildTreeIndex } from './treeUtils';
 
 // 指针落在目标行的相对位置决定放置方式：上下各 25% 区域视为“插入前/后”，
 // 中间 50% 视为“放入内部”（仅分组节点支持）；叶子节点没有“内部”概念，直接对半判断前后。
@@ -109,10 +110,16 @@ export function useDragDrop(
     onMove(dragKey, indicator.overKey, indicator.position);
   };
 
-  const handleDragCancel = () => {
+  const handleDragCancel = (event: DragCancelEvent) => {
     setActiveDragKey(null);
     setDropIndicator(null);
     dropIndicatorRef.current = null;
+    // 按 Escape 取消指针拖拽时，源行仍聚焦会显示浏览器默认黑色轮廓。
+    // 仅清除源行焦点，保留其他控件的键盘焦点样式。
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && focused.dataset.nodeKey === String(event.active.id)) {
+      focused.blur();
+    }
   };
 
   return {

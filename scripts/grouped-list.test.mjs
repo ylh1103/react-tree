@@ -9,7 +9,7 @@ import {
   moveNodeToDirectory,
   updateNodeTitle,
   deleteBranchAndPromoteChildren,
-} from '../src/components/VirtualTree/utils.ts';
+} from '../src/features/grouped-list/treeUtils.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
@@ -566,3 +566,39 @@ for (const typeField of ['appType', 'maintType']) {
     );
   });
 }
+
+// 固定视口原点的预览必须只跟随指针，不受源行重新测量影响。
+test('拖拽预览：展开、双向滚动及虚拟行卸载不改变指针偏移', async () => {
+  const { offsetDragPreview } = await import('../src/features/grouped-list/dragPreview.ts');
+  const args = {
+    activatorEvent: { clientX: 100, clientY: 200 },
+    transform: { x: 30, y: 50, scaleX: 1, scaleY: 1 },
+    windowRect: { width: 1200, height: 900 },
+  };
+  for (const top of [200, 200 + 56, 200 + 56 * 100, -400, 800, null]) {
+    const result = offsetDragPreview({
+      ...args,
+      activeNodeRect: top === null ? null : { left: 40, top },
+    });
+    assert.equal(result.x, 154);
+    assert.equal(result.y, 322);
+  }
+  const moved = offsetDragPreview({
+    ...args,
+    transform: { ...args.transform, x: 45, y: 30 },
+    activeNodeRect: null,
+  });
+  assert.equal(moved.x, 169);
+  assert.equal(moved.y, 302);
+});
+
+test('拖拽预览：保留视口边缘避让及顶部提示空间', async () => {
+  const { offsetDragPreview } = await import('../src/features/grouped-list/dragPreview.ts');
+  const args = {
+    activatorEvent: { clientX: 950, clientY: 790 },
+    transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 },
+    windowRect: { width: 1000, height: 800 },
+  };
+  assert.deepEqual(offsetDragPreview(args), { x: 718, y: 760, scaleX: 1, scaleY: 1 });
+  assert.equal(offsetDragPreview({ ...args, transform: { ...args.transform, y: -850 } }).y, 64);
+});
