@@ -157,9 +157,17 @@
   color: #8a9aa3;
 }
 
-.application-tree .tree-row:hover > .tree-node-card {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
+/* 悬停统一为中性色，主题色背景只用于选中状态。 */
+.application-tree .tree-row:not(.tree-row-selected):hover > .tree-node-card {
+  border-color: #cbd5dc;
+  background: #f5f7f9;
+}
+
+.application-tree
+  [data-node-type='leaf']
+  .tree-row:not(.tree-row-selected):hover
+  > .tree-node-card {
+  border-left-color: var(--accent);
 }
 
 .application-tree .tree-row.tree-row-selected > .tree-node-card {
@@ -168,10 +176,12 @@
   box-shadow: 0 0 0 1px transparent;
 }
 
-.application-tree .tree-row:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-  border-radius: 6px;
+/* 行与文字的焦点环由卡片统一呈现，避免出现内外多层轮廓。 */
+.application-tree [data-node-key]:focus-visible,
+.application-tree .tree-row:focus-visible,
+.application-tree .application-content:focus-visible,
+.application-tree .group-name:focus-visible {
+  outline: none;
 }
 
 .application-tree mark {
@@ -242,10 +252,6 @@
   background: var(--accent-bg-hover);
 }
 
-.application-tree .tree-node-card:focus-within {
-  border-color: var(--accent);
-}
-
 /* 隐藏时保留占位；仅键盘焦点保留操作入口，鼠标点击后的焦点不使按钮常驻。触屏仍可直接操作。 */
 @media (hover: hover) and (pointer: fine) {
   .tree-node-actions {
@@ -303,7 +309,7 @@
 .virtual-tree .tree-row > .tree-switcher-button {
   width: 28px;
   min-width: 28px;
-  height: min(44px, 100%);
+  height: min(28px, 100%);
   margin-left: -6px;
   margin-right: -2px;
 }
@@ -316,11 +322,6 @@
 .virtual-tree .tree-switcher-button:hover {
   color: var(--accent);
   background: var(--accent-bg);
-}
-
-.tree-switcher-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -388,7 +389,18 @@
   background: var(--accent-bg-hover);
 }
 
-.application-settings-button.ant-btn:focus-visible {
-  outline: 2px solid var(--accent);
+/* 与 Ant Design 更多操作按钮共用焦点参数；只标记当前聚焦的卡片或按钮。 */
+.application-tree [data-node-key]:focus-visible > .tree-row > .tree-node-card,
+.application-tree .tree-row:focus-visible > .tree-node-card,
+.application-tree
+  .tree-node-card:has(.application-content:focus-visible, .group-name:focus-visible),
+.virtual-tree .tree-switcher-button:focus-visible,
+.virtual-tree .tree-node-actions .ant-btn:focus-visible,
+.virtual-tree .application-settings-button.ant-btn:focus-visible {
+  outline: var(--tree-focus-width, 3px) solid var(--tree-focus-color, #91caff);
   outline-offset: 1px;
+}
+
+.virtual-tree .tree-switcher-button {
+  border-radius: var(--tree-focus-radius, 6px);
 }

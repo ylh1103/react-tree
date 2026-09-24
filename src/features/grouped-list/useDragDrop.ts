@@ -3,7 +3,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -110,16 +109,10 @@ export function useDragDrop(
     onMove(dragKey, indicator.overKey, indicator.position);
   };
 
-  const handleDragCancel = (event: DragCancelEvent) => {
+  const handleDragCancel = () => {
     setActiveDragKey(null);
     setDropIndicator(null);
     dropIndicatorRef.current = null;
-    // 按 Escape 取消指针拖拽时，源行仍聚焦会显示浏览器默认黑色轮廓。
-    // 仅清除源行焦点，保留其他控件的键盘焦点样式。
-    const focused = document.activeElement;
-    if (focused instanceof HTMLElement && focused.dataset.nodeKey === String(event.active.id)) {
-      focused.blur();
-    }
   };
 
   return {

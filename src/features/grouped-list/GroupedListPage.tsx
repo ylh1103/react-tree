@@ -54,6 +54,9 @@ export function GroupedListPage({
   } = useGroupedList(service);
   const { token } = theme.useToken();
   const treeTheme = {
+    '--tree-focus-color': token.colorPrimaryBorder,
+    '--tree-focus-width': `${token.lineWidthFocus}px`,
+    '--tree-focus-radius': `${token.borderRadius}px`,
     '--accent': token.colorPrimary,
     '--accent-hover': token.colorPrimaryHover,
     '--accent-border': token.colorPrimaryBorder,

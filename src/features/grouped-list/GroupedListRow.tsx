@@ -355,11 +355,13 @@ const GroupedLeaf = memo(function GroupedLeaf({
   const showTooltip = isOverflowing && !isDragActive;
   return (
     <Tooltip
-      trigger={['hover', 'focus']}
+      trigger={showTooltip ? ['hover', 'focus'] : []}
       placement="right"
       open={showTooltip ? undefined : false}
+      mouseEnterDelay={0.3}
+      destroyOnHidden
       title={
-        showTooltip ? (
+        isOverflowing ? (
           <div className="application-search-tooltip">
             <div className="tooltip-name">
               <Highlight text={node.title} query={searchQuery} />
@@ -436,10 +438,14 @@ const GroupContent = memo(function GroupContent({
     <span className="group-content">
       <span aria-hidden="true" className={expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'} />
       <Tooltip
-        trigger={['hover', 'focus']}
+        trigger={showTooltip ? ['hover', 'focus'] : []}
         placement="right"
         open={showTooltip ? undefined : false}
-        title={showTooltip ? <div className="application-search-tooltip">{node.title}</div> : null}
+        mouseEnterDelay={0.3}
+        destroyOnHidden
+        title={
+          isOverflowing ? <div className="application-search-tooltip">{node.title}</div> : null
+        }
       >
         <span ref={nameRef} className="group-name" tabIndex={showTooltip ? 0 : undefined}>
           {node.title}
