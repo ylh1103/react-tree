@@ -3,6 +3,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragCancelEvent,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
@@ -109,10 +110,17 @@ export function useDragDrop(
     onMove(dragKey, indicator.overKey, indicator.position);
   };
 
-  const handleDragCancel = () => {
+  const handleDragCancel = (event: DragCancelEvent) => {
+    const target = event.activatorEvent.target;
+    const row = target instanceof Element ? target.closest<HTMLElement>('[data-node-key]') : null;
     setActiveDragKey(null);
     setDropIndicator(null);
     dropIndicatorRef.current = null;
+
+    // PointerSensor 不自动恢复焦点；取消后两类节点都聚焦整行，复用卡片焦点框。
+    if (row?.isConnected && row.dataset.nodeKey === String(event.active.id)) {
+      row.focus({ preventScroll: true });
+    }
   };
 
   return {

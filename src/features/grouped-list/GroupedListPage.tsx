@@ -26,7 +26,8 @@ const dragMeasuring = {
   },
 };
 
-const ROW_HEIGHT = 56;
+const ROW_HEIGHT = 42;
+const ROW_GAP = 10;
 const getSearchText = (node: LeafNode) => `${node.title} ${node.data.desc ?? ''}`;
 
 /** 参数和应用列表内部使用，不提供通用渲染插槽。 */
@@ -173,6 +174,9 @@ export function GroupedListPage({
     getItemKey,
     getScrollElement: () => parentScrollRef.current,
     estimateSize: () => ROW_HEIGHT,
+    gap: ROW_GAP,
+    paddingStart: ROW_GAP,
+    paddingEnd: ROW_GAP,
     overscan: 8,
   });
 
@@ -218,6 +222,20 @@ export function GroupedListPage({
     }, 1400);
   }, [flat, selectedKey, virtualizer]);
 
+  // “分组之后”的线挂在最后一个可见后代上，位置由节点边缘决定。
+  let dropLineIndex = -1;
+  let dropLineDepth = 0;
+  if (dropIndicator && dropIndicator.position !== 'inside') {
+    dropLineIndex = flat.findIndex(({ node }) => node.key === dropIndicator.overKey);
+    if (dropLineIndex !== -1) {
+      dropLineDepth = flat[dropLineIndex].depth;
+      if (dropIndicator.position === 'after') {
+        while (dropLineIndex + 1 < flat.length && flat[dropLineIndex + 1].depth > dropLineDepth)
+          dropLineIndex++;
+      }
+    }
+  }
+
   const handleEnterEdit = () => dispatch({ type: 'ENTER_EDIT' });
   const handleAddBranch = () => dispatch({ type: 'ADD_BRANCH', title: `${config.label}分组` });
   const commitRename = useCallback(
@@ -227,7 +245,11 @@ export function GroupedListPage({
   const cancelRename = useCallback(() => dispatch({ type: 'CANCEL_RENAME' }), [dispatch]);
 
   return (
-    <main className="parameter-demo" style={treeTheme} aria-busy={disabled}>
+    <main
+      className="relative flex flex-col w-[340px] max-w-full h-full bg-white border border-solid border-[#edf0f2] rounded-[6px] overflow-hidden max-[400px]:w-full"
+      style={treeTheme}
+      aria-busy={disabled}
+    >
       {error && (
         <Alert
           type="error"
@@ -245,7 +267,7 @@ export function GroupedListPage({
       )}
       {ready && (
         <div
-          className="virtual-tree application-tree flex flex-col overflow-hidden"
+          className="virtual-tree flex flex-col flex-1 min-h-0 overflow-hidden"
           aria-busy={isSaving || disabled}
           inert={isSaving || disabled}
         >
@@ -275,7 +297,7 @@ export function GroupedListPage({
               cancel: handleCancel,
             }}
           />
-          <div className="tree-search flex items-center gap-2 p-2 border-b border-gray-200 bg-white">
+          <div className="flex items-center gap-2 px-5 pb-3.5 bg-white">
             <Input.Search
               placeholder={`请输入${config.label}名称或描述`}
               aria-label={`请输入${config.label}名称或描述`}
@@ -288,13 +310,13 @@ export function GroupedListPage({
                   resetSearchCollapse(query.trim());
                 }
               }}
-              className="max-w-xs"
+              className="max-w-none"
             />
           </div>
 
           <div
             ref={parentScrollRef}
-            className="tree-scroll-viewport min-h-0 min-w-0 flex-1 overflow-auto relative"
+            className="tree-scroll-viewport [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#dce5e9_transparent] min-h-0 min-w-0 flex-1 overflow-auto relative"
           >
             {flat.length === 0 && (
               <div
@@ -315,12 +337,6 @@ export function GroupedListPage({
                 {virtualizer.getVirtualItems().map((virtualItem) => {
                   const flatNode = flat[virtualItem.index];
                   const { node } = flatNode;
-                  // 分组之后表示整个子树之后，避免在目录与首个子节点之间画线。
-                  let afterIndex = virtualItem.index + 1;
-                  if (dropIndicator?.overKey === node.key && dropIndicator.position === 'after') {
-                    while (afterIndex < flat.length && flat[afterIndex].depth > flatNode.depth)
-                      afterIndex++;
-                  }
                   return (
                     <GroupedListRow
                       key={node.key}
@@ -336,7 +352,12 @@ export function GroupedListPage({
                       searchQuery={normalizedSearchQuery}
                       dropIndicator={dropIndicator?.overKey === node.key ? dropIndicator : null}
                       rowHeight={ROW_HEIGHT}
-                      dropAfterOffset={(afterIndex - virtualItem.index) * ROW_HEIGHT}
+                      rowGap={ROW_GAP}
+                      dropLine={
+                        virtualItem.index === dropLineIndex && dropIndicator
+                          ? { position: dropIndicator.position, depth: dropLineDepth }
+                          : null
+                      }
                       config={config}
                       onSettings={!isEditing && onSettings ? handleSettings : undefined}
                       onDeleteLeaf={!isEditing && onDelete ? handleDeleteLeaf : undefined}
@@ -361,7 +382,10 @@ export function GroupedListPage({
         </div>
       )}
       {loading && (
-        <div className="list-loading" aria-label={`正在加载${config.label}列表`}>
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center bg-white/65"
+          aria-label={`正在加载${config.label}列表`}
+        >
           <Spin />
         </div>
       )}

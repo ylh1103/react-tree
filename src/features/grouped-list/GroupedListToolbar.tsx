@@ -39,9 +39,9 @@ export function GroupedListToolbar({
   } = context;
   return (
     <>
-      <header className="application-toolbar">
+      <header className="flex flex-wrap items-center gap-2 px-5 pt-4.5 pb-2.5">
         <GroupedListHeading context={context} config={config} showDetails={typeFilter === 'all'} />
-        <div className="toolbar-actions">
+        <div className="flex shrink-0 gap-1.5 ml-auto">
           <Tooltip title={filtersExpanded ? '收起' : '展开'}>
             <Button
               size="small"
@@ -103,7 +103,11 @@ export function GroupedListToolbar({
           </Tooltip>
         </div>
       </header>
-      <div id={filterPanelId} hidden={!filtersExpanded} className="application-type-filter">
+      <div
+        id={filterPanelId}
+        hidden={!filtersExpanded}
+        className="application-type-filter shrink-0 mx-5 mb-3"
+      >
         <Segmented<FilterValue>
           block
           aria-label={config.filterLabel}
@@ -113,9 +117,9 @@ export function GroupedListToolbar({
           options={config.options.map((option) => ({
             value: option.value,
             label: (
-              <span className="application-type-filter-option">
+              <span className="flex flex-wrap items-center justify-center gap-x-1.25 gap-y-0.5">
                 <span>{option.label}</span>
-                <span className="application-type-filter-count">
+                <span className="application-type-filter-count min-w-4.5 px-1 rounded-1 bg-[#e8edf2] text-[11px] font-600 leading-[18px] tabular-nums [overflow-wrap:anywhere]">
                   {option.value === 'all'
                     ? totalLeafCount
                     : (totalLeafCountsByCategory.get(option.value) ?? 0)}
@@ -127,23 +131,26 @@ export function GroupedListToolbar({
       </div>
       {isEditing && (
         <div
-          className="editing-toolbar grouped-editing-toolbar"
+          className="flex flex-wrap items-center justify-between shrink-0 gap-2 mt-0.5 mx-5 mb-3 p-2 border border-solid border-[#e3e9ed] rounded-2 bg-[#f7f9fb]"
           role="group"
           aria-label="分组编辑操作"
         >
           <Button
-            className="editing-add-button"
+            size="small"
+            variant="outlined"
+            color="primary"
             icon={<PlusOutlined aria-hidden="true" />}
             onClick={addBranch}
             disabled={busy}
           >
             新增分组
           </Button>
-          <div className="editing-confirm-actions">
-            <Button type="text" onClick={cancel} disabled={busy}>
+          <div className="flex items-center gap-1 ml-auto">
+            <Button size="small" type="text" onClick={cancel} disabled={busy}>
               取消
             </Button>
             <Button
+              size="small"
               type="primary"
               icon={<CheckOutlined aria-hidden="true" />}
               onClick={save}
@@ -195,7 +202,7 @@ function GroupedListHeading({
   ];
   const countDescription = countLines.join('；');
   return (
-    <h2 className="list-heading">
+    <h2 className="flex items-center gap-1.5 whitespace-nowrap m-0 text-[16px] font-[650] leading-7">
       <span>{config.label}列表</span>
       <Tooltip
         title={
@@ -209,7 +216,7 @@ function GroupedListHeading({
         }
       >
         <span
-          className="list-heading-count"
+          className="inline-flex items-center justify-center min-w-6 px-1.5 rounded-[5px] bg-[var(--accent-bg)] text-[var(--accent-text)] text-[12px] font-600 leading-[22px] tabular-nums"
           role="status"
           aria-atomic="true"
           aria-label={countDescription}

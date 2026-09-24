@@ -5,6 +5,7 @@
   --ws-text: #d8dbe5;
   --ws-muted: #a0a5b8;
   --ws-accent: #a7b7ff;
+  height: 100vh;
   height: 100dvh;
   display: flex;
   flex-direction: column;

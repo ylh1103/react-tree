@@ -1,42 +1,4 @@
-.editing-toolbar.grouped-editing-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  gap: 8px;
-  margin: 2px 20px 12px;
-  padding: 8px;
-  border: 1px solid #e3e9ed;
-  border-radius: 8px;
-  background: #f7f9fb;
-}
-.grouped-editing-toolbar .ant-btn {
-  height: 32px;
-  padding-inline: 10px;
-  font-size: 13px;
-  box-shadow: none;
-}
-.grouped-editing-toolbar .editing-add-button:not(:disabled) {
-  color: var(--accent-text);
-  border-color: var(--accent-border);
-}
-.editing-confirm-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: auto;
-}
-@media (pointer: coarse) {
-  .grouped-editing-toolbar .ant-btn {
-    min-height: 44px;
-  }
-}
-
-.application-type-filter {
-  flex-shrink: 0;
-  margin: 0 20px 12px;
-}
+/* 树列表专用：组件内部覆盖、跨节点交互和主题变量。基础布局使用组件中的 UnoCSS 类。 */
 .application-type-filter .ant-segmented {
   width: 100%;
   padding: 4px;
@@ -64,7 +26,7 @@
     0 1px 4px #20384612,
     inset 0 0 0 1px var(--accent-border);
 }
-.application-type-filter .ant-segmented-item:has(input:focus-visible) {
+.application-type-filter .ant-segmented-item:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -85,154 +47,52 @@
   }
 }
 
-.application-type-filter-option {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 2px 5px;
-}
-.application-type-filter-count {
-  min-width: 18px;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: #e8edf2;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 18px;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
 .application-type-filter .ant-segmented-item-selected .application-type-filter-count {
   color: var(--accent-text);
   background: var(--accent-bg);
 }
 
-.application-tree {
-  flex: 1;
-  min-height: 0;
-  border: 0;
-  border-radius: 0;
-}
-
-.application-tree .tree-search {
-  padding: 0 20px 14px;
-  border: 0;
-}
-
-.application-tree .tree-search .ant-input-search {
-  max-width: none;
-}
-
-.application-tree .tree-row {
-  background: transparent;
-  padding-right: 20px !important;
-}
-
-.application-tree .tree-row > .tree-node-card {
-  min-width: 0;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  padding: 7px 10px;
-  border: 1px solid #e3e9ed;
-  border-radius: 6px;
-  background: #fff;
-  transition:
-    background 0.15s,
-    border-color 0.15s,
-    box-shadow 0.15s;
-}
-
-.application-tree [data-node-type='leaf'] .tree-row > .tree-node-card {
-  height: 46px;
-  padding-block: 4px;
-  border-left: 2px solid var(--accent);
-}
-
-.application-tree .tree-row > .tree-switcher {
-  width: 12px;
-  min-width: 12px;
-  margin-right: 4px;
-  color: #8a9aa3;
-}
-
 /* 悬停统一为中性色，主题色背景只用于选中状态。 */
-.application-tree .tree-row:not(.tree-row-selected):hover > .tree-node-card {
+.virtual-tree .tree-row:not(.tree-row-selected):hover > .tree-node-card {
   border-color: #cbd5dc;
   background: #f5f7f9;
 }
 
-.application-tree
-  [data-node-type='leaf']
-  .tree-row:not(.tree-row-selected):hover
-  > .tree-node-card {
+.virtual-tree [data-node-type='leaf'] .tree-row:not(.tree-row-selected):hover > .tree-node-card {
   border-left-color: var(--accent);
 }
 
-.application-tree .tree-row.tree-row-selected > .tree-node-card {
+.virtual-tree .tree-row.tree-row-selected > .tree-node-card {
   border-color: var(--accent);
   background: var(--accent-bg);
-  box-shadow: 0 0 0 1px transparent;
 }
 
 /* 行与文字的焦点环由卡片统一呈现，避免出现内外多层轮廓。 */
-.application-tree [data-node-key]:focus-visible,
-.application-tree .tree-row:focus-visible,
-.application-tree .application-content:focus-visible,
-.application-tree .group-name:focus-visible {
+.virtual-tree [data-node-key]:focus-visible,
+.virtual-tree .tree-row:focus-visible,
+.virtual-tree .application-content:focus-visible,
+.virtual-tree .group-name:focus-visible {
   outline: none;
 }
 
-.application-tree mark {
-  background: #ffefb4;
-  color: inherit;
-  border-radius: 2px;
-}
-
 /* 保留滚动条槽位，展开、搜索及拖拽改变行数时不挤压节点。 */
-.tree-scroll-viewport {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: #dce5e9 transparent;
-}
-
 @supports not (scrollbar-gutter: stable) {
   .tree-scroll-viewport {
     overflow-y: scroll;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .application-tree .tree-row > .tree-node-card {
-    transition: none;
-  }
-}
-
 /* 定位提示贴合节点内容，保留缩进、展开箭头及行间留白。 */
-.tree-node-card[data-locate-highlighted] {
-  outline: 2px solid #f0a33a;
-  outline-offset: -2px;
-  border-radius: 4px;
-}
-
-.application-tree .tree-node-card[data-locate-highlighted] {
+.virtual-tree .tree-node-card[data-locate-highlighted] {
+  outline: 2px solid #f5222d;
   outline-offset: 1px;
-  border-radius: 6px;
 }
 
-.tree-node-card[data-drop-inside] {
+.virtual-tree .tree-node-card[data-drop-inside] {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
-}
-
-.application-tree .tree-node-card[data-drop-inside] {
   background: var(--accent-bg-hover);
   border-color: var(--accent);
-}
-
-.virtual-tree:not(.application-tree) .tree-row-selected {
-  background: var(--accent-bg);
 }
 
 /* 内容和操作共享节点边框，操作区固定宽度，长标题自然省略。 */
@@ -247,7 +107,7 @@
   color: #77858e;
 }
 
-.tree-node-actions .ant-btn:not(.ant-btn-dangerous):hover {
+.tree-row .tree-node-actions .ant-btn:not(.ant-btn-dangerous):hover {
   color: var(--accent);
   background: var(--accent-bg-hover);
 }
@@ -259,7 +119,7 @@
     pointer-events: none;
   }
   .tree-row:hover .tree-node-actions,
-  .tree-row:is(:focus-visible, :has(:focus-visible)) .tree-node-actions,
+  .tree-row[data-keyboard-focus] .tree-node-actions,
   .tree-row-editing:focus-within .tree-node-actions,
   [data-node-key]:focus-visible .tree-node-actions,
   .tree-node-actions[data-menu-open] {
@@ -270,67 +130,39 @@
 
 /* 目录的数量与更多操作共用右侧位置，不额外预留按钮宽度。 */
 @media (hover: hover) and (pointer: fine) {
-  .application-tree [data-node-type='branch'] .tree-node-card:has(.tree-node-actions) {
+  .virtual-tree [data-node-type='branch'] .tree-node-card[data-has-actions] {
     position: relative;
   }
-  .application-tree [data-node-type='branch'] .tree-node-card:has(.tree-node-actions) .group-count {
+  .virtual-tree [data-node-type='branch'] .tree-node-card[data-has-actions] .group-count {
     min-width: 24px;
     text-align: center;
   }
-  .application-tree [data-node-type='branch'] .tree-node-actions {
+  .virtual-tree [data-node-type='branch'] .tree-node-actions {
     position: absolute;
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
   }
-  .application-tree
+  .virtual-tree
     [data-node-type='branch']
     .tree-row:hover
-    .tree-node-card:has(.tree-node-actions)
+    .tree-node-card[data-has-actions]
     .group-count,
-  .application-tree
+  .virtual-tree
     [data-node-type='branch']
-    .tree-row:is(:focus-visible, :has(:focus-visible), .tree-row-editing:focus-within)
-    .tree-node-card:has(.tree-node-actions)
+    .tree-row[data-keyboard-focus]
+    .tree-node-card[data-has-actions]
     .group-count,
-  .application-tree
+  .virtual-tree
     [data-node-type='branch']:focus-visible
-    .tree-node-card:has(.tree-node-actions)
+    .tree-node-card[data-has-actions]
     .group-count,
-  .application-tree
-    [data-node-type='branch']
-    .tree-node-card:has(.tree-node-actions[data-menu-open])
-    .group-count {
+  .virtual-tree [data-node-type='branch'] .tree-node-card[data-menu-open] .group-count {
     opacity: 0;
   }
 }
 
-/* 两种模式共用扩展箭头热区，负边距保持节点原有缩进及内容宽度。 */
-.virtual-tree .tree-row > .tree-switcher-button {
-  width: 28px;
-  min-width: 28px;
-  height: min(28px, 100%);
-  margin-left: -6px;
-  margin-right: -2px;
-}
-
-.application-tree .tree-row > .tree-switcher-button {
-  margin-left: -8px;
-  margin-right: -4px;
-}
-
-.virtual-tree .tree-switcher-button:hover {
-  color: var(--accent);
-  background: var(--accent-bg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tree-switcher-button > span {
-    transition: none !important;
-  }
-}
-
-.application-tree .tree-node-card:has(.leaf-type-badge) {
+.virtual-tree .tree-node-card[data-has-badge] {
   position: relative;
   --leaf-type-color: #8c959f;
   --leaf-type-text: #59636e;
@@ -338,7 +170,7 @@
 }
 
 /* 公共应用沿用相同的交互规则，仅将节点内的强调色切换为角标对应的橙色。 */
-.application-tree .tree-row:has(.application-content[data-leaf-type-color='purple']) {
+.virtual-tree .tree-row[data-leaf-type-color='purple'] {
   --accent: #fa8c16;
   --accent-hover: #ffa940;
   --accent-border: #ffd591;
@@ -346,14 +178,14 @@
   --accent-bg-hover: #ffe7ba;
   --accent-text: #d46b08;
 }
-.application-tree .tree-node-card:has(.application-content[data-leaf-type-color='purple']) {
+.virtual-tree .tree-row[data-leaf-type-color='purple'] .tree-node-card {
   --leaf-type-color: var(--accent);
   --leaf-type-text: #fff;
   --leaf-type-bg: var(--leaf-type-color);
 }
 
 /* 增量维护复用应用节点的交互规则，使用自身的青色主题。 */
-.application-tree .tree-row:has(.application-content[data-leaf-type-color='cyan']) {
+.virtual-tree .tree-row[data-leaf-type-color='cyan'] {
   --accent: #13c2c2;
   --accent-hover: #36cfc9;
   --accent-border: #87e8de;
@@ -362,38 +194,31 @@
   --accent-text: #087f8c;
 }
 
-.application-tree .tree-node-card:has(.application-content[data-leaf-type-color='cyan']) {
+.virtual-tree .tree-row[data-leaf-type-color='cyan'] .tree-node-card {
   --leaf-type-color: var(--accent);
   --leaf-type-text: #fff;
   --leaf-type-bg: var(--leaf-type-color);
 }
 
-/* 两类列表的角标均保持原位，重叠时显示在操作按钮上层。 */
-.application-tree .leaf-type-badge {
-  z-index: 1;
-}
-/* 名称和描述各自省略，外层不裁切设置按钮的悬停背景与焦点轮廓。 */
-.application-tree .tree-node-content:has(.application-settings-button) {
-  overflow: visible;
-}
-.application-settings-button.ant-btn {
+/* 设置按钮保留独立的热区与焦点轮廓。 */
+.virtual-tree .tree-node-card .application-settings-button.ant-btn {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  margin-inline: -5px;
+  margin-left: -5px;
+  margin-right: -5px;
   padding: 0;
   color: var(--accent);
 }
 
-.application-settings-button.ant-btn:not(:disabled):hover {
+.virtual-tree .tree-node-card .application-settings-button.ant-btn:not(:disabled):hover {
   background: var(--accent-bg-hover);
 }
 
 /* 与 Ant Design 更多操作按钮共用焦点参数；只标记当前聚焦的卡片或按钮。 */
-.application-tree [data-node-key]:focus-visible > .tree-row > .tree-node-card,
-.application-tree .tree-row:focus-visible > .tree-node-card,
-.application-tree
-  .tree-node-card:has(.application-content:focus-visible, .group-name:focus-visible),
+.virtual-tree [data-node-key]:focus-visible > .tree-row > .tree-node-card,
+.virtual-tree .tree-row:focus-visible > .tree-node-card,
+.virtual-tree .tree-node-card[data-content-focus],
 .virtual-tree .tree-switcher-button:focus-visible,
 .virtual-tree .tree-node-actions .ant-btn:focus-visible,
 .virtual-tree .application-settings-button.ant-btn:focus-visible {
@@ -401,6 +226,15 @@
   outline-offset: 1px;
 }
 
-.virtual-tree .tree-switcher-button {
-  border-radius: var(--tree-focus-radius, 6px);
+/* Chrome 86 尚不支持标准滚动条配色，使用 WebKit 伪元素回退。 */
+.tree-scroll-viewport::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.tree-scroll-viewport::-webkit-scrollbar-thumb {
+  background: #dce5e9;
+  border-radius: 4px;
+}
+.tree-scroll-viewport::-webkit-scrollbar-track {
+  background: transparent;
 }

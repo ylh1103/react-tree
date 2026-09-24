@@ -33,7 +33,9 @@ pnpm build
 | 接口数据合并与树格式转换                               | `model.ts`                 |
 | 业务配置、节点、服务及回调类型                         | `types.ts`                 |
 | HTTP 与 Mock 接口实现                                  | `service.ts`、`mockApi.ts` |
-| 列表、节点和工具栏的全部样式                           | `GroupedList.css`          |
+| 列表的复杂交互、主题和 Ant Design 样式覆盖             | `GroupedList.css`          |
+
+基础布局、间距、文字和简单状态使用各组件中的 UnoCSS 类；需要手写的树列表 CSS 统一放在 `GroupedList.css`，由 `GroupedListPage.tsx` 引入，入口 `src/index.css` 仅保留全局基础和应用框架样式。
 
 排查一次操作时，从 `GroupedListPage.tsx` 的事件绑定进入；节点入口看 `GroupedListRow.tsx`，分组编辑看 `useGroupEditing.tsx`，接口请求看 `useGroupedList.ts`。标题、节点内容、预览等只在一处使用的组件保留为对应文件内的私有组件。
 
@@ -119,3 +121,11 @@ VS Code 请安装工作区推荐的 ESLint 和 Prettier 扩展。
 这套配置不启用需要类型信息的 ESLint 规则；类型检查由 `pnpm build` 中的 `tsc -b` 完成。
 
 参考：[typescript-eslint](https://typescript-eslint.io/getting-started/)、[Prettier 与 Linter 集成](https://prettier.io/docs/integrating-with-linters)。
+
+### 浏览器样式兼容
+
+- 自有 CSS 以 Chrome 86 为最低检查目标；Vite 的 JS/CSS 构建目标均为 `chrome86`。
+- 树列表使用显式 `data-*` 状态表达父子交互，不依赖 `:has()`、`:is()` 或 `:where()`；基本样式继续使用 UnoCSS。
+- Ant Design 运行时样式通过 `StyleProvider` 开启 `hashPriority="high"`、逻辑属性降级和前缀转换；提升样式优先级后要检查业务覆盖规则。
+- `100dvh` 保留 `100vh` 回退；滚动条使用 WebKit 伪元素，并在不支持 `scrollbar-gutter` 时保留滚动空间。
+- 构建目标不提供 DOM/JavaScript API 的 polyfill。当前 `inert` 等行为和第三方组件仍需 Chrome 86 实机回归；现代 Chromium 的检查不能代替该验收。

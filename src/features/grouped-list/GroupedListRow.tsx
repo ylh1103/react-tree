@@ -18,7 +18,8 @@ interface TreeRowProps {
   searchQuery: string;
   dropIndicator: DropIndicator | null;
   rowHeight: number;
-  dropAfterOffset: number;
+  rowGap: number;
+  dropLine: { position: DropIndicator['position']; depth: number } | null;
   config: GroupedListConfig;
   onSettings?: (node: LeafNode) => void;
   onDeleteLeaf?: (node: LeafNode) => void;
@@ -44,7 +45,8 @@ export const GroupedListRow = memo(function GroupedListRow({
   searchQuery,
   dropIndicator,
   rowHeight,
-  dropAfterOffset,
+  rowGap,
+  dropLine,
   config,
   onSettings,
   onDeleteLeaf,
@@ -60,6 +62,10 @@ export const GroupedListRow = memo(function GroupedListRow({
   const { node, depth } = flatNode;
   const isBranch = node.type === 'branch';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
+  const [hasContentFocus, setHasContentFocus] = useState(false);
+  const leafKind = node.type === 'leaf' ? node.data[config.typeField] : undefined;
+  const leafColor = leafKind === undefined ? undefined : config.types[leafKind]?.color;
 
   const {
     setNodeRef: setDragRef,
@@ -81,8 +87,8 @@ export const GroupedListRow = memo(function GroupedListRow({
     }
   };
 
-  const showBefore = dropIndicator?.overKey === node.key && dropIndicator.position === 'before';
-  const showAfter = dropIndicator?.overKey === node.key && dropIndicator.position === 'after';
+  const showBefore = dropLine?.position === 'before';
+  const showAfter = dropLine?.position === 'after';
   const showInside = dropIndicator?.overKey === node.key && dropIndicator.position === 'inside';
 
   return (
@@ -102,7 +108,30 @@ export const GroupedListRow = memo(function GroupedListRow({
       // 只在编辑态下绑定拖拽监听，非编辑态整行保持普通的点击交互。
       {...(isEditing ? { ...listeners, ...attributes } : {})}
     >
+      {/* 仅拖拽时覆盖上下各半个 gap；命中仍归属当前节点，测量保持真实行高。 */}
+      {isDragActive && (
+        <div
+          aria-hidden="true"
+          className="absolute left-0 right-0"
+          style={{ top: -rowGap / 2, bottom: -rowGap / 2 }}
+        />
+      )}
       <div
+        data-leaf-type-color={!isRenaming ? leafColor : undefined}
+        data-keyboard-focus={hasKeyboardFocus || undefined}
+        onFocusCapture={(event) => {
+          const visible = event.target.matches(':focus-visible');
+          setHasKeyboardFocus(visible);
+          setHasContentFocus(visible && event.target.matches('.application-content, .group-name'));
+        }}
+        onBlurCapture={() => {
+          setHasKeyboardFocus(false);
+          setHasContentFocus(false);
+        }}
+        onPointerDownCapture={() => {
+          setHasKeyboardFocus(false);
+          setHasContentFocus(false);
+        }}
         onClick={handleRowClick}
         role={isEditing ? undefined : 'button'}
         tabIndex={isEditing ? undefined : 0}
@@ -119,7 +148,7 @@ export const GroupedListRow = memo(function GroupedListRow({
         }}
         className={[
           'tree-row flex items-center h-full cursor-pointer select-none relative',
-          isSelected ? 'tree-row-selected' : 'hover:bg-gray-50',
+          isSelected ? 'tree-row-selected' : '',
 
           isEditing ? 'tree-row-editing cursor-grab!' : '',
         ].join(' ')}
@@ -128,7 +157,11 @@ export const GroupedListRow = memo(function GroupedListRow({
         {(showBefore || showAfter) && (
           <div
             className="tree-drop-line absolute right-5 h-0.5 bg-[var(--accent)] pointer-events-none z-5"
-            style={{ left: depth * INDENT + 24, top: showBefore ? 0 : dropAfterOffset }}
+            style={{
+              left: (dropLine?.depth ?? depth) * INDENT + 24,
+              top: showBefore ? -rowGap / 2 : `calc(100% + ${rowGap / 2}px)`,
+              transform: 'translateY(-50%)',
+            }}
             aria-hidden="true"
           >
             <span className="tree-drop-dot absolute -left-1 -top-0.75 w-2 h-2 border-2 border-solid border-[var(--accent)] bg-white rounded-full" />
@@ -146,23 +179,25 @@ export const GroupedListRow = memo(function GroupedListRow({
               event.stopPropagation();
               onToggleExpand(node.key);
             }}
-            className="tree-switcher tree-switcher-button mr-1 flex items-center justify-center w-4 h-4 text-gray-500 p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded shrink-0"
+            className="tree-switcher-button flex items-center justify-center w-7 min-w-7 h-full -ml-2 -mr-1 text-[#8a9aa3] p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded-[var(--tree-focus-radius,6px)] shrink-0 hover:text-[var(--accent)] hover:bg-[var(--accent-bg)]"
           >
             <span
               aria-hidden="true"
-              className="i-lucide-chevron-right"
-              style={{
-                transform: isExpanded ? 'rotate(90deg)' : 'none',
-                transition: 'transform 0.15s',
-              }}
+              className={`i-lucide-chevron-right transition-transform duration-150 motion-reduce:transition-none ${isExpanded ? 'rotate-90' : ''}`}
             />
           </button>
         ) : (
-          <span className="tree-switcher mr-1 w-4 h-4 inline-block" />
+          <span className="mr-1 w-3 min-w-3 h-4 inline-block" />
         )}
 
         <div
-          className="tree-node-card flex-1 flex items-center min-w-0 gap-1.5"
+          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-[#e3e9ed] rounded-[6px] bg-white [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none ${isBranch ? 'py-1.75' : 'py-1 border-l-2 border-l-[var(--accent)]'}`}
+          data-has-actions={!isRenaming || undefined}
+          data-menu-open={isMenuOpen || undefined}
+          data-has-badge={
+            (!isRenaming && leafKind !== undefined && leafKind === config.badgeType) || undefined
+          }
+          data-content-focus={hasContentFocus || undefined}
           data-drop-inside={showInside || undefined}
           data-locate-highlighted={isHighlighted || undefined}
         >
@@ -174,7 +209,9 @@ export const GroupedListRow = memo(function GroupedListRow({
               onCancel={onCancelRename}
             />
           ) : (
-            <span className="tree-node-content flex-1 truncate text-sm min-w-0">
+            <span
+              className={`tree-node-content flex-1 whitespace-nowrap text-ellipsis text-sm min-w-0 ${isBranch ? 'overflow-hidden' : 'overflow-visible'}`}
+            >
               {node.type === 'branch' ? (
                 <GroupContent node={node} expanded={isExpanded} isDragActive={isDragActive} />
               ) : (
@@ -321,7 +358,13 @@ function RenameInput({
 
 function Highlight({ text, query }: { text: string; query: string }) {
   return highlightText(text, query).map((part, index) =>
-    part.match ? <mark key={index}>{part.text}</mark> : <span key={index}>{part.text}</span>,
+    part.match ? (
+      <mark className="bg-[#fff1f0] text-[#cf1322] rounded-[2px]" key={index}>
+        {part.text}
+      </mark>
+    ) : (
+      <span key={index}>{part.text}</span>
+    ),
   );
 }
 
@@ -362,12 +405,12 @@ const GroupedLeaf = memo(function GroupedLeaf({
       destroyOnHidden
       title={
         isOverflowing ? (
-          <div className="application-search-tooltip">
-            <div className="tooltip-name">
+          <div className="max-w-[min(320px,calc(100vw-48px))] whitespace-normal [overflow-wrap:anywhere] leading-[1.6]">
+            <div className="font-600">
               <Highlight text={node.title} query={searchQuery} />
             </div>
             {description && (
-              <div className="tooltip-description">
+              <div className="mt-1 text-[12px]">
                 <Highlight text={description} query={searchQuery} />
               </div>
             )}
@@ -376,7 +419,7 @@ const GroupedLeaf = memo(function GroupedLeaf({
       }
     >
       <span
-        className="application-content"
+        className="application-content flex items-center gap-2.25 min-w-0 w-full"
         data-leaf-type-color={typeColor}
         tabIndex={showTooltip ? 0 : undefined}
       >
@@ -393,16 +436,24 @@ const GroupedLeaf = memo(function GroupedLeaf({
             event.stopPropagation();
             onSettings?.(node);
           }}
-          icon={<span aria-hidden="true" className="application-gear i-lucide-settings" />}
+          icon={
+            <span
+              aria-hidden="true"
+              className="i-lucide-settings shrink-0 text-[var(--accent)] text-[18px]"
+            />
+          }
         />
-        <span className="application-copy">
-          <span className="application-title-line">
-            <span ref={nameRef} className="application-name">
+        <span className="flex-1 min-w-0 flex flex-col gap-0">
+          <span className="flex items-center min-w-0">
+            <span
+              ref={nameRef}
+              className="min-w-0 text-[13px] font-[550] leading-[18px] overflow-hidden text-ellipsis"
+            >
               <Highlight text={node.title} query={searchQuery} />
             </span>
             {kind === config.badgeType && (
               <span
-                className="leaf-type-badge"
+                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 rounded-[0_5px_0_7px] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
                 data-color={typeColor}
                 title={typeLabel}
                 role="img"
@@ -412,7 +463,10 @@ const GroupedLeaf = memo(function GroupedLeaf({
               </span>
             )}
           </span>
-          <span ref={descriptionRef} className="application-description">
+          <span
+            ref={descriptionRef}
+            className="text-[#75838d] text-[11px] leading-4 overflow-hidden text-ellipsis"
+          >
             <Highlight text={description} query={searchQuery} />
           </span>
         </span>
@@ -435,8 +489,11 @@ const GroupContent = memo(function GroupContent({
 
   const showTooltip = isOverflowing && !isDragActive;
   return (
-    <span className="group-content">
-      <span aria-hidden="true" className={expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'} />
+    <span className="flex items-center gap-2.25 min-w-0 w-full">
+      <span
+        aria-hidden="true"
+        className={`shrink-0 text-[#77939e] text-[16px] ${expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'}`}
+      />
       <Tooltip
         trigger={showTooltip ? ['hover', 'focus'] : []}
         placement="right"
@@ -444,14 +501,24 @@ const GroupContent = memo(function GroupContent({
         mouseEnterDelay={0.3}
         destroyOnHidden
         title={
-          isOverflowing ? <div className="application-search-tooltip">{node.title}</div> : null
+          isOverflowing ? (
+            <div className="max-w-[min(320px,calc(100vw-48px))] whitespace-normal [overflow-wrap:anywhere] leading-[1.6]">
+              {node.title}
+            </div>
+          ) : null
         }
       >
-        <span ref={nameRef} className="group-name" tabIndex={showTooltip ? 0 : undefined}>
+        <span
+          ref={nameRef}
+          className="group-name min-w-0 overflow-hidden text-ellipsis text-[13px] font-500"
+          tabIndex={showTooltip ? 0 : undefined}
+        >
           {node.title}
         </span>
       </Tooltip>
-      <span className="group-count">{node.children.length}</span>
+      <span className="group-count ml-auto shrink-0 text-[#7d8e98] bg-[#f1f5f7] rounded-1 px-1.5 text-[11px] leading-[19px] tabular-nums">
+        {node.children.length}
+      </span>
     </span>
   );
 });

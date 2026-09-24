@@ -25,7 +25,7 @@ applications.push(
     (_, index): ApplicationItem => {
       const number = String(index + initialApplicationCount + 1).padStart(3, '0');
       const appType = index % 3 === 0 ? '1' : '0';
-      const category = appType === '1' ? '公共应用' : '业务应用';
+      const category = appType === '1' ? 'public' : 'bussiness';
       return {
         appName: `${category}-${number}`,
         appDesc: `${category} ${number} 的参数配置、服务管理与发布设置`,

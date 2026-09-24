@@ -366,7 +366,7 @@ export function useTreeActions({
       );
       const moveModal = Modal.confirm({
         title: '快速移动',
-        icon: <span aria-hidden="true" className="i-lucide-folder text-5.5 mr-3" />,
+        icon: <span aria-hidden="true" className="i-lucide-folder-input text-5.5 mr-3" />,
         width: 560,
         centered: true,
         content: renderMoveContent(),
