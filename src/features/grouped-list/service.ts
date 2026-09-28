@@ -1,3 +1,4 @@
+import { requestData } from '../../lib/http.ts';
 import type { ListNode } from './types';
 
 export interface ListApi<Item, Field extends string> {
@@ -30,20 +31,22 @@ export function createListService<Item, Field extends string>(
 export function createHttpListApi<Item, Field extends string>(urls: {
   items: string;
   groups: string;
-}): ListApi<Item, Field> {
-  async function request(url: string, init?: RequestInit) {
-    const response = await fetch(url, { credentials: 'same-origin', ...init });
-    if (!response.ok) throw new Error(`请求失败（${response.status}）`);
-    return response;
-  }
+}): ListApi<Item, Field> & { deleteItem: (key: string) => Promise<void> } {
   return {
-    getItems: async (signal) => (await request(urls.items, { signal })).json(),
-    getGroups: async (signal) => (await request(urls.groups, { signal })).json(),
+    deleteItem: async (key) => {
+      await requestData({
+        url: urls.items,
+        method: 'DELETE',
+        data: { key },
+      });
+    },
+    getItems: (signal) => requestData<Item[]>({ url: urls.items, signal }),
+    getGroups: (signal) => requestData<Record<Field, string | null>>({ url: urls.groups, signal }),
     saveGroups: async (payload) => {
-      await request(urls.groups, {
+      await requestData({
+        url: urls.groups,
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        data: payload,
       });
     },
   };

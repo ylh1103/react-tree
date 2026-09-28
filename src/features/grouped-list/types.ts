@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export interface ListNode {
   key: string;
   title: string;
@@ -20,11 +22,25 @@ export interface ParameterItem {
 }
 
 /** 业务侧负责弹窗、校验和接口；取消返回 false，成功后列表自动刷新。 */
-export type ListNodeAction = (node: ListNode) => Promise<void | false>;
+export type ListNodeAction = (node: ListNode) => void | false | Promise<void | false>;
+
+/** 自定义菜单项；key 在同一菜单内必须唯一。 */
+export interface ListNodeMenuItem {
+  key: string;
+  label: ReactNode;
+  icon?: ReactNode;
+  disabled?: boolean;
+  danger?: boolean;
+  onClick: ListNodeAction;
+}
+
+/** 仅自定义叶子业务菜单，始终保留快速移动；未配置、返回 undefined 或空数组时仅保留移动。 */
+export type ListNodeMenuItems =
+  readonly ListNodeMenuItem[] | ((node: ListNode) => readonly ListNodeMenuItem[] | undefined);
 
 export interface ListNodeActions {
+  menuItems?: ListNodeMenuItems;
   onSettings?: ListNodeAction;
-  onDelete?: ListNodeAction;
 }
 
 export interface GroupedListConfig {

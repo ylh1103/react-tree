@@ -1,7 +1,15 @@
 import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Button, Dropdown, Input, Tooltip, type InputRef } from 'antd';
-import type { BranchNode, DropIndicator, FlatNode, LeafNode, GroupedListConfig } from './types';
+import type {
+  ListNodeMenuItem,
+  ListNodeAction,
+  BranchNode,
+  DropIndicator,
+  FlatNode,
+  LeafNode,
+  GroupedListConfig,
+} from './types';
 import { highlightText } from './treeUtils';
 
 const INDENT = 20;
@@ -22,7 +30,8 @@ interface TreeRowProps {
   dropLine: { position: DropIndicator['position']; depth: number } | null;
   config: GroupedListConfig;
   onSettings?: (node: LeafNode) => void;
-  onDeleteLeaf?: (node: LeafNode) => void;
+  menuItems?: readonly ListNodeMenuItem[];
+  onMenuAction: (action: ListNodeAction, node: LeafNode) => void;
   onToggleExpand: (key: string) => void;
   onSelect: (key: string) => void;
   onStartRename: (key: string) => void;
@@ -49,7 +58,8 @@ export const GroupedListRow = memo(function GroupedListRow({
   dropLine,
   config,
   onSettings,
-  onDeleteLeaf,
+  menuItems,
+  onMenuAction,
   onToggleExpand,
   onSelect,
   onStartRename,
@@ -260,29 +270,29 @@ export const GroupedListRow = memo(function GroupedListRow({
                             icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
                           },
                         ]
-                      : [
-                          {
-                            key: 'settings',
-                            label: `设置${config.label}`,
-                            disabled: !onSettings,
-                            icon: <span aria-hidden="true" className="i-lucide-settings" />,
-                          },
-                          {
-                            key: 'delete-leaf',
-                            label: `删除${config.label}`,
-                            disabled: !onDeleteLeaf,
-                            danger: true,
-                            icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
-                          },
-                        ]),
+                      : (menuItems ?? []).map((item) => ({
+                          key: `custom:${item.key}`,
+                          label: item.label,
+                          icon: item.icon,
+                          danger: item.danger,
+                          disabled: isEditing || item.disabled,
+                        }))),
                   ],
                   onClick: ({ key, domEvent }) => {
                     domEvent.stopPropagation();
-                    if (key === 'move') onQuickMove(node.key);
+                    if (key === 'move') {
+                      onQuickMove(node.key);
+                      return;
+                    }
+                    if (node.type === 'leaf' && menuItems !== undefined) {
+                      const item = menuItems.find((entry) => `custom:${entry.key}` === key);
+                      if (item && !item.disabled && !isEditing && !isDragActive) {
+                        onMenuAction(item.onClick, node);
+                      }
+                      return;
+                    }
                     if (isBranch && key === 'rename') onStartRename(node.key);
                     if (isBranch && key === 'delete') onDelete(node.key);
-                    if (node.type === 'leaf' && key === 'settings') onSettings?.(node);
-                    if (node.type === 'leaf' && key === 'delete-leaf') onDeleteLeaf?.(node);
                   },
                 }}
               >

@@ -196,7 +196,7 @@ interface TreeActionsOptions {
   dispatch: ReturnType<typeof useTreeReducer>['dispatch'];
   treeIndex: ReturnType<typeof buildTreeIndex>;
   disabled: boolean;
-  onSave: (tree: TreeNode[]) => Promise<void>;
+  onSave: (tree: TreeNode[], baseline: TreeNode[]) => Promise<TreeNode[]>;
   expandPath: (keys: string[]) => void;
 }
 
@@ -221,8 +221,10 @@ export function useTreeActions({
       setSaveError('');
       try {
         // 保存成功后才更新提交基线；失败时保留草稿，使用户可以继续修改或重试。
-        if (!areTreesEqual(state.committed, nextTree)) await onSave(nextTree);
-        dispatch({ type: 'COMMIT_TREE', tree: nextTree });
+        const savedTree = areTreesEqual(state.committed, nextTree)
+          ? nextTree
+          : await onSave(nextTree, state.committed);
+        dispatch({ type: 'COMMIT_TREE', tree: savedTree });
       } finally {
         savingRef.current = false;
         setIsSaving(false);

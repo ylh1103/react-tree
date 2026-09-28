@@ -7,6 +7,7 @@ import type {
   DropIndicator,
   GroupedListConfig,
   ListNodeActions,
+  ListNodeAction,
   GroupedListService,
 } from './types';
 import { useGroupedList } from './useGroupedList';
@@ -35,7 +36,7 @@ export function GroupedListPage({
   service,
   config,
   onSettings,
-  onDelete,
+  menuItems,
 }: ListNodeActions & {
   service: GroupedListService;
   config: GroupedListConfig;
@@ -81,12 +82,6 @@ export function GroupedListPage({
     },
     [onSettings, runNodeAction],
   );
-  const handleDeleteLeaf = useCallback(
-    (node: LeafNode) => {
-      if (onDelete) void runNodeAction(onDelete, node.data);
-    },
-    [onDelete, runNodeAction],
-  );
   const { state, dispatch } = useTreeReducer(treeData);
   const { draft, isEditing, editingKey } = state;
   const treeIndex = useMemo(() => buildTreeIndex(draft, getLeafCategory), [draft, getLeafCategory]);
@@ -130,6 +125,12 @@ export function GroupedListPage({
         getLeafCategory,
       ),
     [draft, normalizedSearchQuery, filterLeaf, isEditing, getLeafCategory],
+  );
+  const handleMenuAction = useCallback(
+    (action: ListNodeAction, node: LeafNode) => {
+      if (!isEditing) void runNodeAction(action, node.data);
+    },
+    [isEditing, runNodeAction],
   );
   const totalLeafCount = treeIndex.leafCount;
   const isFiltered = Boolean(normalizedSearchQuery || filterLeaf);
@@ -360,7 +361,14 @@ export function GroupedListPage({
                       }
                       config={config}
                       onSettings={!isEditing && onSettings ? handleSettings : undefined}
-                      onDeleteLeaf={!isEditing && onDelete ? handleDeleteLeaf : undefined}
+                      menuItems={
+                        node.type === 'leaf'
+                          ? typeof menuItems === 'function'
+                            ? menuItems(node.data)
+                            : menuItems
+                          : undefined
+                      }
+                      onMenuAction={handleMenuAction}
                       onToggleExpand={toggleExpand}
                       onSelect={setSelectedKey}
                       onStartRename={handleStartRename}

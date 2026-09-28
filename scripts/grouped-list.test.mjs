@@ -1,3 +1,6 @@
+import { createServer } from 'node:http';
+import { once } from 'node:events';
+import axios from 'axios';
 import {
   buildTreeIndex,
   deriveTreeView,
@@ -19,6 +22,95 @@ import {
   toTreeData,
 } from '../src/features/grouped-list/model.ts';
 import { createListService, createHttpListApi } from '../src/features/grouped-list/service.ts';
+import { reconcileGroupSave } from '../src/features/grouped-list/saveConflict.ts';
+
+test('并发保存：保留草稿结构、新增应用和最新业务字段，输入不变', () => {
+  const baseline = [{ key: 'g', title: '组', children: [{ key: 'a', title: 'a', appType: '0' }] }];
+  const draft = [{ ...baseline[0], title: '本地名称' }];
+  const latest = [
+    {
+      ...baseline[0],
+      children: [
+        { key: 'a', title: 'a', appType: '1', desc: '新描述' },
+        { key: 'b', title: 'b' },
+      ],
+    },
+    { key: 'c', title: 'c' },
+  ];
+  const before = structuredClone({ baseline, draft, latest });
+  assert.deepEqual(reconcileGroupSave(baseline, draft, latest), [
+    { ...latest[0], title: '本地名称' },
+    latest[1],
+  ]);
+  assert.deepEqual({ baseline, draft, latest }, before);
+});
+
+test('并发保存：分组改名、增删、移动、排序及清单删除均阻止覆盖', () => {
+  const baseline = [
+    {
+      key: 'g',
+      title: '组',
+      children: [
+        { key: 'a', title: 'a' },
+        { key: 'b', title: 'b' },
+      ],
+    },
+    { key: 'empty', title: '空组', children: [] },
+  ];
+  const draft = [{ ...baseline[0], title: '本地名称' }, baseline[1]];
+  for (const latest of [
+    [{ ...baseline[0], title: '远程名称' }, baseline[1]],
+    [...baseline, { key: 'new', title: '新组', children: [] }],
+    [baseline[0]],
+    [baseline[1], baseline[0]],
+    [{ ...baseline[0], children: [...baseline[0].children].reverse() }, baseline[1]],
+    [
+      { ...baseline[0], children: [baseline[0].children[0]] },
+      { ...baseline[1], children: [baseline[0].children[1]] },
+    ],
+    [{ ...baseline[0], children: [baseline[0].children[0]] }, baseline[1]],
+  ]) {
+    assert.throws(() => reconcileGroupSave(baseline, draft, latest), /本次未保存/);
+  }
+});
+
+test('并发保存：新增应用与删除分组或本地 key 冲突时保留草稿并拒绝合并', () => {
+  const baseline = [{ key: 'g', title: '组', children: [] }];
+  assert.throws(
+    () =>
+      reconcileGroupSave(baseline, [], [{ ...baseline[0], children: [{ key: 'a', title: 'a' }] }]),
+    /本次未保存/,
+  );
+  assert.throws(
+    () =>
+      reconcileGroupSave(
+        baseline,
+        [...baseline, { key: 'a', title: '本地组', children: [] }],
+        [...baseline, { key: 'a', title: 'a' }],
+      ),
+    /本次未保存/,
+  );
+});
+
+test('并发保存：移动分组后新增应用随组保留；重复保存仍使用原始基线检查', () => {
+  const baseline = [
+    { key: 'g', title: '组', children: [] },
+    { key: 'target', title: '目标', children: [] },
+  ];
+  const draft = [{ ...baseline[1], children: [baseline[0]] }];
+  const latest = [{ ...baseline[0], children: [{ key: 'a', title: 'a' }] }, baseline[1]];
+  assert.deepEqual(
+    reconcileGroupSave(baseline, draft, latest)[0].children[0].children,
+    latest[0].children,
+  );
+  for (let attempt = 0; attempt < 2; attempt++) {
+    assert.throws(
+      () =>
+        reconcileGroupSave(baseline, draft, [{ ...baseline[0], title: '他人修改' }, baseline[1]]),
+      /本次未保存/,
+    );
+  }
+});
 
 test('目录重命名：保留层级、标识及类型数据，源树保持不变', () => {
   const nodes = [
@@ -226,20 +318,92 @@ for (const [label, merge, field, items] of [
   });
 }
 
-test('HTTP 适配器：GET 清单和分组，PUT 正确 payload，支持 204 与 HTTP 错误', async (t) => {
+async function startApiServer(t, handler) {
+  const server = createServer(handler);
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(
+    () =>
+      new Promise((resolve, reject) => {
+        server.closeAllConnections();
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
+  );
+  return `http://127.0.0.1:${server.address().port}`;
+}
+
+test('Axios 接口：GET 数据、PUT JSON、DELETE key、204 和 HTTP 错误', async (t) => {
   const requests = [];
-  t.mock.method(globalThis, 'fetch', async (url, init) => {
-    requests.push({ url, init });
-    return init.method === 'PUT' ? new Response(null, { status: 204 }) : Response.json([]);
+  let status = 200;
+  const base = await startApiServer(t, async (req, res) => {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+    requests.push({
+      url: req.url,
+      method: req.method,
+      body,
+      contentType: req.headers['content-type'],
+    });
+    if (status !== 200) {
+      res.writeHead(status).end();
+    } else if (req.method === 'GET') {
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify(req.url === '/items' ? [{ key: '参数' }] : { appGroupInfo: null }));
+    } else {
+      res.writeHead(204).end();
+    }
   });
-  const api = createHttpListApi({ items: '/items', groups: '/groups' });
-  await api.getItems();
-  await api.getGroups();
+  const api = createHttpListApi({ items: `${base}/items`, groups: `${base}/groups` });
+  assert.deepEqual(await api.getItems(), [{ key: '参数' }]);
+  assert.deepEqual(await api.getGroups(), { appGroupInfo: null });
   await api.saveGroups({ appGroupInfo: '[]' });
-  assert.equal(requests[2].init.method, 'PUT');
-  assert.equal(requests[2].init.body, '{"appGroupInfo":"[]"}');
-  t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 500 }));
-  await assert.rejects(api.saveGroups({ appGroupInfo: '[]' }), /500/);
+  await api.deleteItem('数据库连接');
+  assert.deepEqual(
+    requests.map(({ method, url }) => [method, url]),
+    [
+      ['GET', '/items'],
+      ['GET', '/groups'],
+      ['PUT', '/groups'],
+      ['DELETE', '/items'],
+    ],
+  );
+  assert.deepEqual(JSON.parse(requests[2].body), { appGroupInfo: '[]' });
+  assert.deepEqual(JSON.parse(requests[3].body), { key: '数据库连接' });
+  assert.match(requests[2].contentType, /application\/json/);
+  status = 500;
+  await assert.rejects(api.saveGroups({ appGroupInfo: '[]' }), /请求失败（500）/);
+  status = 403;
+  await assert.rejects(api.deleteItem('数据库连接'), /请求失败（403）/);
+});
+
+test('Axios 接口：AbortSignal 取消查询，预先取消不发送请求', async (t) => {
+  const received = Promise.withResolvers();
+  let count = 0;
+  const base = await startApiServer(t, () => {
+    count++;
+    received.resolve();
+  });
+  const api = createHttpListApi({ items: `${base}/items`, groups: `${base}/groups` });
+  const controller = new AbortController();
+  const pending = api.getItems(controller.signal);
+  const rejected = assert.rejects(pending, (error) => axios.isCancel(error));
+  await received.promise;
+  controller.abort();
+  await rejected;
+  await assert.rejects(api.getGroups(controller.signal), (error) => axios.isCancel(error));
+  assert.equal(count, 1);
+});
+
+test('Axios 接口：无效 JSON 作为错误处理', async (t) => {
+  const base = await startApiServer(t, (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end('{invalid');
+  });
+  const api = createHttpListApi({ items: `${base}/items`, groups: `${base}/groups` });
+  await assert.rejects(
+    api.getItems(),
+    (error) => error.name === 'SyntaxError' || error.cause?.name === 'SyntaxError',
+  );
 });
 
 for (const [label, merge, typeField, items] of [

@@ -17,7 +17,7 @@ const applications: ApplicationItem[] = [
   },
 ];
 
-const mockApplicationCount = 500;
+const mockApplicationCount = 50000;
 const initialApplicationCount = applications.length;
 applications.push(
   ...Array.from(

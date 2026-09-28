@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fromTreeData, toTreeData } from './model';
+import { reconcileGroupSave } from './saveConflict';
 import type { TreeNode, ListNode, ListNodeAction, GroupedListService } from './types';
 
 /** 统一管理两个列表的查询、保存及节点操作状态。 */
@@ -64,19 +65,31 @@ export function useGroupedList(service: GroupedListService) {
   }, [load]);
 
   const save = useCallback(
-    async (tree: TreeNode[]) => {
+    async (tree: TreeNode[], baseline: TreeNode[]) => {
       if (busyRef.current) throw new Error('正在处理，请稍候');
       busyRef.current = true;
       setBusy(true);
       setError('');
+      const controller = new AbortController();
+      requestRef.current = controller;
       try {
-        await service.save(fromTreeData(tree));
-        if (mountedRef.current) {
-          setTreeData(tree);
+        const latest = await service.load(controller.signal);
+        if (controller.signal.aborted || !mountedRef.current) {
+          throw new Error('保存已取消');
         }
+        const nodes = reconcileGroupSave(fromTreeData(baseline), fromTreeData(tree), latest);
+        await service.save(nodes);
+        const savedTree = toTreeData(nodes);
+        if (mountedRef.current) {
+          setTreeData(savedTree);
+        }
+        return savedTree;
       } finally {
-        busyRef.current = false;
-        if (mountedRef.current) setBusy(false);
+        if (requestRef.current === controller) {
+          requestRef.current = null;
+          busyRef.current = false;
+          if (mountedRef.current) setBusy(false);
+        }
       }
     },
     [service],

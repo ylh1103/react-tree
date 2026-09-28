@@ -39,7 +39,7 @@ pnpm build
 
 排查一次操作时，从 `GroupedListPage.tsx` 的事件绑定进入；节点入口看 `GroupedListRow.tsx`，分组编辑看 `useGroupEditing.tsx`，接口请求看 `useGroupedList.ts`。标题、节点内容、预览等只在一处使用的组件保留为对应文件内的私有组件。
 
-### 设置与删除的业务接入
+### 节点操作的业务接入
 
 两个页面使用同一个业务列表入口，分别传入自己的接口与操作：
 
@@ -48,15 +48,46 @@ pnpm build
   config={config}
   service={parameterService}
   onSettings={handleParameterSettings}
-  onDelete={handleParameterDelete}
+  menuItems={[{ key: 'delete', label: '删除参数', danger: true, onClick: handleParameterDelete }]}
 />
 ```
 
 - `service.load(signal)` 和 `service.save(nodes)` 对接清单/分组的获取与保存；应用和参数保留各自的响应转换和保存字段。
-- `onSettings` / `onDelete` 接收业务节点 `ListNode`，类型为 `ListNodeAction`。业务页面负责弹窗、确认、校验和实际接口，请返回等待整个操作结束的 Promise；取消时 resolve `false`，成功时 resolve `undefined`，失败时 reject。
+- `onSettings` / 菜单项 `onClick` 接收业务节点 `ListNode`，类型为 `ListNodeAction`。业务页面负责弹窗、确认、校验和实际接口，请返回等待整个操作结束的 Promise；取消时 resolve `false`，成功时 resolve `undefined`，失败时 reject。
 - 列表在操作期间统一防重复点击，成功后重新查询清单和分组，取消不刷新，失败展示错误并保留当前数据。业务节点删除不调用分组删除或分组保存逻辑。
-- 分组编辑期间禁用叶子设置/删除，以保护尚未保存的草稿；分组重命名、移动和删除仍走共用逻辑。
-- 当前示例只提供清单/分组接口，尚未实现真实节点设置和删除；未传入回调的按钮和菜单保持禁用。
+- 分组编辑期间禁用叶子设置快捷按钮和自定义菜单项，以保护尚未保存的草稿；分组重命名、移动和删除仍走共用逻辑。
+- 参数页面已通过自定义菜单接入删除确认和删除接口，节点设置尚未实现；未传入 `onSettings` 时设置快捷按钮禁用，未配置 `menuItems` 时叶子菜单仅显示快速移动。
+
+### 自定义更多操作菜单
+
+`GroupedListPage` 的 `menuItems` 仅针对叶子节点，可传菜单数组，或按叶子 `ListNode` 返回菜单的函数。分组始终保留快速移动、重命名和删除，且不会调用菜单生成函数。叶子始终保留快速移动；其他操作全部由自定义项提供，不再内置设置、删除菜单项。不传、函数返回 `undefined` 或返回 `[]` 时均仅保留快速移动。
+
+```tsx
+<GroupedListPage
+  config={config}
+  service={parameterService}
+  menuItems={(node) => [
+    {
+      key: 'details',
+      label: '查看详情',
+      onClick: (current) => {
+        showDetails(current);
+        return false; // 只查看，不刷新列表
+      },
+    },
+    {
+      key: 'publish',
+      label: '发布参数',
+      disabled: node.maintType === '0',
+      onClick: async (current) => {
+        await publishParameter(current.key);
+      },
+    },
+  ]}
+/>
+```
+
+每项支持 `key`、`label`、`icon`、`disabled`、`danger` 和 `onClick`，key 在同一菜单中必须唯一。`onClick` 支持同步或异步，返回 `false` 不刷新，其他成功结果自动刷新，抛出错误时展示错误提示。操作期间统一防重复执行；编辑分组期间禁用自定义菜单项，避免刷新覆盖草稿。叶子左侧的设置快捷按钮仍由 `onSettings` 控制。
 
 ### 数据约定与合并
 
@@ -129,3 +160,15 @@ VS Code 请安装工作区推荐的 ESLint 和 Prettier 扩展。
 - Ant Design 运行时样式通过 `StyleProvider` 开启 `hashPriority="high"`、逻辑属性降级和前缀转换；提升样式优先级后要检查业务覆盖规则。
 - `100dvh` 保留 `100vh` 回退；滚动条使用 WebKit 伪元素，并在不支持 `scrollbar-gutter` 时保留滚动空间。
 - 构建目标不提供 DOM/JavaScript API 的 polyfill。当前 `inert` 等行为和第三方组件仍需 Chrome 86 实机回归；现代 Chromium 的检查不能代替该验收。
+
+### 参数删除
+
+参数叶子的更多菜单包含“快速移动”和“删除参数”。删除需要确认；取消不请求接口，失败显示错误，成功重新加载清单和分组。分组编辑期间禁用删除。
+
+默认 Mock 使用 `DELETE /mock-api/parameters`，请求体为 `{ "key": "参数名称" }`，删除记录持久化到 `react-tree:mock:paramDbTypeGroupInfo:deletedItems`，刷新页面后仍生效；清除此存储项可恢复示例参数。分组存储不修改，列表合并时自动剔除已删除的叶子并保留分组。
+
+配置 `VITE_LIST_API_BASE_URL` 后使用 `DELETE <baseUrl>/parameters`，请求体相同；后端需实现此接口，支持成功返回 204，非 2xx 响应作为失败处理。
+
+### Axios 请求入口
+
+真实接口和 Mock 接口统一通过 `src/lib/http.ts` 发起 Axios 请求，业务层直接获取响应数据。浏览器使用 XHR 适配器兼容 Mock.js；GET 查询继续传递 `AbortSignal`，PUT 和 DELETE 自动序列化 JSON，支持 204 响应。非 2xx 响应保留状态码错误提示，取消请求保持 Axios 取消错误，Mock 响应体中的业务错误仍会抛出。

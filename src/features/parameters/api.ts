@@ -22,6 +22,13 @@ const api = baseUrl
       items: `${baseUrl}/parameters`,
       groups: `${baseUrl}/parameters/groups`,
     })
-  : createMockListApi('/mock-api/parameters', parameters, 'paramDbTypeGroupInfo');
+  : createMockListApi(
+      '/mock-api/parameters',
+      parameters,
+      'paramDbTypeGroupInfo',
+      (item) => item.paramTypeName,
+    );
 
 export const parameterService = createListService(api, 'paramDbTypeGroupInfo', mergeParameters);
+
+export const deleteParameter = (key: string) => api.deleteItem(key);
