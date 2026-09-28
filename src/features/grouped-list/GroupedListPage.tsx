@@ -246,8 +246,8 @@ export function GroupedListPage({
   const cancelRename = useCallback(() => dispatch({ type: 'CANCEL_RENAME' }), [dispatch]);
 
   return (
-    <main
-      className="relative flex flex-col w-[340px] max-w-full h-full bg-white border border-solid border-[#edf0f2] rounded-[6px] overflow-hidden max-[400px]:w-full"
+    <section
+      className="grouped-list-panel relative flex flex-col w-[340px] max-w-full h-full bg-white border border-solid border-[#edf0f2] rounded-[6px] overflow-hidden max-[400px]:w-full"
       style={treeTheme}
       aria-busy={disabled}
     >
@@ -397,7 +397,7 @@ export function GroupedListPage({
           <Spin />
         </div>
       )}
-    </main>
+    </section>
   );
 }
 
