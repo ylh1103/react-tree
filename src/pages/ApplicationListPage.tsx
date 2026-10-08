@@ -19,5 +19,5 @@ const config: GroupedListConfig = {
 };
 
 export default function ApplicationListPage() {
-  return <GroupedListPage service={applicationService} config={config} />;
+  return <GroupedListPage listId="applications" service={applicationService} config={config} />;
 }

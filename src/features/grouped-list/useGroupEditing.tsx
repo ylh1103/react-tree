@@ -1,5 +1,7 @@
+import { buildDirectoryDestinations } from './directoryDestinations';
+import { MoveDirectoryContent, DeleteDirectoryContent } from './DirectoryDialogs';
 import { useCallback, useReducer, useRef, useState, type ReactNode } from 'react';
-import { Alert, Input, Modal, TreeSelect } from 'antd';
+import { App, Input, Modal } from 'antd';
 import type { TreeNode, DropPosition } from './types';
 import {
   buildTreeIndex,
@@ -159,20 +161,6 @@ export function useTreeReducer(treeData: TreeNode[]) {
 }
 
 // 编辑操作：分组弹窗、保存失败重试与取消确认。
-function buildDirectoryDestinations(tree: TreeNode[], excludedKey: string) {
-  // 用数字值区分根节点与业务 key，并排除整个源子树。
-  const destinationKeys: (string | null)[] = [null];
-  type DirectoryOption = { title: string; value: number; children: DirectoryOption[] };
-  const walk = (nodes: TreeNode[]): DirectoryOption[] =>
-    nodes.flatMap((node) => {
-      if (node.type !== 'branch' || node.key === excludedKey) return [];
-      const value = destinationKeys.push(node.key) - 1;
-      return [{ title: node.title || '未命名分组', value, children: walk(node.children) }];
-    });
-  const treeData = [{ title: '根节点', value: 0, children: walk(tree) }];
-  return { destinationKeys, treeData };
-}
-
 // 静态 confirm 对拒绝的 onOk Promise 会再次抛出异常。使用显式关闭回调，
 // 让已在弹窗展示的保存错误保持可重试，不产生未处理的 Promise 拒绝。
 async function runDialogAction(
@@ -209,16 +197,15 @@ export function useTreeActions({
   onSave,
   expandPath,
 }: TreeActionsOptions) {
+  const { modal } = App.useApp();
   const { draft, isEditing, isDirty } = state;
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
   const savingRef = useRef(false);
   const persistTree = useCallback(
     async (nextTree: TreeNode[]) => {
       if (savingRef.current || disabled) throw new Error('正在处理，请稍候');
       savingRef.current = true;
       setIsSaving(true);
-      setSaveError('');
       try {
         // 保存成功后才更新提交基线；失败时保留草稿，使用户可以继续修改或重试。
         const savedTree = areTreesEqual(state.committed, nextTree)
@@ -248,22 +235,12 @@ export function useTreeActions({
       });
       try {
         await persistTree(nextTree);
-      } catch (error) {
-        dialog.update({
-          content: (
-            <>
-              <Alert
-                type="error"
-                showIcon
-                title={error instanceof Error ? error.message : '保存失败，请重试'}
-              />
-              {renderContent()}
-            </>
-          ),
-        });
-        throw error;
       } finally {
-        dialog.update({ cancelButtonProps: { disabled: false }, keyboard: true });
+        dialog.update({
+          cancelButtonProps: { disabled: false },
+          keyboard: true,
+          content: renderContent(),
+        });
       }
     },
     [disabled, draft, persistTree],
@@ -292,7 +269,7 @@ export function useTreeActions({
           />
         </div>
       );
-      const renameModal = Modal.confirm({
+      const renameModal = modal.confirm({
         title: '重命名分组',
         centered: true,
         content: renderContent(),
@@ -315,7 +292,7 @@ export function useTreeActions({
         },
       });
     },
-    [treeIndex, isEditing, draft, commitImmediateChange, dispatch],
+    [modal, treeIndex, isEditing, draft, commitImmediateChange, dispatch],
   );
 
   const handleQuickMove = useCallback(
@@ -332,41 +309,17 @@ export function useTreeActions({
           .map((ancestor) => treeIndex.nodeByKey.get(ancestor)?.title || '未命名分组'),
       ].join(' / ');
       const renderMoveContent = () => (
-        <div className="flex min-w-0 flex-col gap-4 pt-3 text-sm">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
-              <span
-                aria-hidden="true"
-                className={node.type === 'branch' ? 'i-lucide-folder' : 'i-lucide-file'}
-              />{' '}
-              {node.title}
-            </div>
-            <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs text-gray-500 [overflow-wrap:anywhere]">
-              当前位置：{currentPath}
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="font-medium text-gray-900">移动到</span>
-            <TreeSelect
-              aria-label="移动到"
-              className="w-full"
-              size="large"
-              treeData={treeData}
-              defaultValue={destinationKeys.indexOf(destinationKey)}
-              treeDefaultExpandedKeys={[0]}
-              showSearch
-              treeNodeFilterProp="title"
-              onChange={(value: number) => {
-                destinationKey = destinationKeys[value];
-              }}
-            />
-            <p className="m-0 text-xs leading-5 text-gray-500">
-              移动到所选位置的末尾。分组内的所有内容将一起移动。
-            </p>
-          </div>
-        </div>
+        <MoveDirectoryContent
+          node={node}
+          treeData={treeData}
+          value={destinationKeys.indexOf(destinationKey)}
+          currentPath={currentPath}
+          onChange={(value) => {
+            destinationKey = destinationKeys[value];
+          }}
+        />
       );
-      const moveModal = Modal.confirm({
+      const moveModal = modal.confirm({
         title: '快速移动',
         icon: <span aria-hidden="true" className="i-lucide-folder-input text-5.5 mr-3" />,
         width: 560,
@@ -399,7 +352,7 @@ export function useTreeActions({
         },
       });
     },
-    [treeIndex, isEditing, draft, commitImmediateChange, dispatch, expandPath],
+    [modal, treeIndex, isEditing, draft, commitImmediateChange, dispatch, expandPath],
   );
 
   const handleDelete = useCallback(
@@ -415,54 +368,17 @@ export function useTreeActions({
           .map((ancestor) => treeIndex.nodeByKey.get(ancestor)?.title || '未命名分组');
         directoryPath.push(node.title || '未命名分组');
         const renderDeleteContent = () => (
-          <div className="flex min-w-0 flex-col gap-5 pt-3 text-sm">
-            <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-lg text-gray-500">
-                <span aria-hidden="true" className="i-lucide-folder" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 text-xs text-gray-500">即将删除的分组</div>
-                <div className="break-words font-medium text-gray-900 [overflow-wrap:anywhere]">
-                  {node.title || '未命名分组'}
-                </div>
-                <div className="mt-2 max-h-20 overflow-y-auto break-words text-xs leading-5 text-gray-500 [overflow-wrap:anywhere]">
-                  <span className="sr-only">分组路径：</span>
-                  根节点 / {directoryPath.join(' / ')}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium text-gray-900">子节点移动到</span>
-                <span className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
-                  {node.children.length} 个直接子节点
-                </span>
-              </div>
-              <TreeSelect
-                aria-label="子节点移动到"
-                className="w-full"
-                size="large"
-                treeData={treeData}
-                defaultValue={destinationKeys.indexOf(destinationKey)}
-                treeDefaultExpandedKeys={[0]}
-                showSearch
-                treeNodeFilterProp="title"
-                onChange={(value: number) => {
-                  destinationKey = destinationKeys[value];
-                }}
-              />
-              <p className="m-0 text-xs leading-5 text-gray-500">
-                默认选择父分组，可搜索并选择其他分组或根节点。
-              </p>
-            </div>
-
-            <div className="rounded-md border-l-2 border-amber-400 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900">
-              仅删除该分组，子节点及其内容会保留，并按原顺序追加到目标末尾。
-            </div>
-          </div>
+          <DeleteDirectoryContent
+            node={node}
+            treeData={treeData}
+            value={destinationKeys.indexOf(destinationKey)}
+            directoryPath={directoryPath}
+            onChange={(value) => {
+              destinationKey = destinationKeys[value];
+            }}
+          />
         );
-        const deleteModal = Modal.confirm({
+        const deleteModal = modal.confirm({
           title: '删除分组',
           width: 560,
           centered: true,
@@ -495,7 +411,7 @@ export function useTreeActions({
         dispatch({ type: 'DELETE_BRANCH', key });
       } else {
         const renderContent = () => <p>确定删除空分组「{node.title || '未命名分组'}」？</p>;
-        const deleteModal = Modal.confirm({
+        const deleteModal = modal.confirm({
           title: '删除分组',
           centered: true,
           content: renderContent(),
@@ -517,23 +433,22 @@ export function useTreeActions({
         });
       }
     },
-    [treeIndex, isEditing, draft, commitImmediateChange, dispatch, expandPath],
+    [modal, treeIndex, isEditing, draft, commitImmediateChange, dispatch, expandPath],
   );
 
   const handleSave = async () => {
     if (savingRef.current || disabled || !isEditing) return;
     try {
       await persistTree(draft);
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : '保存失败，请重试');
+    } catch {
+      // useGroupedList 已展示错误弹窗；保留草稿和编辑状态供用户继续处理。
     }
   };
 
   const handleCancel = () => {
     if (savingRef.current) return;
-    setSaveError('');
     if (isDirty) {
-      Modal.confirm({
+      modal.confirm({
         title: '放弃更改',
         content: '有未保存的更改，确定放弃吗？',
         okText: '放弃',
@@ -550,7 +465,6 @@ export function useTreeActions({
 
   return {
     isSaving,
-    saveError,
     handleStartRename,
     handleQuickMove,
     handleDelete,

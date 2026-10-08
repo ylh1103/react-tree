@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Alert, Button, Input, Spin, theme } from 'antd';
@@ -10,10 +18,18 @@ import type {
   ListNodeAction,
   GroupedListService,
 } from './types';
+import type { GroupedListId } from './queries';
 import { useGroupedList } from './useGroupedList';
 import { GroupedListToolbar } from './GroupedListToolbar';
 import { GroupedListRow } from './GroupedListRow';
-import { flattenTree, buildTreeIndex, deriveTreeView, findNode } from './treeUtils';
+import {
+  flattenTree,
+  buildFlatIndex,
+  buildTreeIndex,
+  createSearchMatcher,
+  deriveTreeView,
+  findNode,
+} from './treeUtils';
 import { useTreeReducer, useTreeActions } from './useGroupEditing';
 import { useDragDrop } from './useDragDrop';
 import { useTreeExpansion } from './useTreeExpansion';
@@ -30,15 +46,18 @@ const dragMeasuring = {
 const ROW_HEIGHT = 42;
 const ROW_GAP = 10;
 const getSearchText = (node: LeafNode) => `${node.title} ${node.data.desc ?? ''}`;
+const matchesSearch = createSearchMatcher(getSearchText);
 
 /** 参数和应用列表内部使用，不提供通用渲染插槽。 */
 export function GroupedListPage({
   service,
+  listId,
   config,
   onSettings,
   menuItems,
 }: ListNodeActions & {
   service: GroupedListService;
+  listId: GroupedListId;
   config: GroupedListConfig;
 }) {
   // TanStack Virtual 实例内部可变，暂不参与 Compiler 自动缓存；兼容后移除。
@@ -53,7 +72,7 @@ export function GroupedListPage({
     refresh,
     save: onSave,
     runNodeAction,
-  } = useGroupedList(service);
+  } = useGroupedList(listId, service);
   const { token } = theme.useToken();
   const treeTheme = {
     '--tree-focus-color': token.colorPrimaryBorder,
@@ -106,7 +125,8 @@ export function GroupedListPage({
     dispatch({ type: 'MOVE_NODE', dragKey, overKey, position }),
   );
 
-  const normalizedSearchQuery = searchQuery.trim();
+  const normalizedSearchQuery = useDeferredValue(searchQuery.trim());
+  const searchPending = normalizedSearchQuery !== searchQuery.trim();
 
   const {
     filteredTree,
@@ -123,6 +143,7 @@ export function GroupedListPage({
         filterLeaf,
         isEditing,
         getLeafCategory,
+        matchesSearch,
       ),
     [draft, normalizedSearchQuery, filterLeaf, isEditing, getLeafCategory],
   );
@@ -135,37 +156,26 @@ export function GroupedListPage({
   const totalLeafCount = treeIndex.leafCount;
   const isFiltered = Boolean(normalizedSearchQuery || filterLeaf);
 
-  const {
-    effectiveExpandedKeys,
-    allExpanded,
-    setAllExpanded,
-    toggleExpand,
-    expandPath,
-    resetSearchCollapse,
-  } = useTreeExpansion({
-    draft,
-    treeIndex,
-    normalizedSearchQuery,
-    searchAncestorKeys,
-    visibleBranchKeys,
-    activeDragKey,
-    dropIndicator,
-  });
+  const { effectiveExpandedKeys, allExpanded, setAllExpanded, toggleExpand, expandPath } =
+    useTreeExpansion({
+      draft,
+      treeIndex,
+      normalizedSearchQuery,
+      searchAncestorKeys,
+      visibleBranchKeys,
+      activeDragKey,
+      dropIndicator,
+    });
 
-  const {
-    isSaving,
-    saveError,
-    handleStartRename,
-    handleQuickMove,
-    handleDelete,
-    handleSave,
-    handleCancel,
-  } = useTreeActions({ state, dispatch, treeIndex, disabled, onSave, expandPath });
+  const { isSaving, handleStartRename, handleQuickMove, handleDelete, handleSave, handleCancel } =
+    useTreeActions({ state, dispatch, treeIndex, disabled, onSave, expandPath });
 
   const flat = useMemo(
     () => flattenTree(filteredTree, effectiveExpandedKeys),
     [filteredTree, effectiveExpandedKeys],
   );
+
+  const flatIndex = useMemo(() => buildFlatIndex(flat), [flat]);
 
   // 排序、搜索会改变行索引，使用业务 key 保持虚拟行与节点身份一致。
   const getItemKey = useCallback((index: number) => flat[index].node.key, [flat]);
@@ -211,8 +221,8 @@ export function GroupedListPage({
 
   useEffect(() => {
     if (!pendingLocateRef.current || !selectedKey) return;
-    const idx = flat.findIndex((f) => f.node.key === selectedKey);
-    if (idx === -1) return;
+    const idx = flatIndex.rowByKey.get(selectedKey);
+    if (idx === undefined) return;
     pendingLocateRef.current = false;
     virtualizer.scrollToIndex(idx, { align: 'center' });
     setHighlightedKey(selectedKey);
@@ -221,18 +231,17 @@ export function GroupedListPage({
       setHighlightedKey(null);
       highlightTimerRef.current = null;
     }, 1400);
-  }, [flat, selectedKey, virtualizer]);
+  }, [flatIndex, selectedKey, virtualizer]);
 
   // “分组之后”的线挂在最后一个可见后代上，位置由节点边缘决定。
   let dropLineIndex = -1;
   let dropLineDepth = 0;
   if (dropIndicator && dropIndicator.position !== 'inside') {
-    dropLineIndex = flat.findIndex(({ node }) => node.key === dropIndicator.overKey);
+    dropLineIndex = flatIndex.rowByKey.get(dropIndicator.overKey) ?? -1;
     if (dropLineIndex !== -1) {
       dropLineDepth = flat[dropLineIndex].depth;
       if (dropIndicator.position === 'after') {
-        while (dropLineIndex + 1 < flat.length && flat[dropLineIndex + 1].depth > dropLineDepth)
-          dropLineIndex++;
+        dropLineIndex = flatIndex.subtreeEnd[dropLineIndex];
       }
     }
   }
@@ -249,33 +258,31 @@ export function GroupedListPage({
     <section
       className="grouped-list-panel relative flex flex-col w-[340px] max-w-full h-full bg-white border border-solid border-[#edf0f2] rounded-[6px] overflow-hidden max-[400px]:w-full"
       style={treeTheme}
-      aria-busy={disabled}
+      aria-busy={disabled || loading}
     >
       {error && (
         <Alert
           type="error"
           showIcon
-          title={ready ? error : '列表加载失败'}
-          description={ready ? undefined : error}
+          title={ready ? '刷新失败，当前显示上次加载的数据' : '列表加载失败'}
+          description={error.message}
           action={
-            !ready && (
-              <Button onClick={refresh} disabled={disabled}>
-                重试
-              </Button>
-            )
+            <Button size="small" loading={loading} onClick={() => void refresh()}>
+              重试
+            </Button>
           }
         />
       )}
       {ready && (
         <div
           className="virtual-tree flex flex-col flex-1 min-h-0 overflow-hidden"
-          aria-busy={isSaving || disabled}
-          inert={isSaving || disabled}
+          aria-busy={isSaving || disabled || loading}
+          inert={isSaving || disabled || loading}
         >
-          {saveError && <Alert type="error" showIcon title={saveError} />}
           <GroupedListToolbar
             config={config}
             busy={disabled}
+            listId={listId}
             refresh={refresh}
             typeFilter={typeFilter}
             setTypeFilter={setTypeFilter}
@@ -304,19 +311,14 @@ export function GroupedListPage({
               aria-label={`请输入${config.label}名称或描述`}
               allowClear
               value={searchQuery}
-              onChange={(e) => {
-                const query = e.target.value;
-                setSearchQuery(query);
-                if (query.trim() !== normalizedSearchQuery) {
-                  resetSearchCollapse(query.trim());
-                }
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="max-w-none"
             />
           </div>
 
           <div
             ref={parentScrollRef}
+            aria-busy={searchPending}
             className="tree-scroll-viewport [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#dce5e9_transparent] min-h-0 min-w-0 flex-1 overflow-auto relative"
           >
             {flat.length === 0 && (
@@ -392,6 +394,7 @@ export function GroupedListPage({
       {loading && (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center bg-white/65"
+          role="status"
           aria-label={`正在加载${config.label}列表`}
         >
           <Spin />

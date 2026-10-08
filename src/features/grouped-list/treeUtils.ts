@@ -308,6 +308,7 @@ export function deriveTreeView(
   filterLeaf?: (node: LeafNode) => boolean,
   keepEmptyBranches = false,
   getLeafCategory?: (node: LeafNode) => string | undefined,
+  matchesSearch?: (node: LeafNode, normalizedQuery: string) => boolean,
 ) {
   const normalizedQuery = query.trim().toLowerCase();
   const isFiltered = Boolean(normalizedQuery || filterLeaf);
@@ -321,7 +322,10 @@ export function deriveTreeView(
       if (node.type === 'leaf') {
         if (
           (!filterLeaf || filterLeaf(node)) &&
-          (!normalizedQuery || getSearchText(node).toLowerCase().includes(normalizedQuery))
+          (!normalizedQuery ||
+            (matchesSearch
+              ? matchesSearch(node, normalizedQuery)
+              : getSearchText(node).toLowerCase().includes(normalizedQuery)))
         ) {
           filtered.push(node);
           leafCount++;
@@ -374,4 +378,33 @@ export function countLeafNodes(tree: TreeNode[]): number {
     count += node.type === 'leaf' ? 1 : countLeafNodes(node.children);
   }
   return count;
+}
+
+/** 可见行的查询索引；栈保证所有子树边界只计算一次。 */
+export function buildFlatIndex(flat: FlatNode[]) {
+  const rowByKey = new Map<string, number>();
+  const subtreeEnd: number[] = [];
+  const stack: number[] = [];
+  flat.forEach((row, index) => {
+    while (stack.length && flat[stack[stack.length - 1]].depth >= row.depth) {
+      subtreeEnd[stack.pop()!] = index - 1;
+    }
+    rowByKey.set(row.node.key, index);
+    stack.push(index);
+  });
+  for (const index of stack) subtreeEnd[index] = flat.length - 1;
+  return { rowByKey, subtreeEnd };
+}
+
+/** 依赖不可变叶子对象，移动/分组改名复用缓存；删除后可自动回收。 */
+export function createSearchMatcher(getText: (node: LeafNode) => string) {
+  const cache = new WeakMap<LeafNode, string>();
+  return (node: LeafNode, normalizedQuery: string) => {
+    let text = cache.get(node);
+    if (text === undefined) {
+      text = getText(node).toLowerCase();
+      cache.set(node, text);
+    }
+    return text.includes(normalizedQuery);
+  };
 }

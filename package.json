@@ -11,7 +11,7 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "preview": "vite preview",
-    "test": "node --test scripts/grouped-list.test.mjs"
+    "test": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
     "@ant-design/cssinjs": "2.1.2",
@@ -20,6 +20,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-virtual": "^3.14.9",
     "antd": "^6.6.1",
     "axios": "^1.20.0",

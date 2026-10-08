@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Modal } from 'antd';
+import { App } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { GroupedListPage } from '../features/grouped-list/GroupedListPage';
 import type { GroupedListConfig, ListNodeMenuItem } from '../features/grouped-list/types';
@@ -22,7 +22,7 @@ const config: GroupedListConfig = {
 };
 
 export default function ParameterListPage() {
-  const [modal, contextHolder] = Modal.useModal();
+  const { modal } = App.useApp();
   const menuItems = useMemo<ListNodeMenuItem[]>(
     () => [
       {
@@ -48,8 +48,12 @@ export default function ParameterListPage() {
   );
   return (
     <>
-      {contextHolder}
-      <GroupedListPage service={parameterService} config={config} menuItems={menuItems} />
+      <GroupedListPage
+        listId="parameters"
+        service={parameterService}
+        config={config}
+        menuItems={menuItems}
+      />
     </>
   );
 }

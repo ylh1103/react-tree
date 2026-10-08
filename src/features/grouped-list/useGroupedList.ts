@@ -1,124 +1,117 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
+import { useIsMutating, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { App } from 'antd';
 import { fromTreeData, toTreeData } from './model';
 import { reconcileGroupSave } from './saveConflict';
+import {
+  groupedListKeys,
+  groupedListOptions,
+  refreshGroupedList,
+  type GroupedListId,
+} from './queries';
 import type { TreeNode, ListNode, ListNodeAction, GroupedListService } from './types';
 
-/** 统一管理两个列表的查询、保存及节点操作状态。 */
-export function useGroupedList(service: GroupedListService) {
-  const [treeData, setTreeData] = useState<TreeNode[]>([]);
-  const [ready, setReady] = useState(false);
-  const [busy, setBusy] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  // 同步互斥刷新和保存，覆盖状态更新前的连续点击窗口。
-  const busyRef = useRef(false);
-  const mountedRef = useRef(false);
-  const requestRef = useRef<AbortController | null>(null);
+const EMPTY_TREE: TreeNode[] = [];
 
-  const load = useCallback(() => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    const controller = new AbortController();
-    requestRef.current = controller;
-    return Promise.resolve()
-      .then(() => service.load(controller.signal))
-      .then((next) => {
-        if (controller.signal.aborted || !mountedRef.current) return;
-        setTreeData(toTreeData(next));
-        setReady(true);
-      })
-      .catch((reason) => {
-        if (!controller.signal.aborted && mountedRef.current) {
-          setError(reason instanceof Error ? reason.message : '加载失败，请重试');
-        }
-      })
-      .finally(() => {
-        // StrictMode 会先清理再重启请求；旧请求不得清除新请求的忙碌状态。
-        if (requestRef.current === controller) {
-          requestRef.current = null;
-          busyRef.current = false;
-          if (mountedRef.current) {
-            setBusy(false);
-            setLoading(false);
-          }
-        }
-      });
-  }, [service]);
+/** 服务端快照交给 Query；编辑草稿仍由 useTreeReducer 独立维护。 */
+export function useGroupedList(id: GroupedListId, service: GroupedListService) {
+  const { modal } = App.useApp();
+  const client = useQueryClient();
+  const mutationKey = groupedListKeys.write(id);
+  const writing = useIsMutating({ mutationKey }) > 0;
+  const lockRef = useRef(false);
+  const query = useQuery({
+    ...groupedListOptions(id, service),
+    enabled: !writing,
+    // 稳定的 select 配合结构共享：内容未改变时不重建树和索引。
+    select: toTreeData,
+  });
+  const refresh = useCallback(() => refreshGroupedList(client, id), [client, id]);
+  const invalidateAfterWrite = () =>
+    client.invalidateQueries({
+      queryKey: groupedListKeys.list(id),
+      exact: true,
+      // 同步操作可能在 React 提交暂停状态前结束，此时直接刷新；
+      // 已暂停的查询保持过期，重新启用后刷新。
+      refetchType: 'active',
+    });
 
-  useEffect(() => {
-    mountedRef.current = true;
-    void load();
-    return () => {
-      mountedRef.current = false;
-      requestRef.current?.abort();
-      requestRef.current = null;
-      busyRef.current = false;
-    };
-  }, [load]);
-
-  const refresh = useCallback(async () => {
-    if (busyRef.current) return;
-    setBusy(true);
-    setLoading(true);
-    setError('');
-    await load();
-  }, [load]);
+  const { mutateAsync: saveTree } = useMutation({
+    mutationKey,
+    mutationFn: async ({ tree, baseline }: { tree: TreeNode[]; baseline: TreeNode[] }) => {
+      await client.cancelQueries({ queryKey: groupedListKeys.list(id), exact: true });
+      // 冲突检查必须读取最新服务端数据，不能用可能仍在 staleTime 内的缓存。
+      const latest = await service.load();
+      const nodes = reconcileGroupSave(fromTreeData(baseline), fromTreeData(tree), latest);
+      await service.save(nodes);
+      // 防止保存过程中其他调用方主动 refetch 的旧响应覆盖保存结果。
+      await client.cancelQueries({ queryKey: groupedListKeys.list(id), exact: true });
+      client.setQueryData(groupedListKeys.list(id), nodes);
+      return toTreeData(nodes);
+    },
+    onError: (error) => {
+      modal.error({ title: '保存失败', content: error.message, okText: '知道了' });
+    },
+    // 包括失败：写入期间收到的外部失效通知也会在查询重新启用后得到处理。
+    onSettled: invalidateAfterWrite,
+  });
+  const { mutateAsync: performAction } = useMutation({
+    mutationKey,
+    mutationFn: async ({ action, node }: { action: ListNodeAction; node: ListNode }) => {
+      await client.cancelQueries({ queryKey: groupedListKeys.list(id), exact: true });
+      return action(node);
+    },
+    onError: (error) => {
+      modal.error({ title: '操作失败', content: error.message, okText: '知道了' });
+    },
+    onSettled: (result, error) => {
+      // 取消操作不触发额外请求；已有外部失效标记保持不变。
+      if (
+        result !== false ||
+        error ||
+        client.getQueryState(groupedListKeys.list(id))?.isInvalidated
+      )
+        return invalidateAfterWrite();
+    },
+  });
 
   const save = useCallback(
     async (tree: TreeNode[], baseline: TreeNode[]) => {
-      if (busyRef.current) throw new Error('正在处理，请稍候');
-      busyRef.current = true;
-      setBusy(true);
-      setError('');
-      const controller = new AbortController();
-      requestRef.current = controller;
+      if (lockRef.current || client.isMutating({ mutationKey: groupedListKeys.write(id) })) {
+        throw new Error('正在处理，请稍候');
+      }
+      lockRef.current = true;
       try {
-        const latest = await service.load(controller.signal);
-        if (controller.signal.aborted || !mountedRef.current) {
-          throw new Error('保存已取消');
-        }
-        const nodes = reconcileGroupSave(fromTreeData(baseline), fromTreeData(tree), latest);
-        await service.save(nodes);
-        const savedTree = toTreeData(nodes);
-        if (mountedRef.current) {
-          setTreeData(savedTree);
-        }
-        return savedTree;
+        return await saveTree({ tree, baseline });
       } finally {
-        if (requestRef.current === controller) {
-          requestRef.current = null;
-          busyRef.current = false;
-          if (mountedRef.current) setBusy(false);
-        }
+        lockRef.current = false;
       }
     },
-    [service],
+    [client, id, saveTree],
   );
-
   const runNodeAction = useCallback(
     async (action: ListNodeAction, node: ListNode) => {
-      if (busyRef.current) return;
-      busyRef.current = true;
-      setBusy(true);
-      setError('');
+      if (lockRef.current || client.isMutating({ mutationKey: groupedListKeys.write(id) })) return;
+      lockRef.current = true;
       try {
-        const result = await action(node);
-        if (result !== false && mountedRef.current) {
-          // 释放互斥锁后立即刷新，重新合并清单与分组；删除不走分组保存接口。
-          busyRef.current = false;
-          await refresh();
-        }
-      } catch (reason) {
-        if (mountedRef.current) {
-          setError(reason instanceof Error ? reason.message : '操作失败，请重试');
-        }
+        await performAction({ action, node });
+      } catch {
+        // mutation 的 onError 统一展示错误弹窗。
       } finally {
-        busyRef.current = false;
-        if (mountedRef.current) setBusy(false);
+        lockRef.current = false;
       }
     },
-    [refresh],
+    [client, id, performAction],
   );
 
-  return { treeData, ready, busy, loading, error, refresh, save, runNodeAction };
+  return {
+    treeData: query.data ?? EMPTY_TREE,
+    ready: query.data !== undefined,
+    busy: writing,
+    loading: query.isFetching,
+    error: query.error,
+    refresh,
+    save,
+    runNodeAction,
+  };
 }

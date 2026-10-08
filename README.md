@@ -13,7 +13,7 @@ pnpm build
 - `/applications`：应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
 - `/parameters`：参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
 - `/` 和原 `/tree` 自动跳转到应用列表。
-- 路由只负责页面匹配；共用列表容器通过 `useGroupedList` 在挂载时同时查询清单和分组，刷新按钮也会重新查询两者。切换页面会取消未完成的查询，初次加载失败可在页面内重试。
+- 路由只负责页面匹配；共用列表容器通过 React Query 缓存清单与分组的合并结果。首次挂载或缓存过期时并行查询两者；手动刷新立即使对应缓存失效。最后一个列表订阅卸载时取消未完成的查询，加载失败通过列表内的错误提示重试。
 - 生产部署需将页面路由回退到 `index.html`，以支持直接访问或刷新各路由。
 
 ### 页面结构与维护入口
@@ -39,12 +39,32 @@ pnpm build
 
 排查一次操作时，从 `GroupedListPage.tsx` 的事件绑定进入；节点入口看 `GroupedListRow.tsx`，分组编辑看 `useGroupEditing.tsx`，接口请求看 `useGroupedList.ts`。标题、节点内容、预览等只在一处使用的组件保留为对应文件内的私有组件。
 
+### 跨组件刷新与请求缓存
+
+应用入口的 `QueryClientProvider` 使用 `src/lib/queryClient.ts` 中的唯一客户端。列表使用 `queries.ts` 统一管理查询键：应用为 `['grouped-list', 'applications']`，参数为 `['grouped-list', 'parameters']`。`listId` 与 `service` 必须对应；未来增加租户或项目维度时也应将其纳入查询键。
+
+其他组件先通过 `useQueryClient()` 取得客户端，在业务接口成功后调用：
+
+```ts
+await refreshGroupedList(queryClient, 'parameters');
+```
+
+`refreshGroupedList` 从 `src/features/grouped-list/queries.ts` 导入。React 外的调用方可导入 `src/lib/queryClient.ts` 的共享客户端。不要新建另一个 QueryClient，也无需取得列表 ref。右侧 `GroupedListRefreshButton` 就是一个独立调用示例。
+
+- 缓存 30 秒内视为新鲜，切换页面优先复用；窗口聚焦不自动刷新。手动刷新不受这 30 秒限制。
+- 已挂载的列表在后台刷新；未挂载的列表只标记过期，下次进入再请求。此函数返回不代表未挂载列表已完成请求。
+- 保存和节点操作共用每种列表的 mutation key。写入期间暂停自动查询，外部刷新只标记过期；写入结束重新启用查询，合并刷新请求。
+- 编辑草稿与查询缓存分离。编辑中允许外部刷新缓存，草稿保持不变；取消编辑接收最新缓存，保存继续执行最新服务端快照的冲突合并。
+- 首次加载和刷新均显示列表 loading 遮罩，保留当前内容与草稿，并暂时阻止列表交互。外部按钮独立订阅请求计数，避免请求状态变化让整个布局重新渲染。
+- 使用稳定 `select: toTreeData` 和默认结构共享；相同数据刷新后维持树引用，避免重建索引。查询错误在列表内展示，写入失败保留草稿。
+
 ### 节点操作的业务接入
 
 两个页面使用同一个业务列表入口，分别传入自己的接口与操作：
 
 ```tsx
 <GroupedListPage
+  listId="parameters"
   config={config}
   service={parameterService}
   onSettings={handleParameterSettings}
@@ -64,6 +84,7 @@ pnpm build
 
 ```tsx
 <GroupedListPage
+  listId="parameters"
   config={config}
   service={parameterService}
   menuItems={(node) => [
@@ -172,3 +193,11 @@ VS Code 请安装工作区推荐的 ESLint 和 Prettier 扩展。
 ### Axios 请求入口
 
 真实接口和 Mock 接口统一通过 `src/lib/http.ts` 发起 Axios 请求，业务层直接获取响应数据。浏览器使用 XHR 适配器兼容 Mock.js；GET 查询继续传递 `AbortSignal`，PUT 和 DELETE 自动序列化 JSON，支持 204 响应。非 2xx 响应保留状态码错误提示，取消请求保持 Axios 取消错误，Mock 响应体中的业务错误仍会抛出。
+
+### 列表性能与模拟数据
+
+模拟接口与数据在第一次列表请求时动态加载；配置 `VITE_LIST_API_BASE_URL` 后不初始化 Mock.js 或生成模拟清单。默认应用列表仅包含 7 条示例。
+
+压力测试可在 `.env.local` 中设置 `VITE_MOCK_APPLICATION_COUNT=50000`，重启开发服务器后生效。该配置仅影响模拟接口，不影响真实接口。
+
+搜索使用延迟结果和按不可变叶子对象缓存的搜索文本；高亮、计数和展开状态使用同一搜索值。拖拽目标及可见子树边界随可见行重建索引，拖拽时直接查询。加载失败会保留已有列表并显示内联重试入口。

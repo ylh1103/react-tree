@@ -1,3 +1,5 @@
+import { useIsFetching } from '@tanstack/react-query';
+import { groupedListKeys, type GroupedListId } from './queries';
 import { useId, useState } from 'react';
 import { Button, Segmented, Tooltip } from 'antd';
 import { PlusOutlined, CheckOutlined } from '@ant-design/icons';
@@ -9,6 +11,7 @@ export function GroupedListToolbar({
   context,
   config,
   busy,
+  listId,
   refresh,
   typeFilter,
   setTypeFilter,
@@ -16,10 +19,12 @@ export function GroupedListToolbar({
   context: TreeToolbarContext;
   config: GroupedListConfig;
   busy: boolean;
+  listId: GroupedListId;
   refresh: () => Promise<void>;
   typeFilter: 'all' | '0' | '1';
   setTypeFilter: (value: 'all' | '0' | '1') => void;
 }) {
+  const refreshing = useIsFetching({ queryKey: groupedListKeys.list(listId), exact: true }) > 0;
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const filterPanelId = useId();
   const {
@@ -83,7 +88,7 @@ export function GroupedListToolbar({
               size="small"
               aria-label={`刷新${config.label}列表`}
               disabled={isEditing || busy}
-              loading={busy && !isSaving}
+              loading={refreshing}
               onClick={refresh}
               icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
             />

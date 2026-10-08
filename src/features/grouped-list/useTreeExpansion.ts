@@ -29,6 +29,9 @@ export function useTreeExpansion({
     query: string;
     keys: Set<string>;
   }>({ query: '', keys: new Set() });
+  if (searchCollapse.query !== normalizedSearchQuery) {
+    setSearchCollapse({ query: normalizedSearchQuery, keys: new Set() });
+  }
   const [previousDraft, setPreviousDraft] = useState(draft);
   if (previousDraft !== draft) {
     setPreviousDraft(draft);
@@ -149,15 +152,11 @@ export function useTreeExpansion({
     [effectiveExpandedKeys, normalizedSearchQuery, searchAncestorKeys],
   );
 
-  const resetSearchCollapse = (query: string) => {
-    setSearchCollapse({ query, keys: new Set() });
-  };
   return {
     effectiveExpandedKeys,
     allExpanded,
     setAllExpanded,
     toggleExpand,
     expandPath,
-    resetSearchCollapse,
   };
 }
