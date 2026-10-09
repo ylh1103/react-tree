@@ -1,22 +1,23 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 import App from './App';
-import ApplicationListPage from './pages/ApplicationListPage';
-import ParameterListPage from './pages/ParameterListPage';
-import WorkspacePage from './pages/WorkspacePage';
+import AppLayout from './layouts/AppLayout';
+import { navigationItems } from './layouts/navigation';
+import LayoutPage from './pages/LayoutPage';
 
 export const router = createBrowserRouter([
-  { path: '/workspace', Component: WorkspacePage },
   {
     Component: App,
     children: [
-      { index: true, element: <Navigate to="/applications" replace /> },
       {
-        path: 'applications',
-        Component: ApplicationListPage,
-      },
-      {
-        path: 'parameters',
-        Component: ParameterListPage,
+        Component: AppLayout,
+        children: [
+          { index: true, element: <Navigate to="/overview" replace /> },
+          { path: 'layout', element: <Navigate to="/overview" replace /> },
+          ...navigationItems.map(({ to, label, splitPane }) => ({
+            path: to.slice(1),
+            element: <LayoutPage title={label} splitPane={splitPane} />,
+          })),
+        ],
       },
     ],
   },

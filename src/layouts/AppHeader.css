@@ -1,0 +1,242 @@
+.app-header {
+  flex-shrink: 0;
+  min-width: 0;
+  color: var(--header-text);
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+}
+
+.app-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 160ms,
+    color 160ms,
+    border-color 160ms;
+}
+
+.app-header button:hover {
+  background: var(--header-hover);
+}
+
+.app-header button:focus-visible {
+  outline: 2px solid var(--header-primary);
+  outline-offset: -2px;
+}
+
+.app-header__main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 10px 20px;
+}
+
+.app-header__brand {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header__logo {
+  width: 32px;
+  height: 32px;
+}
+
+.app-header__brand h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  line-height: 28px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.app-header__contexts {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding-right: 12px;
+  border-right: 1px solid var(--header-border);
+}
+
+.app-header .app-header__context {
+  flex-shrink: 0;
+  color: var(--header-muted);
+}
+
+.app-header .app-header__context--application {
+  flex-shrink: 1;
+  min-width: 0;
+  color: var(--header-text);
+  background: var(--header-soft);
+  font-weight: 500;
+}
+
+.app-header__context-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-header__chevron {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  opacity: 0.65;
+}
+
+.app-header__account {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.app-header .app-header__environment {
+  gap: 6px;
+  border-color: var(--header-danger-border);
+  color: var(--header-danger);
+  background: var(--header-danger-bg);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.app-header__status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.app-header .app-header__user {
+  min-height: 40px;
+  padding: 4px 6px;
+}
+
+.app-header__workspace {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.app-header__tools {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  margin-left: auto;
+  padding: 2px 0;
+}
+
+.app-header .app-header__tool {
+  flex-shrink: 0;
+  min-height: 32px;
+  color: var(--header-muted);
+  font-size: 12px;
+}
+
+.app-header .app-header__tool:hover {
+  color: var(--header-primary);
+  background: var(--header-primary-bg);
+}
+
+.app-header .app-header__tool--danger {
+  color: var(--header-danger);
+}
+
+.app-header .app-header__tool--danger:hover {
+  color: var(--header-danger);
+  background: var(--header-danger-bg);
+}
+
+.app-header__tool-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+}
+
+.app-header__popover-content {
+  max-width: min(260px, calc(100vw - 48px));
+  font-size: 13px;
+  line-height: 22px;
+}
+
+@media (max-width: 1500px) {
+  .app-header__tool-label {
+    display: none;
+  }
+
+  .app-header .app-header__tool {
+    width: 36px;
+    min-height: 36px;
+    padding: 0;
+  }
+
+  .app-header__context--application {
+    max-width: 230px;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-header__main {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .app-header__brand h1 {
+    display: none;
+  }
+
+  .app-header__logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .app-header__account {
+    gap: 4px;
+  }
+
+  .app-header button,
+  .app-header .app-header__tool,
+  .app-header .app-header__user {
+    min-height: 44px;
+  }
+
+  .app-header .app-header__tool {
+    width: 44px;
+  }
+
+  .app-header__user > .app-header__chevron {
+    display: none;
+  }
+
+  .app-header__contexts {
+    gap: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header button {
+    transition: none;
+  }
+}

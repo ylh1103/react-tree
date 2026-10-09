@@ -1,0 +1,35 @@
+export const navigationItems = [
+  { to: '/overview', label: '总览', icon: 'i-lucide-layout-grid', splitPane: false, bottom: false },
+  { to: '/applications', label: '应用', icon: 'i-lucide-cloud', splitPane: true, bottom: false },
+  {
+    to: '/parameters',
+    label: '参数项',
+    icon: 'i-lucide-sliders-horizontal',
+    splitPane: false,
+    bottom: false,
+  },
+  { to: '/search', label: '搜索', icon: 'i-lucide-search', splitPane: true, bottom: false },
+  { to: '/checks', label: '检查', icon: 'i-lucide-scan-eye', splitPane: false, bottom: false },
+  {
+    to: '/exceptions',
+    label: '异常项',
+    icon: 'i-lucide-file-warning',
+    splitPane: false,
+    bottom: false,
+  },
+  {
+    to: '/scheduled-comparison',
+    label: '定时比对',
+    icon: 'i-lucide-calendar-clock',
+    splitPane: false,
+    bottom: false,
+  },
+  {
+    to: '/batch-comparison',
+    label: '批量比对',
+    icon: 'i-lucide-files',
+    splitPane: false,
+    bottom: false,
+  },
+  { to: '/settings', label: '设置', icon: 'i-lucide-settings', splitPane: false, bottom: true },
+];
