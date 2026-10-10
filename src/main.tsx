@@ -10,6 +10,11 @@ import { RouterProvider } from 'react-router/dom';
 import 'virtual:uno.css';
 import './index.css';
 import { router } from './router';
+import { themeVariables } from './styles/theme';
+
+for (const [name, value] of Object.entries(themeVariables)) {
+  document.documentElement.style.setProperty(name, value);
+}
 
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 

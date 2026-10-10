@@ -1,7 +1,6 @@
 import type { ParameterItem } from '../grouped-list/types';
-import { createMockListApi } from '../grouped-list/mockApi';
 
-export function createApi() {
+export function createMockParameters() {
   const parameters: ParameterItem[] = [
     {
       paramTypeName: '数据库连接',
@@ -15,9 +14,14 @@ export function createApi() {
     { paramTypeName: '接口超时', paramTypeDesc: '外部接口调用超时和重试次数', maintType: '0' },
   ];
 
+  return parameters;
+}
+
+export async function createApi() {
+  const { createMockListApi } = await import('../grouped-list/mockApi');
   return createMockListApi(
     '/mock-api/parameters',
-    parameters,
+    createMockParameters(),
     'paramDbTypeGroupInfo',
     (item) => item.paramTypeName,
   );

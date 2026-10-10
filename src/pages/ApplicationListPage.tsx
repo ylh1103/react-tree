@@ -1,6 +1,8 @@
 import { GroupedListPage } from '../features/grouped-list/GroupedListPage';
 import type { GroupedListConfig } from '../features/grouped-list/types';
 import { applicationService } from '../features/applications/api';
+import type { GroupedListService, ListNode } from '../features/grouped-list/types';
+import { applicationListId } from '../features/grouped-list/queries';
 
 const config: GroupedListConfig = {
   label: '应用',
@@ -18,6 +20,27 @@ const config: GroupedListConfig = {
   },
 };
 
-export default function ApplicationListPage() {
-  return <GroupedListPage listId="applications" service={applicationService} config={config} />;
+export default function ApplicationListPage({
+  systemName,
+  service = applicationService,
+  selectedAppName,
+  onSelectApplication,
+  embedded = false,
+}: {
+  systemName?: string;
+  service?: GroupedListService;
+  selectedAppName?: string | null;
+  onSelectApplication?: (node: ListNode) => void;
+  embedded?: boolean;
+} = {}) {
+  return (
+    <GroupedListPage
+      listId={systemName === undefined ? 'applications' : applicationListId(systemName)}
+      service={service}
+      config={config}
+      selectedKey={selectedAppName}
+      onSelect={onSelectApplication}
+      embedded={embedded}
+    />
+  );
 }

@@ -124,7 +124,7 @@ export function GroupedListToolbar({
             label: (
               <span className="flex flex-wrap items-center justify-center gap-x-1.25 gap-y-0.5">
                 <span>{option.label}</span>
-                <span className="application-type-filter-count min-w-4.5 px-1 rounded-1 bg-[#e8edf2] text-[11px] font-600 leading-[18px] tabular-nums [overflow-wrap:anywhere]">
+                <span className="application-type-filter-count min-w-4.5 px-1 rounded-1 bg-canvas text-text-muted text-[11px] font-600 leading-[18px] tabular-nums [overflow-wrap:anywhere]">
                   {option.value === 'all'
                     ? totalLeafCount
                     : (totalLeafCountsByCategory.get(option.value) ?? 0)}
@@ -136,7 +136,7 @@ export function GroupedListToolbar({
       </div>
       {isEditing && (
         <div
-          className="flex flex-wrap items-center justify-between shrink-0 gap-2 mt-0.5 mx-5 mb-3 p-2 border border-solid border-[#e3e9ed] rounded-2 bg-[#f7f9fb]"
+          className="flex flex-wrap items-center justify-between shrink-0 gap-2 mt-0.5 mx-5 mb-3 p-2 border border-solid border-border rounded-2 bg-sidebar"
           role="group"
           aria-label="分组编辑操作"
         >

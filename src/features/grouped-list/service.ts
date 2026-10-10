@@ -31,6 +31,7 @@ export function createListService<Item, Field extends string>(
 export function createHttpListApi<Item, Field extends string>(urls: {
   items: string;
   groups: string;
+  params?: Record<string, string>;
 }): ListApi<Item, Field> & { deleteItem: (key: string) => Promise<void> } {
   return {
     deleteItem: async (key) => {
@@ -38,15 +39,18 @@ export function createHttpListApi<Item, Field extends string>(urls: {
         url: urls.items,
         method: 'DELETE',
         data: { key },
+        params: urls.params,
       });
     },
-    getItems: (signal) => requestData<Item[]>({ url: urls.items, signal }),
-    getGroups: (signal) => requestData<Record<Field, string | null>>({ url: urls.groups, signal }),
+    getItems: (signal) => requestData<Item[]>({ url: urls.items, params: urls.params, signal }),
+    getGroups: (signal) =>
+      requestData<Record<Field, string | null>>({ url: urls.groups, params: urls.params, signal }),
     saveGroups: async (payload) => {
       await requestData({
         url: urls.groups,
         method: 'PUT',
         data: payload,
+        params: urls.params,
       });
     },
   };

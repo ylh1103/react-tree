@@ -201,7 +201,7 @@ export const GroupedListRow = memo(function GroupedListRow({
         )}
 
         <div
-          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-[#e3e9ed] rounded-[6px] bg-white [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none ${isBranch ? 'py-1.75' : 'py-1 border-l-2 border-l-[var(--accent)]'}`}
+          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-[6px] bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none ${isBranch ? 'py-1.75' : 'py-1 border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
           data-has-actions={!isRenaming || undefined}
           data-menu-open={isMenuOpen || undefined}
           data-has-badge={
@@ -475,7 +475,7 @@ const GroupedLeaf = memo(function GroupedLeaf({
           </span>
           <span
             ref={descriptionRef}
-            className="text-[#75838d] text-[11px] leading-4 overflow-hidden text-ellipsis"
+            className="text-text-muted text-[11px] leading-4 overflow-hidden text-ellipsis"
           >
             <Highlight text={description} query={searchQuery} />
           </span>

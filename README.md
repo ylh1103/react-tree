@@ -2,17 +2,37 @@
 
 ## 开发
 
+全局配色维护于 `src/styles/theme.ts`，直接使用 Ant Design 默认算法和蓝色色阶，不覆盖颜色 token。入口将 `theme.getDesignToken(appTheme)` 的配色写入 CSS 变量，UnoCSS 与 Ant Design 共用同一套默认颜色；深色导航和品牌 Logo 保留各自的色彩。调整主题时统一修改该文件。
+
 ```sh
 pnpm install
 pnpm dev
 pnpm build
 ```
 
-## 业务列表与路由
+## 系统入口与平台路由
 
-- `/applications`：应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
-- `/parameters`：参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
-- `/` 和原 `/tree` 自动跳转到应用列表。
+- `/` 展示我的系统，支持系统英文名、中文名、架构编号搜索、角色筛选和分页，默认每页 8 条。
+- `/systems/:systemName` 跳转至该系统的 `overview`。应用参数页面为 `overview`、`application/:appName?`、`params`、`search`、`inspect`、`exception`、`compare`、`apps-comparison`、`setting`。
+- 数据库参数使用 `/systems/:systemName/db/:paramTypeName?`，设置使用 `/systems/:systemName/db/setting`。`setting` 是保留类型名称。
+- 平台切换进入目标默认页；系统切换保留平台、进入目标默认页。系统、平台、菜单和列表选中项均由 URL 驱动。
+- `src/routeManifest.ts` 是可测试的路由结构，`src/router.tsx` 绑定页面；系统共享框架提供工作上下文，应用与数据库平台复用现有导航与 `SplitPane`。
+- 未实现业务页面显示工作区框架；环境锁定、系统新增、成员管理不在本次范围。
+
+### 数据接入
+
+系统清单接口尚未提供，默认使用 `src/features/systems/mock.ts`。配置 `VITE_SYSTEMS_API_URL` 后通过已有 `requestData` 发起 GET，请返回用户给定结构的 `SystemInfo[]`。该接口应只返回当前用户可访问的系统，未知角色仅显示“未知角色”，不推导操作权限。
+
+应用和数据库参数类型清单复用 `VITE_LIST_API_BASE_URL` 下已有的 `/applications`、`/parameters` GET 接口，系统工作区额外传递 `systemName` 查询参数；后端需支持按系统过滤。未配置时复用现有清单 Mock。React Query 查询键包含系统维度，避免跨系统缓存复用。应用侧边栏支持分组保存，参数内容工作区仍为待接入框架；数据库类型清单只读。
+
+部署时需将页面路由回退到 `index.html`，以支持刷新和直接访问。系统清单返回 403 时展示无权访问；名称不在清单内时显示系统不存在，不自动进入其他系统。
+
+## 既有业务列表组件
+
+- `ApplicationListPage`：既有分组应用列表，叶子 key / title 使用 `appName`，描述使用 `appDesc`。
+- `ParameterListPage`：既有分组参数列表，叶子 key / title 使用 `paramTypeName`，描述使用 `paramTypeDesc`。
+- 应用路由的侧边栏已接入 `ApplicationListPage`，保留分组编辑、搜索、类型筛选、选中定位、虚拟滚动和拖拽。选中应用同步到 URL，右侧展示应用信息与参数内容框架；数据库工作区仍采用只读类型清单。
+- 系统应用列表的查询与写入键为 `['grouped-list', 'applications:<systemName>']` 和 `['grouped-list-write', 'applications:<systemName>']`；侧边栏与右侧共用查询结果。真实清单和分组接口的 GET / PUT 均携带 `systemName` 查询参数。模拟分组按系统独立存储，不修改原全局分组记录。
 - 路由只负责页面匹配；共用列表容器通过 React Query 缓存清单与分组的合并结果。首次挂载或缓存过期时并行查询两者；手动刷新立即使对应缓存失效。最后一个列表订阅卸载时取消未完成的查询，加载失败通过列表内的错误提示重试。
 - 生产部署需将页面路由回退到 `index.html`，以支持直接访问或刷新各路由。
 

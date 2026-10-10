@@ -3,11 +3,14 @@ import type { ReactNode } from 'react';
 import { Button } from 'antd';
 import { dragResize } from './dragResize';
 import type { DragResizeState } from './dragResize';
+import { useLayoutPreferences } from '../../features/preferences/useLayoutPreferences';
 
 export interface SplitPaneProps {
   sidebar: ReactNode;
   children: ReactNode;
   sidebarLabel?: string;
+  title?: string;
+  titleExtra?: ReactNode;
   defaultWidth?: number;
   minWidth?: number;
   maxWidth?: number;
@@ -21,6 +24,8 @@ export function SplitPane({
   sidebar,
   children,
   sidebarLabel = '侧边栏',
+  title,
+  titleExtra,
   defaultWidth = 340,
   minWidth = 260,
   maxWidth = 640,
@@ -28,6 +33,9 @@ export function SplitPane({
   defaultVisible = true,
   storageKey,
 }: SplitPaneProps) {
+  const { layoutMode } = useLayoutPreferences();
+  const compact = layoutMode === 'compact';
+  const separatorWidth = compact ? 1 : 4;
   const sidebarId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -69,7 +77,10 @@ export function SplitPane({
   // 优先给右侧内容留出空间，小容器中允许侧栏小于配置的最小宽度。
   const upper = Math.max(
     0,
-    Math.min(maxWidth, availableWidth === null ? maxWidth : availableWidth - minContentWidth - 4),
+    Math.min(
+      maxWidth,
+      availableWidth === null ? maxWidth : availableWidth - minContentWidth - separatorWidth,
+    ),
   );
   const lower = Math.min(Math.max(0, minWidth), upper);
   const width = Math.max(lower, Math.min(layout.width, upper));
@@ -161,7 +172,7 @@ export function SplitPane({
     >
       <aside
         id={sidebarId}
-        className="shrink-0 min-w-0 overflow-auto rounded-r-8px bg-sidebar"
+        className={`shrink-0 min-w-0 overflow-auto bg-sidebar ${compact ? 'rounded-0' : 'workspace-frame'}`}
         hidden={!expanded}
         style={{ width }}
         aria-label={sidebarLabel}
@@ -169,7 +180,7 @@ export function SplitPane({
         {sidebar}
       </aside>
       <div
-        className={`layout-focus relative z-1 flex-[0_0_4px] cursor-ew-resize rounded-sm touch-none transition-colors duration-100 ease-out motion-reduce:transition-none bg-transparent [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${upper > 0 ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
+        className={`layout-focus relative z-1 cursor-ew-resize touch-none transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_4px] rounded-sm bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
         role="separator"
         tabIndex={0}
         aria-label={`调整${sidebarLabel}宽度`}
@@ -258,29 +269,37 @@ export function SplitPane({
         }}
       />
       <section
-        className="flex flex-col flex-1 min-w-0 min-h-0 bg-surface border border-solid border-border-subtle rounded-8px overflow-hidden"
+        className={`flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden ${compact ? 'bg-surface rounded-0' : 'bg-canvas gap-4px'}`}
         aria-label="页面内容"
       >
-        <div className="flex items-center shrink-0 py-8px px-12px border-b border-b-solid border-divider">
-          <Button
-            ref={toggleRef}
-            type="text"
-            htmlType="button"
-            onClick={toggle}
-            disabled={upper === 0}
-            aria-controls={sidebarId}
-            aria-expanded={expanded}
-            aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
-            title={upper === 0 ? '当前空间不足以展开侧边栏' : '切换侧边栏（Ctrl / ⌘ B）'}
-            icon={
-              <span
-                className={`w-18px h-18px ${expanded ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'}`}
-                aria-hidden="true"
-              />
-            }
-          />
+        <div className={compact ? 'workspace-titlebar' : 'workspace-titlebar-detached'}>
+          <div className="workspace-title-identity">
+            <Button
+              ref={toggleRef}
+              type="text"
+              htmlType="button"
+              onClick={toggle}
+              disabled={upper === 0}
+              aria-controls={sidebarId}
+              aria-expanded={expanded}
+              aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
+              title={upper === 0 ? '当前空间不足以展开侧边栏' : '切换侧边栏（Ctrl / ⌘ B）'}
+              icon={
+                <span
+                  className={`w-18px h-18px ${expanded ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'}`}
+                  aria-hidden="true"
+                />
+              }
+            />
+            {title && (
+              <h2 className="workspace-page__title min-w-0 max-w-200px truncate" title={title}>
+                {title}
+              </h2>
+            )}
+          </div>
+          {titleExtra}
         </div>
-        <div className="layout-scroll">{children}</div>
+        <div className={`layout-scroll ${compact ? '' : 'rounded-8px bg-surface'}`}>{children}</div>
       </section>
     </div>
   );

@@ -1,7 +1,6 @@
 import type { ApplicationItem } from '../grouped-list/types';
-import { createMockListApi } from '../grouped-list/mockApi';
 
-export function createApi() {
+export function createMockApplications() {
   const applications: ApplicationItem[] = [
     { appName: 'ABS-BFF', appDesc: 'ABS 系统的 BFF 服务', appType: '0' },
     { appName: '用户中心', appDesc: '统一身份与用户信息管理', appType: '1' },
@@ -33,5 +32,32 @@ export function createApi() {
     });
   }
 
-  return createMockListApi('/mock-api/applications', applications, 'appGroupInfo');
+  return applications;
+}
+
+export async function createApi(systemName?: string) {
+  if (systemName !== undefined) {
+    const storageKey = `react-tree:mock:appGroupInfo:system:${encodeURIComponent(systemName)}`;
+    return {
+      async getItems(signal?: AbortSignal) {
+        const { mockSystems } = await import('../systems/mock');
+        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+        return mockSystems.find((system) => system.systemName === systemName)?.appCount === 0
+          ? []
+          : createMockApplications();
+      },
+      async getGroups(signal?: AbortSignal) {
+        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+        return { appGroupInfo: localStorage.getItem(storageKey) };
+      },
+      async saveGroups(payload: { appGroupInfo: string }) {
+        localStorage.setItem(storageKey, payload.appGroupInfo);
+      },
+      async deleteItem() {
+        throw new Error('应用删除接口尚未接入');
+      },
+    };
+  }
+  const { createMockListApi } = await import('../grouped-list/mockApi');
+  return createMockListApi('/mock-api/applications', createMockApplications(), 'appGroupInfo');
 }

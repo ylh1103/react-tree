@@ -12,3 +12,15 @@ const api = baseUrl
   : createLazyListApi(() => import('./mock').then((module) => module.createApi()));
 
 export const applicationService = createListService(api, 'appGroupInfo', mergeApplications);
+
+/** 每个系统工作区绑定自己的服务；组件通过 useMemo 保持实例稳定。 */
+export function createSystemApplicationService(systemName: string) {
+  const systemApi = baseUrl
+    ? createHttpListApi<ApplicationItem, 'appGroupInfo'>({
+        items: `${baseUrl}/applications`,
+        groups: `${baseUrl}/applications/groups`,
+        params: { systemName },
+      })
+    : createLazyListApi(() => import('./mock').then((module) => module.createApi(systemName)));
+  return createListService(systemApi, 'appGroupInfo', mergeApplications);
+}

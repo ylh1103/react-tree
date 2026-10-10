@@ -2,13 +2,13 @@
 .application-type-filter .ant-segmented {
   width: 100%;
   padding: 4px;
-  border: 1px solid #e3e9ed;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #f4f6f8;
+  background: var(--color-sidebar);
 }
 .application-type-filter .ant-segmented-item {
   min-width: 0;
-  color: #52636f;
+  color: var(--color-text-secondary);
   border-radius: 5px;
 }
 .application-type-filter .ant-segmented-item-label {
@@ -52,14 +52,9 @@
   background: var(--accent-bg);
 }
 
-/* 悬停统一为中性色，主题色背景只用于选中状态。 */
+/* 悬停仅改变背景，保留节点原有的边框与类型强调线。 */
 .virtual-tree .tree-row:not(.tree-row-selected):hover > .tree-node-card {
-  border-color: #cbd5dc;
-  background: #f5f7f9;
-}
-
-.virtual-tree [data-node-type='leaf'] .tree-row:not(.tree-row-selected):hover > .tree-node-card {
-  border-left-color: var(--accent);
+  background: var(--color-sidebar);
 }
 
 .virtual-tree .tree-row.tree-row-selected > .tree-node-card {
@@ -104,7 +99,7 @@
 }
 
 .tree-node-actions .ant-btn:not(.ant-btn-dangerous) {
-  color: #77858e;
+  color: var(--color-text-muted);
 }
 
 .tree-row .tree-node-actions .ant-btn:not(.ant-btn-dangerous):hover {
@@ -224,17 +219,4 @@
 .virtual-tree .application-settings-button.ant-btn:focus-visible {
   outline: var(--tree-focus-width, 3px) solid var(--tree-focus-color, #91caff);
   outline-offset: 1px;
-}
-
-/* Chrome 86 尚不支持标准滚动条配色，使用 WebKit 伪元素回退。 */
-.tree-scroll-viewport::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-.tree-scroll-viewport::-webkit-scrollbar-thumb {
-  background: #dce5e9;
-  border-radius: 4px;
-}
-.tree-scroll-viewport::-webkit-scrollbar-track {
-  background: transparent;
 }

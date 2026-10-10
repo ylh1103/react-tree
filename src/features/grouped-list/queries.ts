@@ -1,7 +1,10 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
 import type { GroupedListService } from './types';
 
-export type GroupedListId = 'applications' | 'parameters';
+export type GroupedListId = 'applications' | 'parameters' | `applications:${string}`;
+
+export const applicationListId = (systemName: string): GroupedListId =>
+  `applications:${systemName}`;
 
 export const groupedListKeys = {
   list: (id: GroupedListId) => ['grouped-list', id] as const,

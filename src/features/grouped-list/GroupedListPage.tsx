@@ -55,10 +55,16 @@ export function GroupedListPage({
   config,
   onSettings,
   menuItems,
+  selectedKey: controlledSelectedKey,
+  onSelect,
+  embedded = false,
 }: ListNodeActions & {
   service: GroupedListService;
   listId: GroupedListId;
   config: GroupedListConfig;
+  selectedKey?: string | null;
+  onSelect?: (node: LeafNode['data']) => void;
+  embedded?: boolean;
 }) {
   // TanStack Virtual 实例内部可变，暂不参与 Compiler 自动缓存；兼容后移除。
   'use no memo';
@@ -105,10 +111,24 @@ export function GroupedListPage({
   const { draft, isEditing, editingKey } = state;
   const treeIndex = useMemo(() => buildTreeIndex(draft, getLeafCategory), [draft, getLeafCategory]);
 
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  if (selectedKey !== null && !treeIndex.nodeByKey.has(selectedKey)) {
+  const [internalSelectedKey, setSelectedKey] = useState<string | null>(null);
+  const selectedKey =
+    controlledSelectedKey === undefined ? internalSelectedKey : controlledSelectedKey;
+  if (
+    controlledSelectedKey === undefined &&
+    selectedKey !== null &&
+    !treeIndex.nodeByKey.has(selectedKey)
+  ) {
     setSelectedKey(null);
   }
+  const handleSelect = useCallback(
+    (key: string) => {
+      if (controlledSelectedKey === undefined) setSelectedKey(key);
+      const node = treeIndex.nodeByKey.get(key);
+      if (node?.type === 'leaf') onSelect?.(node.data);
+    },
+    [controlledSelectedKey, treeIndex, onSelect],
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
   const parentScrollRef = useRef<HTMLDivElement | null>(null);
@@ -194,8 +214,15 @@ export function GroupedListPage({
   // 定位是“先展开、再滚动”两步：展开祖先节点触发 flat 重新计算是异步的（要等下一次渲染），
   // 所以这里用 ref 记一个“待定位”标记，在下面的 effect 里等 flat 更新后再去查找目标行的
   // 索引并滚动，避免用旧的 flat 数据算出错误的 index。
-  const pendingLocateRef = useRef(false);
+  const pendingLocateRef = useRef<'reveal' | 'locate' | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!controlledSelectedKey || !ready || !treeIndex.nodeByKey.has(controlledSelectedKey)) return;
+    expandPath(treeIndex.ancestors(controlledSelectedKey));
+    // URL 选中同步只展开、滚动，不触发主动定位的临时高亮。
+    pendingLocateRef.current = 'reveal';
+  }, [controlledSelectedKey, ready, treeIndex, expandPath]);
 
   // 高亮计时独立于 flat，避免展开、搜索或拖拽更新提前清理计时器。
   useEffect(
@@ -216,17 +243,20 @@ export function GroupedListPage({
       }
     }
     expandPath(treeIndex.ancestors(selectedKey));
-    pendingLocateRef.current = true;
+    pendingLocateRef.current = 'locate';
   };
 
   useEffect(() => {
     if (!pendingLocateRef.current || !selectedKey) return;
     const idx = flatIndex.rowByKey.get(selectedKey);
     if (idx === undefined) return;
-    pendingLocateRef.current = false;
+    const highlight = pendingLocateRef.current === 'locate';
+    pendingLocateRef.current = null;
     virtualizer.scrollToIndex(idx, { align: 'center' });
-    setHighlightedKey(selectedKey);
+    setHighlightedKey(highlight ? selectedKey : null);
     if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = null;
+    if (!highlight) return;
     highlightTimerRef.current = setTimeout(() => {
       setHighlightedKey(null);
       highlightTimerRef.current = null;
@@ -256,7 +286,7 @@ export function GroupedListPage({
 
   return (
     <section
-      className="grouped-list-panel relative flex flex-col w-[340px] max-w-full h-full bg-white border border-solid border-[#edf0f2] rounded-[6px] overflow-hidden max-[400px]:w-full"
+      className={`grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface overflow-hidden ${embedded ? 'w-full' : 'w-[340px] border border-solid border-[#edf0f2] rounded-[6px] max-[400px]:w-full'}`}
       style={treeTheme}
       aria-busy={disabled || loading}
     >
@@ -319,7 +349,7 @@ export function GroupedListPage({
           <div
             ref={parentScrollRef}
             aria-busy={searchPending}
-            className="tree-scroll-viewport [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:#dce5e9_transparent] min-h-0 min-w-0 flex-1 overflow-auto relative"
+            className="tree-scroll-viewport tree-scrollbar min-h-0 min-w-0 flex-1 overflow-auto relative"
           >
             {flat.length === 0 && (
               <div
@@ -372,7 +402,7 @@ export function GroupedListPage({
                       }
                       onMenuAction={handleMenuAction}
                       onToggleExpand={toggleExpand}
-                      onSelect={setSelectedKey}
+                      onSelect={handleSelect}
                       onStartRename={handleStartRename}
                       onCommitRename={commitRename}
                       onCancelRename={cancelRename}

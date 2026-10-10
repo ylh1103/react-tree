@@ -8,30 +8,46 @@ interface LayoutPageProps {
 
 export default function LayoutPage({ title, splitPane = false }: LayoutPageProps) {
   const content = (
-    <div className="flex min-h-full flex-col items-center justify-center p-24px text-center text-text-muted">
-      <LayoutOutlined
-        className="text-[clamp(64px,12vw,160px)] text-watermark mb-20px"
-        aria-hidden="true"
-      />
-      <h2 className="m-0 mb-12px text-18px font-500 text-text-secondary">{title}</h2>
-      <p className="text-13px m-0">从左侧菜单切换页面，在这里开始工作。</p>
+    <div
+      className={`flex flex-1 flex-col items-center justify-center p-32px text-center ${splitPane ? 'min-h-full' : 'min-h-0'}`}
+    >
+      <div className="grid place-items-center w-56px h-56px mb-18px border border-solid border-border rounded-12px text-accent bg-sidebar text-24px">
+        <LayoutOutlined aria-hidden="true" />
+      </div>
+      <h3 className="m-0 mb-8px text-text-secondary text-15px font-500">{title}工作区</h3>
+      <p className="max-w-360px m-0 text-text-muted text-13px leading-22px">
+        当前暂无内容，可从左侧导航切换其他功能。
+      </p>
     </div>
   );
 
-  if (!splitPane) return content;
+  if (!splitPane)
+    return (
+      <section className="flex flex-col min-h-full border border-solid border-border rounded-8px bg-surface">
+        <div className="flex items-center min-h-49px px-20px border-b border-b-solid border-divider">
+          <h2 className="workspace-page__title">{title}</h2>
+        </div>
+        {content}
+      </section>
+    );
 
   return (
     <SplitPane
       key={title}
       storageKey={`react-tree:split-pane:${title}:v1`}
       sidebarLabel={`${title}侧边栏`}
+      title={title}
       sidebar={
-        <div className="py-20px px-16px">
-          <h2 className="m-0 mb-28px text-14px font-600">{title}</h2>
-          <p className="text-13px text-text-secondary">侧边栏区域</p>
-          <span className="text-12px leading-[1.8] text-text-muted">
-            可以在这里放置当前页面的导航、筛选或辅助内容。
-          </span>
+        <div>
+          <div className="flex items-center min-h-49px px-16px border-b border-b-solid border-divider">
+            <h2 className="workspace-page__title">{title}导航</h2>
+          </div>
+          <div className="py-20px px-16px text-text-muted text-13px leading-22px">
+            <p className="m-0 mb-8px text-text-secondary font-500">
+              暂无{title === '搜索' ? '筛选条件' : '导航内容'}
+            </p>
+            <span className="text-12px">当前工作区尚未配置内容。</span>
+          </div>
         </div>
       }
     >
