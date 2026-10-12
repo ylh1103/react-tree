@@ -1,16 +1,17 @@
-import { Avatar, Button, Dropdown, Modal, Popover, theme } from 'antd';
-import { useContext, useState } from 'react';
+import { App as AntdApp, Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
+import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import { SystemContext } from '../features/systems/SystemContext';
 import { platformHome } from '../features/systems/paths';
-import { LayoutSettings } from '../features/preferences/LayoutSettings';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { openUserSettings } from '../store/preferencesSlice';
 
 const headerTools = [
   { label: '友情链接', icon: 'i-lucide-panels-top-left', content: '暂无友情链接' },
   { label: '旧版本', icon: 'i-lucide-link', content: '暂无可用的旧版本入口' },
   { label: '高风险提权', icon: 'i-lucide-zap', content: '暂无待处理的提权申请', danger: true },
   { label: '平台管理', icon: 'i-lucide-users-round', content: '暂无可用的平台管理入口' },
-  { label: '快照检测', icon: 'i-lucide-square-terminal', content: '暂无快照检测记录' },
+  { label: '快照检视', icon: 'i-lucide-square-terminal', content: '暂无快照检测记录' },
   { label: '小工具', icon: 'i-lucide-wrench', content: '暂无可用工具' },
   { label: '公告', icon: 'i-lucide-megaphone', content: '暂无公告' },
   {
@@ -20,40 +21,53 @@ const headerTools = [
   },
 ] as const;
 
+function subscribeWideHeader(onChange: () => void) {
+  const media = window.matchMedia('(min-width: 1601px)');
+  media.addEventListener('change', onChange);
+  return () => media.removeEventListener('change', onChange);
+}
+const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1601px)').matches;
+
 export function AppHeader() {
-  const { token } = theme.useToken();
   const workspace = useContext(SystemContext);
   const navigate = useNavigate();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
+  const wideHeader = useSyncExternalStore(subscribeWideHeader, getWideHeaderSnapshot);
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const showToolTips = headerToolsIconOnly || !wideHeader;
+  const { message } = AntdApp.useApp();
 
   return (
     <header className="shrink-0 min-w-0 text-text bg-header border-b border-b-solid border-divider">
-      <div className="flex flex-wrap items-center gap-20px min-h-56px py-8px px-16px [@media(max-width:1200px)]:gap-12px [@media(max-width:1200px)]:px-12px">
-        <div className="flex shrink-0 items-center gap-10px pr-20px border-r border-r-solid border-divider [@media(max-width:1200px)]:pr-12px">
-          <svg className="w-28px h-28px" viewBox="0 0 32 32" aria-hidden="true">
-            <path d="M3 11 14 7v21L3 25Z" fill="var(--color-logo-red)" />
-            <path d="m14 2 9 4v24l-9-4Z" fill="var(--color-logo-blue)" />
-            <path d="m23 6 7-3v19l-7 4Z" fill="var(--color-logo-cyan)" />
-          </svg>
-          <h1 className="m-0 text-17px font-600 leading-24px tracking-0.2px whitespace-nowrap">
-            灵动参数管家
-          </h1>
-        </div>
+      <div className="flex items-center gap-4 min-h-56px py-2 px-4">
+        <h1 className="m-0 shrink-0 pr-4">
+          <Button
+            type="text"
+            htmlType="button"
+            onClick={() => navigate('/')}
+            aria-label="灵动参数管家，返回主页"
+            title="返回主页"
+            className="h-40px! px-1! gap-2.5! text-text! layout-focus motion-reduce:transition-none!"
+          >
+            <svg className="w-28px h-28px" viewBox="0 0 32 32" aria-hidden="true">
+              <path d="M3 11 14 7v21L3 25Z" fill="var(--color-logo-red)" />
+              <path d="m14 2 9 4v24l-9-4Z" fill="var(--color-logo-blue)" />
+              <path d="m23 6 7-3v19l-7 4Z" fill="var(--color-logo-cyan)" />
+            </svg>
+            <span className="text-17px font-600 leading-24px tracking-0.2px whitespace-nowrap">
+              灵动参数管家
+            </span>
+          </Button>
+        </h1>
 
-        <div className="flex flex-1 flex-wrap items-center gap-12px min-w-0 [@media(max-width:700px)]:order-3 [@media(max-width:700px)]:basis-full">
+        <div className="flex flex-1 items-center gap-3 min-w-0">
           <nav
             aria-label="当前工作上下文"
-            className="flex flex-[0_1_auto] items-center gap-8px min-w-0 [@media(max-width:1200px)]:gap-4px"
+            className="flex flex-[0_1_auto] items-center gap-2 min-w-0"
           >
             {workspace ? (
               <>
-                <Button
-                  type="text"
-                  onClick={() => navigate('/')}
-                  aria-label="返回我的系统"
-                  title="返回我的系统"
-                  icon={<span className="i-lucide-arrow-left w-16px h-16px" aria-hidden="true" />}
-                />
                 <Dropdown
                   trigger={['click']}
                   menu={{
@@ -71,7 +85,7 @@ export function AppHeader() {
                       ),
                   }}
                 >
-                  <Button type="text" aria-label="切换参数平台" className="px-8px! text-13px!">
+                  <Button type="text" aria-label="切换参数平台" className="px-2! text-13px!">
                     {workspace.platform === 'database' ? '数据库参数' : '应用参数'}
                     <span className="i-lucide-chevron-down w-12px h-12px" aria-hidden="true" />
                   </Button>
@@ -90,7 +104,7 @@ export function AppHeader() {
                   <Button
                     aria-label="切换系统"
                     title={`${workspace.system.systemName} · ${workspace.system.systemChineseName}`}
-                    className="min-w-0 max-w-300px [@media(max-width:1200px)]:max-w-190px px-8px! text-13px!"
+                    className="min-w-0 max-w-190px wide:max-w-300px px-2! text-13px!"
                   >
                     <span className="truncate">
                       {workspace.system.systemName} · {workspace.system.systemChineseName}
@@ -109,78 +123,103 @@ export function AppHeader() {
 
           <nav
             aria-label="快捷工具"
-            className="flex flex-wrap items-center gap-4px ml-auto py-2px pl-12px border-l border-l-solid border-divider [@media(max-width:700px)]:hidden"
+            className={`flex items-center ml-auto py-0.5 pl-3 ${showToolTips ? 'gap-1.5' : 'gap-1'}`}
           >
             {headerTools.map((tool) => (
               <Popover
                 key={tool.label}
                 title={tool.label}
-                content={
-                  <div className="max-w-[min(260px,calc(100vw-48px))] text-13px leading-22px">
-                    {tool.content}
-                  </div>
-                }
+                content={<div className="max-w-260px text-13px leading-22px">{tool.content}</div>}
                 trigger="click"
                 placement="bottomRight"
+                open={activeTool === tool.label}
+                onOpenChange={(open) => setActiveTool(open ? tool.label : null)}
               >
-                <Button
-                  type="text"
-                  htmlType="button"
-                  danger={'danger' in tool && tool.danger}
-                  icon={<span className={`${tool.icon} w-15px h-15px`} aria-hidden="true" />}
-                  aria-label={tool.label}
-                  title={tool.label}
-                  className="shrink-0 text-12px! gap-6px! px-8px! [@media(max-width:1600px)]:w-32px [@media(max-width:1600px)]:px-0! [@media(max-width:1600px)]:gap-0! motion-reduce:transition-none!"
+                <Tooltip
+                  title={showToolTips ? tool.label : undefined}
+                  placement="bottom"
+                  trigger={['hover', 'focus']}
+                  open={activeTool === tool.label ? false : undefined}
                 >
-                  <span className="[@media(max-width:1600px)]:hidden">{tool.label}</span>
-                </Button>
+                  <Button
+                    type="text"
+                    htmlType="button"
+                    danger={'danger' in tool && tool.danger}
+                    icon={
+                      <span
+                        className={`${tool.icon} ${headerToolsIconOnly ? 'w-18px h-18px' : 'w-15px h-15px'}`}
+                        aria-hidden="true"
+                      />
+                    }
+                    aria-label={tool.label}
+                    className={`shrink-0 text-12px! gap-0! motion-reduce:transition-none! ${showToolTips ? 'w-44px! h-36px! px-3! rounded-8px!' : 'w-32px px-0! wide:w-auto wide:px-2! wide:gap-1.5!'}`}
+                  >
+                    {!headerToolsIconOnly && (
+                      <span className="hidden wide:inline">{tool.label}</span>
+                    )}
+                  </Button>
+                </Tooltip>
               </Popover>
             ))}
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center ml-auto">
-          <Popover
-            title="当前用户"
-            content={
-              <div className="flex flex-col gap-8px">
-                <span className="workspace-muted">暂无个人资料</span>
-                <Button onClick={() => setSettingsOpen(true)}>用户设置</Button>
-              </div>
-            }
-            trigger="click"
+        <div className="flex shrink-0 items-center pl-3">
+          <Dropdown
+            trigger={['click']}
             placement="bottomRight"
+            popupRender={(menu) => (
+              <div className="min-w-200px rounded-6px bg-surface shadow-lg overflow-hidden">
+                <div className="px-4 py-3 border-b border-b-solid border-divider">
+                  <div className="text-14px font-600 text-text">伟业</div>
+                  <div className="mt-1 text-12px text-text-secondary">当前用户 · 暂无个人资料</div>
+                </div>
+                {menu}
+              </div>
+            )}
+            menu={{
+              selectable: false,
+              className:
+                'shadow-none! rounded-0! p-1.5! [&_.ant-dropdown-menu-item]:min-h-36px [&_.ant-dropdown-menu-item]:px-2.5! [&_.ant-dropdown-menu-item]:gap-2!',
+              items: [
+                {
+                  key: 'settings',
+                  label: '用户配置',
+                  icon: <span className="i-lucide-settings-2 w-16px h-16px" aria-hidden="true" />,
+                },
+                { type: 'divider' },
+                {
+                  key: 'logout',
+                  label: '退出登录',
+                  icon: <span className="i-lucide-log-out w-16px h-16px" aria-hidden="true" />,
+                },
+              ],
+              onClick: ({ key }) => {
+                if (key === 'settings') dispatch(openUserSettings());
+                if (key === 'logout') {
+                  void message.info('当前为演示环境，暂未接入登录服务');
+                }
+              },
+            }}
           >
             <Button
               type="text"
               htmlType="button"
-              aria-label="打开用户信息：伟业"
-              className="h-40px! px-6px! gap-6px! motion-reduce:transition-none!"
+              aria-label="打开用户菜单：伟业"
+              className="h-40px! w-auto! min-w-56px! px-3! rounded-10px! hover:bg-watermark! active:bg-hover! layout-focus motion-reduce:transition-none!"
               icon={
                 <Avatar
                   size={30}
-                  style={{ backgroundColor: token.colorPrimaryBg, color: token.colorPrimaryText }}
+                  aria-hidden="true"
+                  className="bg-hover! text-accent-text! text-14px! font-500"
                 >
-                  伟业
+                  伟
                 </Avatar>
               }
-            >
-              <span
-                className="i-lucide-chevron-down shrink-0 w-12px h-12px opacity-65"
-                aria-hidden="true"
-              />
-            </Button>
-          </Popover>
+            />
+          </Dropdown>
         </div>
       </div>
-      <Modal
-        title="用户设置"
-        open={settingsOpen}
-        onCancel={() => setSettingsOpen(false)}
-        footer={<Button onClick={() => setSettingsOpen(false)}>关闭</Button>}
-      >
-        <LayoutSettings />
-      </Modal>
     </header>
   );
 }

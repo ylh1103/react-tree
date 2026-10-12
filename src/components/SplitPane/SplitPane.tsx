@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from 'antd';
 import { dragResize } from './dragResize';
@@ -11,6 +11,10 @@ export interface SplitPaneProps {
   sidebarLabel?: string;
   title?: string;
   titleExtra?: ReactNode;
+  /** 标题栏与主体共用面板，不显示分隔线或间距。 */
+  integratedHeader?: boolean;
+  /** 加载占位只读取布局，不注册交互或写入偏好。 */
+  readOnly?: boolean;
   defaultWidth?: number;
   minWidth?: number;
   maxWidth?: number;
@@ -26,6 +30,8 @@ export function SplitPane({
   sidebarLabel = '侧边栏',
   title,
   titleExtra,
+  integratedHeader = false,
+  readOnly = false,
   defaultWidth = 340,
   minWidth = 260,
   maxWidth = 640,
@@ -39,7 +45,10 @@ export function SplitPane({
   const sidebarId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const separatorRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragResizeState | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const pendingLayoutRef = useRef<{ width: number; visible: boolean } | null>(null);
   const [availableWidth, setAvailableWidth] = useState<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -48,6 +57,7 @@ export function SplitPane({
   useEffect(
     () => () => {
       if (hoverTimerRef.current !== null) clearTimeout(hoverTimerRef.current);
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     },
     [],
   );
@@ -74,6 +84,28 @@ export function SplitPane({
       return fallback;
     }
   });
+  const flushDragLayout = useCallback(() => {
+    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    const next = pendingLayoutRef.current;
+    pendingLayoutRef.current = null;
+    if (!next) return;
+    setLayout((previous) =>
+      previous.width === next.width && previous.visible === next.visible ? previous : next,
+    );
+  }, []);
+
+  const endDrag = useCallback(() => {
+    // 松开或切换侧栏时提交末帧，避免异步更新覆盖后续操作。
+    flushDragLayout();
+    const drag = dragRef.current;
+    dragRef.current = null;
+    const separator = separatorRef.current;
+    if (drag && separator?.hasPointerCapture(drag.pointerId)) {
+      separator.releasePointerCapture(drag.pointerId);
+    }
+    setDragging(false);
+  }, [flushDragLayout]);
   // 优先给右侧内容留出空间，小容器中允许侧栏小于配置的最小宽度。
   const upper = Math.max(
     0,
@@ -95,15 +127,16 @@ export function SplitPane({
   }, []);
 
   useEffect(() => {
-    if (!storageKey || dragging) return;
+    if (!storageKey || dragging || readOnly) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(layout));
     } catch {
       /* 禁用存储时仍可使用面板。 */
     }
-  }, [layout, dragging, storageKey]);
+  }, [layout, dragging, storageKey, readOnly]);
 
   useEffect(() => {
+    if (readOnly) return;
     const container = containerRef.current;
     if (!container) return;
     const ownerDocument = container.ownerDocument;
@@ -141,23 +174,28 @@ export function SplitPane({
         );
       if (activePane !== container || !container?.getClientRects().length) return;
       event.preventDefault();
-      dragRef.current = null;
-      setDragging(false);
+      endDrag();
       toggleRef.current?.focus();
       setLayout((previous) => ({ ...previous, visible: !previous.visible }));
     }
     ownerDocument.addEventListener('keydown', onKeyDown);
     return () => ownerDocument.removeEventListener('keydown', onKeyDown);
-  }, [upper]);
+  }, [upper, endDrag, readOnly]);
 
   function resize(next: number) {
     setLayout((previous) => ({ ...previous, width: Math.max(lower, Math.min(upper, next)) }));
   }
-  function endDrag() {
-    dragRef.current = null;
-    setDragging(false);
+  function updateDrag(x: number) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const next = dragResize(drag, x, lower, upper);
+    pendingLayoutRef.current = { width: next.width, visible: next.visible };
+    if (frameRef.current === null) {
+      frameRef.current = requestAnimationFrame(flushDragLayout);
+    }
   }
   function toggle() {
+    if (readOnly) return;
     endDrag();
     toggleRef.current?.focus();
     setLayout((previous) => ({ ...previous, visible: !previous.visible }));
@@ -180,9 +218,10 @@ export function SplitPane({
         {sidebar}
       </aside>
       <div
-        className={`layout-focus relative z-1 cursor-ew-resize touch-none transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_4px] rounded-sm bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
+        ref={separatorRef}
+        className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_var(--layout-gap)] rounded-sm bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
         role="separator"
-        tabIndex={0}
+        tabIndex={readOnly ? -1 : 0}
         aria-label={`调整${sidebarLabel}宽度`}
         aria-orientation="vertical"
         aria-controls={sidebarId}
@@ -190,10 +229,14 @@ export function SplitPane({
         aria-valuemax={Math.round(upper)}
         aria-valuenow={expanded ? Math.round(width) : 0}
         aria-valuetext={expanded ? `${Math.round(width)} 像素` : '侧边栏已隐藏'}
-        aria-disabled={upper === 0}
-        title="拖拽调整宽度，向左拖到底收起，向右拖动展开；双击恢复默认，Enter 切换侧栏"
+        aria-disabled={readOnly || upper === 0}
+        title={
+          readOnly
+            ? '加载中，布局暂不可调整'
+            : '拖拽调整宽度，向左拖到底收起，向右拖动展开；双击恢复默认，Enter 切换侧栏'
+        }
         onPointerEnter={(event) => {
-          if (event.pointerType === 'touch' || upper === 0) return;
+          if (readOnly || event.pointerType === 'touch' || upper === 0) return;
           clearHover();
           if (dragRef.current) {
             setHovered(true);
@@ -209,7 +252,7 @@ export function SplitPane({
         }}
         onPointerLeave={clearHover}
         onPointerDown={(event) => {
-          if (event.button !== 0 || !event.isPrimary || upper === 0) return;
+          if (readOnly || event.button !== 0 || !event.isPrimary || upper === 0) return;
           clearHover();
           event.preventDefault();
           event.currentTarget.focus();
@@ -225,32 +268,37 @@ export function SplitPane({
         onPointerMove={(event) => {
           const drag = dragRef.current;
           if (drag?.pointerId !== event.pointerId) return;
-          const next = dragResize(drag, event.clientX, lower, upper);
-          dragRef.current = next.drag;
-          setLayout({ width: next.width, visible: next.visible });
+          updateDrag(event.clientX);
         }}
         onPointerUp={(event) => {
+          if (dragRef.current?.pointerId !== event.pointerId) return;
+          updateDrag(event.clientX);
           endDrag();
-          if (event.currentTarget.hasPointerCapture(event.pointerId))
-            event.currentTarget.releasePointerCapture(event.pointerId);
         }}
-        onPointerCancel={() => {
+        onPointerCancel={(event) => {
+          if (dragRef.current?.pointerId !== event.pointerId) return;
           clearHover();
           endDrag();
         }}
-        onLostPointerCapture={endDrag}
+        onLostPointerCapture={(event) => {
+          if (dragRef.current?.pointerId === event.pointerId) endDrag();
+        }}
         onDoubleClick={() => {
+          if (readOnly) return;
+          endDrag();
           if (upper > 0)
             setLayout({ width: Math.max(lower, Math.min(upper, defaultWidth)), visible: true });
         }}
         onKeyDown={(event) => {
-          if (upper === 0) return;
+          if (readOnly || upper === 0) return;
           if (event.key === 'Enter') {
             event.preventDefault();
+            endDrag();
             setLayout((previous) => ({ ...previous, visible: !previous.visible }));
             return;
           }
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          endDrag();
           if (!expanded) {
             event.preventDefault();
             if (event.key === 'ArrowRight' || event.key === 'End') {
@@ -269,17 +317,25 @@ export function SplitPane({
         }}
       />
       <section
-        className={`flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden ${compact ? 'bg-surface rounded-0' : 'bg-canvas gap-4px'}`}
+        className={`flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden ${integratedHeader ? (compact ? 'bg-surface rounded-0' : 'workspace-panel') : `gap-layout ${compact ? 'bg-surface rounded-0' : 'bg-canvas'}`}`}
         aria-label="页面内容"
       >
-        <div className={compact ? 'workspace-titlebar' : 'workspace-titlebar-detached'}>
+        <div
+          className={
+            integratedHeader
+              ? 'workspace-titlebar-layout'
+              : compact
+                ? 'workspace-titlebar'
+                : 'workspace-titlebar-detached'
+          }
+        >
           <div className="workspace-title-identity">
             <Button
               ref={toggleRef}
               type="text"
               htmlType="button"
               onClick={toggle}
-              disabled={upper === 0}
+              disabled={readOnly || upper === 0}
               aria-controls={sidebarId}
               aria-expanded={expanded}
               aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
@@ -299,7 +355,11 @@ export function SplitPane({
           </div>
           {titleExtra}
         </div>
-        <div className={`layout-scroll ${compact ? '' : 'rounded-8px bg-surface'}`}>{children}</div>
+        <div
+          className={`layout-scroll ${compact || integratedHeader ? '' : 'rounded-8px bg-surface'}`}
+        >
+          {children}
+        </div>
       </section>
     </div>
   );

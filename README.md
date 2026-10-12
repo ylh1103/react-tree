@@ -2,7 +2,7 @@
 
 ## 开发
 
-全局配色维护于 `src/styles/theme.ts`，直接使用 Ant Design 默认算法和蓝色色阶，不覆盖颜色 token。入口将 `theme.getDesignToken(appTheme)` 的配色写入 CSS 变量，UnoCSS 与 Ant Design 共用同一套默认颜色；深色导航和品牌 Logo 保留各自的色彩。调整主题时统一修改该文件。
+全局配色维护于 `src/styles/theme.ts`，浅色使用 Ant Design 默认算法，暗色使用暗色算法与石墨灰表面 token，背景、内容面板和弹层逐级提亮，导航背景复用同一灰阶，激活态与 Ant Design 主按钮共用主色 token，悬停和按下使用主色深色阶。根据用户配置将对应配色写入根节点 CSS 变量，UnoCSS 与 Ant Design 组件及弹层同步切换主题；深色导航和品牌 Logo 保留各自的色彩。调整主题时统一修改该文件。
 
 ```sh
 pnpm install
@@ -16,7 +16,7 @@ pnpm build
 - `/systems/:systemName` 跳转至该系统的 `overview`。应用参数页面为 `overview`、`application/:appName?`、`params`、`search`、`inspect`、`exception`、`compare`、`apps-comparison`、`setting`。
 - 数据库参数使用 `/systems/:systemName/db/:paramTypeName?`，设置使用 `/systems/:systemName/db/setting`。`setting` 是保留类型名称。
 - 平台切换进入目标默认页；系统切换保留平台、进入目标默认页。系统、平台、菜单和列表选中项均由 URL 驱动。
-- `src/routeManifest.ts` 是可测试的路由结构，`src/router.tsx` 绑定页面；系统共享框架提供工作上下文，应用与数据库平台复用现有导航与 `SplitPane`。
+- `src/router/` 统一管理路由：`application.tsx` 定义应用参数路由，`database.ts` 定义数据参数路由，`routes.tsx` 组装站点与系统布局，`lazy.tsx` 提供页面懒加载，`index.ts` 创建路由实例；两个参数平台复用现有导航与 `SplitPane`。
 - 未实现业务页面显示工作区框架；环境锁定、系统新增、成员管理不在本次范围。
 
 ### 数据接入
@@ -221,3 +221,25 @@ VS Code 请安装工作区推荐的 ESLint 和 Prettier 扩展。
 压力测试可在 `.env.local` 中设置 `VITE_MOCK_APPLICATION_COUNT=50000`，重启开发服务器后生效。该配置仅影响模拟接口，不影响真实接口。
 
 搜索使用延迟结果和按不可变叶子对象缓存的搜索文本；高亮、计数和展开状态使用同一搜索值。拖拽目标及可见子树边界随可见行重建索引，拖拽时直接查询。加载失败会保留已有列表并显示内联重试入口。
+
+## 用户设置 mock 接口
+
+开发与 preview 服务提供 GET /mock-api/user-settings 和 PUT /mock-api/user-settings，返回或接收 { "layoutMode": "default" | "compact", "themeMode": "light" | "dark" | "system" }。接口模拟 350ms 延迟，配置保存在服务端内存：刷新页面仍保留，重启服务后恢复默认。完整用户配置保存在服务端，抽屉开关只保存在当前页签的 Redux。浏览器仅缓存服务端已确认的主题模式，刷新时先为首屏和路由骨架提供同一配色，配置加载完成后以服务端返回为准；跟随系统模式每次启动按当前系统外观解析。
+
+可用 X-Mock-Error: load 或 X-Mock-Error: save 请求头模拟 503 读取或保存失败。读取失败可重试；修改布局或主题立即生效，保存失败会恢复已保存的配置并允许重试。用户设置抽屉和用户设置页面均可切换浅色／暗色／跟随系统模式；旧接口未返回 themeMode 时兼容为浅色。保存请求始终携带完整布局和主题配置，避免相互覆盖。
+
+同源页签通过 BroadcastChannel 接收保存成功通知并在后台重新读取当前用户配置；不支持时回退到 localStorage 的 storage 事件（此同步键只存通知标记，不存配置）。切回页签或从页面缓存恢复时补读配置。读取和保存期间合并通知，旧读取响应不会覆盖后续的本地保存；后台同步失败保留现有配置，下次通知或切回页签时重试。
+
+后续设置 VITE_USER_SETTINGS_API_URL 即可切换到真实用户设置接口，沿用相同的请求格式。生产静态部署需提供该后端接口或配置真实地址。
+
+页面资源加载骨架通过 `src/router/loading.ts` 的 `pageLoading` 注册，骨架组件放在 `src/components/PageSkeleton.tsx` 或独立的页面骨架模块中，并静态导入：
+
+```tsx
+{
+  path: 'example',
+  ...pageLoading(ExampleSkeleton),
+  lazy: lazyPage(() => import('../pages/ExamplePage')),
+}
+```
+
+不传组件时使用通用骨架。首次进入由 `HydrateFallback` 显示骨架；同一布局内导航由 `RouteOutlet` 显示目标页面的骨架。骨架应在页面代码加载之前可用，因此不要放进同一个懒加载模块。页面接口数据加载可复用同一个骨架，由页面自身的查询状态控制。

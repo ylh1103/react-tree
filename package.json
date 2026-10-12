@@ -20,6 +20,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@reduxjs/toolkit": "^2.13.0",
     "@tanstack/react-query": "^5.104.1",
     "@tanstack/react-virtual": "^3.14.9",
     "antd": "^6.6.1",
@@ -27,6 +28,7 @@
     "mockjs": "^1.1.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-redux": "^9.3.0",
     "react-router": "^8.3.1"
   },
   "devDependencies": {

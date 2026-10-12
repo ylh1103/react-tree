@@ -1,15 +1,7 @@
-import {
-  useCallback,
-  useDeferredValue,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
-import { Alert, Button, Input, Spin, theme } from 'antd';
+import { Alert, Button, Input, Spin } from 'antd';
 import type {
   LeafNode,
   DropIndicator,
@@ -79,18 +71,6 @@ export function GroupedListPage({
     save: onSave,
     runNodeAction,
   } = useGroupedList(listId, service);
-  const { token } = theme.useToken();
-  const treeTheme = {
-    '--tree-focus-color': token.colorPrimaryBorder,
-    '--tree-focus-width': `${token.lineWidthFocus}px`,
-    '--tree-focus-radius': `${token.borderRadius}px`,
-    '--accent': token.colorPrimary,
-    '--accent-hover': token.colorPrimaryHover,
-    '--accent-border': token.colorPrimaryBorder,
-    '--accent-bg': token.colorPrimaryBg,
-    '--accent-bg-hover': token.colorPrimaryBgHover,
-    '--accent-text': token.colorPrimaryText,
-  } as CSSProperties;
   const [typeFilter, setTypeFilter] = useState<'all' | '0' | '1'>('all');
   const matchesType = useCallback(
     (node: LeafNode) => node.data[config.typeField] === typeFilter,
@@ -286,13 +266,12 @@ export function GroupedListPage({
 
   return (
     <section
-      className={`grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface overflow-hidden ${embedded ? 'w-full' : 'w-[340px] border border-solid border-[#edf0f2] rounded-[6px] max-[400px]:w-full'}`}
-      style={treeTheme}
+      className={`grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface overflow-hidden ${embedded ? 'w-full' : 'w-[340px] border border-solid border-tree-panel-border rounded-[6px]'}`}
       aria-busy={disabled || loading}
     >
       {error && (
         <Alert
-          type="error"
+          type={ready ? 'warning' : 'error'}
           showIcon
           title={ready ? '刷新失败，当前显示上次加载的数据' : '列表加载失败'}
           description={error.message}
@@ -335,7 +314,7 @@ export function GroupedListPage({
               cancel: handleCancel,
             }}
           />
-          <div className="flex items-center gap-2 px-5 pb-3.5 bg-white">
+          <div className="flex items-center gap-2 px-5 pb-3.5 bg-surface">
             <Input.Search
               placeholder={`请输入${config.label}名称或描述`}
               aria-label={`请输入${config.label}名称或描述`}
@@ -353,7 +332,7 @@ export function GroupedListPage({
           >
             {flat.length === 0 && (
               <div
-                className="tree-empty px-4 py-10 text-center text-[13px] text-[#75838d]"
+                className="tree-empty px-4 py-10 text-center text-[13px] text-tree-empty"
                 role="status"
               >
                 {normalizedSearchQuery || filterLeaf ? '未找到匹配的结果' : `暂无${config.label}`}
@@ -423,7 +402,7 @@ export function GroupedListPage({
       )}
       {loading && (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-white/65"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-tree-loading-bg"
           role="status"
           aria-label={`正在加载${config.label}列表`}
         >
@@ -472,7 +451,7 @@ function TreeDragPreview({
       {activeDragNode ? (
         <div
           aria-hidden="true"
-          className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-[5px] bg-[#ffffffe6] text-[#536873] shadow-[0_2px_6px_#2038460d] text-[12px] pointer-events-none select-none"
+          className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-[5px] bg-tree-preview-bg text-tree-preview-text shadow-[0_2px_6px_var(--color-tree-preview-shadow)] text-[12px] pointer-events-none select-none"
         >
           <div className="tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)] px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-[5px] text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2 [overflow-wrap:anywhere] pointer-events-none">
             {dropDescription}
@@ -488,7 +467,7 @@ function TreeDragPreview({
             {activeDragNode.title || '未命名分组'}
           </span>
           {activeDragNode.type === 'branch' && (
-            <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-[3px] bg-[#edf3f5] text-[#70838c] text-[10px] leading-4 whitespace-nowrap tabular-nums">
+            <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-[3px] bg-tree-preview-count-bg text-tree-preview-count-text text-[10px] leading-4 whitespace-nowrap tabular-nums">
               {activeDragNode.children.length} 项
             </span>
           )}

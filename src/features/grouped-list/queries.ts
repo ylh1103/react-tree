@@ -1,10 +1,17 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
-import type { GroupedListService } from './types';
+import type { GroupedListService, ListNode } from './types';
+import { routeQueryMountOptions } from '../../lib/routeQuery.ts';
 
 export type GroupedListId = 'applications' | 'parameters' | `applications:${string}`;
 
 export const applicationListId = (systemName: string): GroupedListId =>
   `applications:${systemName}`;
+
+export function hasApplication(nodes: ListNode[], name: string): boolean {
+  return nodes.some((node) =>
+    node.children ? hasApplication(node.children, name) : node.key === name,
+  );
+}
 
 export const groupedListKeys = {
   list: (id: GroupedListId) => ['grouped-list', id] as const,
@@ -13,6 +20,7 @@ export const groupedListKeys = {
 
 export function groupedListOptions(id: GroupedListId, service: GroupedListService) {
   return queryOptions({
+    ...routeQueryMountOptions,
     queryKey: groupedListKeys.list(id),
     queryFn: ({ signal }) => service.load(signal),
   });

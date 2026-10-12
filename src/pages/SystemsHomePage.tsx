@@ -26,11 +26,11 @@ function SystemRow({ system }: { system: SystemInfo }) {
       .join('、') || '暂未配置';
   return (
     <article
-      className="system-row-grid px-20px py-18px lg:px-24px border-b border-b-solid border-divider last:border-b-0 hover:bg-sidebar transition-colors duration-150 motion-reduce:transition-none"
+      className="system-row-grid px-6 py-4.5 border-b border-b-solid border-divider last:border-b-0 hover:bg-sidebar transition-colors duration-150 motion-reduce:transition-none"
       aria-label={`${system.systemName} 系统`}
     >
-      <div className="col-span-2 lg:col-span-1 min-w-0">
-        <div className="flex flex-wrap items-baseline gap-x-12px gap-y-3px">
+      <div className="col-span-1 min-w-0">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.75">
           <h2
             className="m-0 text-17px font-600 leading-24px min-w-0 truncate tracking-0.1px"
             title={system.systemName}
@@ -45,17 +45,15 @@ function SystemRow({ system }: { system: SystemInfo }) {
           </span>
         </div>
         <Tooltip title={system.systemChineseName}>
-          <p className="m-0 mt-4px text-text-secondary text-13px leading-20px truncate">
+          <p className="m-0 mt-1 text-text-secondary text-13px leading-20px truncate">
             {system.systemChineseName || '暂无中文名称'}
           </p>
         </Tooltip>
         <Tooltip title={description}>
-          <p className="m-0 mt-4px text-text-muted text-12px leading-20px truncate">
-            {description}
-          </p>
+          <p className="m-0 mt-1 text-text-muted text-12px leading-20px truncate">{description}</p>
         </Tooltip>
       </div>
-      <div className="flex items-center lg:self-center">
+      <div className="flex items-center self-center">
         <Tag
           className="m-0! text-12px! leading-22px!"
           color={system.role === 'R' ? 'processing' : undefined}
@@ -64,15 +62,11 @@ function SystemRow({ system }: { system: SystemInfo }) {
         </Tag>
       </div>
       <Tooltip title={system.systemCharges || '暂未配置'}>
-        <div className="flex items-center gap-6px min-w-0 lg:self-center text-12px text-text-secondary">
-          <span
-            className="i-lucide-users-round w-14px h-14px text-text-muted shrink-0 lg:hidden"
-            aria-hidden="true"
-          />
+        <div className="flex items-center gap-1.5 min-w-0 self-center text-12px text-text-secondary">
           <span className="truncate">{charges}</span>
         </div>
       </Tooltip>
-      <div className="col-span-2 lg:col-span-1 grid grid-cols-2 gap-8px lg:self-center">
+      <div className="col-span-1 grid grid-cols-2 gap-2 self-center">
         <Button
           type="default"
           className="system-entry"
@@ -117,20 +111,20 @@ export default function SystemsHomePage() {
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
 
   return (
-    <section className="max-w-1600px mx-auto p-16px md:p-28px xl:p-32px">
-      <div className="mb-24px">
-        <div className="flex items-center gap-10px">
+    <section className="max-w-1600px mx-auto p-8">
+      <div className="mb-6">
+        <div className="flex items-center gap-2.5">
           <h1 className="m-0 text-24px font-600 leading-32px">我的系统</h1>
           <span className="text-text-muted text-13px tabular-nums">
             {query.data ? `${systems.length} 个系统` : '—'}
           </span>
         </div>
-        <p className="m-0 mt-6px text-text-muted text-13px leading-22px">
+        <p className="m-0 mt-1.5 text-text-muted text-13px leading-22px">
           选择系统，进入应用参数或数据库参数工作区
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-12px mb-20px">
-        <label className="flex items-center gap-8px text-13px flex-1 min-w-0 w-full md:w-auto md:min-w-260px md:max-w-440px [@media(max-width:767px)]:basis-full">
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <label className="flex items-center gap-2 text-13px flex-1 min-w-260px max-w-440px">
           <span className="shrink-0">筛选系统</span>
           <Input
             allowClear
@@ -146,7 +140,7 @@ export default function SystemsHomePage() {
             }
           />
         </label>
-        <div className="flex items-center gap-8px text-13px">
+        <div className="flex items-center gap-2 text-13px">
           <span>角色</span>
           <Select
             allowClear
@@ -194,7 +188,7 @@ export default function SystemsHomePage() {
           showIcon
           title="系统列表加载失败"
           description={query.error.message}
-          className="mb-20px"
+          className="mb-5"
           action={<Button onClick={() => void query.refetch()}>重试</Button>}
         />
       )}
@@ -209,7 +203,7 @@ export default function SystemsHomePage() {
       ) : visible.length ? (
         <div className="workspace-panel overflow-hidden">
           <div
-            className="system-row-grid hidden! lg:grid! px-24px py-12px border-b border-b-solid border-divider bg-sidebar text-12px text-text-muted"
+            className="system-row-grid px-6 py-3 border-b border-b-solid border-divider bg-sidebar text-12px text-text-muted"
             aria-hidden="true"
           >
             <span>系统信息</span>
@@ -223,13 +217,13 @@ export default function SystemsHomePage() {
         </div>
       ) : (
         !query.error && (
-          <div className="workspace-panel py-64px">
+          <div className="workspace-panel py-16">
             <Empty description={systems.length ? '没有符合筛选条件的系统' : '暂无可访问的系统'} />
           </div>
         )
       )}
       {filtered.length > 0 && (
-        <div className="flex justify-end mt-24px">
+        <div className="flex justify-end mt-6">
           <Pagination
             current={current}
             pageSize={pageSize}

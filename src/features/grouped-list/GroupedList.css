@@ -20,10 +20,10 @@
 }
 .application-type-filter .ant-segmented-item-selected {
   color: var(--accent-text);
-  background: #fff;
+  background: var(--color-surface);
   font-weight: 600;
   box-shadow:
-    0 1px 4px #20384612,
+    0 1px 4px var(--color-tree-filter-shadow),
     inset 0 0 0 1px var(--accent-border);
 }
 .application-type-filter .ant-segmented-item:focus-within {
@@ -79,7 +79,7 @@
 
 /* 定位提示贴合节点内容，保留缩进、展开箭头及行间留白。 */
 .virtual-tree .tree-node-card[data-locate-highlighted] {
-  outline: 2px solid #f5222d;
+  outline: 2px solid var(--color-tree-locate);
   outline-offset: 1px;
 }
 
@@ -159,39 +159,39 @@
 
 .virtual-tree .tree-node-card[data-has-badge] {
   position: relative;
-  --leaf-type-color: #8c959f;
-  --leaf-type-text: #59636e;
-  --leaf-type-bg: #f0f2f4;
+  --leaf-type-color: var(--color-leaf-default);
+  --leaf-type-text: var(--color-leaf-default-text);
+  --leaf-type-bg: var(--color-leaf-default-bg);
 }
 
 /* 公共应用沿用相同的交互规则，仅将节点内的强调色切换为角标对应的橙色。 */
 .virtual-tree .tree-row[data-leaf-type-color='purple'] {
-  --accent: #fa8c16;
-  --accent-hover: #ffa940;
-  --accent-border: #ffd591;
-  --accent-bg: #fff7e6;
-  --accent-bg-hover: #ffe7ba;
-  --accent-text: #d46b08;
+  --accent: var(--color-leaf-public);
+  --accent-hover: var(--color-leaf-public-hover);
+  --accent-border: var(--color-leaf-public-border);
+  --accent-bg: var(--color-leaf-public-bg);
+  --accent-bg-hover: var(--color-leaf-public-bg-hover);
+  --accent-text: var(--color-leaf-public-text);
 }
 .virtual-tree .tree-row[data-leaf-type-color='purple'] .tree-node-card {
   --leaf-type-color: var(--accent);
-  --leaf-type-text: #fff;
+  --leaf-type-text: var(--color-on-accent);
   --leaf-type-bg: var(--leaf-type-color);
 }
 
 /* 增量维护复用应用节点的交互规则，使用自身的青色主题。 */
 .virtual-tree .tree-row[data-leaf-type-color='cyan'] {
-  --accent: #13c2c2;
-  --accent-hover: #36cfc9;
-  --accent-border: #87e8de;
-  --accent-bg: #e6fffb;
-  --accent-bg-hover: #b5f5ec;
-  --accent-text: #087f8c;
+  --accent: var(--color-leaf-incremental);
+  --accent-hover: var(--color-leaf-incremental-hover);
+  --accent-border: var(--color-leaf-incremental-border);
+  --accent-bg: var(--color-leaf-incremental-bg);
+  --accent-bg-hover: var(--color-leaf-incremental-bg-hover);
+  --accent-text: var(--color-leaf-incremental-text);
 }
 
 .virtual-tree .tree-row[data-leaf-type-color='cyan'] .tree-node-card {
   --leaf-type-color: var(--accent);
-  --leaf-type-text: #fff;
+  --leaf-type-text: var(--color-on-accent);
   --leaf-type-bg: var(--leaf-type-color);
 }
 
@@ -217,6 +217,6 @@
 .virtual-tree .tree-switcher-button:focus-visible,
 .virtual-tree .tree-node-actions .ant-btn:focus-visible,
 .virtual-tree .application-settings-button.ant-btn:focus-visible {
-  outline: var(--tree-focus-width, 3px) solid var(--tree-focus-color, #91caff);
+  outline: var(--tree-focus-width, 3px) solid var(--tree-focus-color);
   outline-offset: 1px;
 }

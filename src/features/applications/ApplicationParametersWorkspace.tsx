@@ -16,6 +16,72 @@ interface EnvironmentSelectionProps {
   onChange: (keys: string[]) => void;
 }
 
+export function ApplicationParametersEmptyState({
+  applicationCount,
+  compact,
+  onOpenList,
+  onRefresh,
+  refreshing,
+}: {
+  applicationCount: number;
+  compact: boolean;
+  onOpenList: () => void;
+  onRefresh: () => void;
+  refreshing: boolean;
+}) {
+  const hasApplications = applicationCount > 0;
+  return (
+    <div className="w-full max-w-440px text-center">
+      <Empty
+        className="m-0! [&_.ant-empty-image]:h-auto! [&_.ant-empty-image]:mb-6!"
+        image={
+          <div
+            className="relative mx-auto grid h-80px w-80px place-items-center rounded-20px border border-solid border-accent-border bg-hover"
+            aria-hidden="true"
+          >
+            <span className="i-lucide-panels-top-left h-32px w-32px text-accent" />
+            <span className="absolute -bottom-2 -right-2 grid h-30px w-30px place-items-center rounded-full border-3 border-solid border-surface bg-accent">
+              <span className="i-lucide-mouse-pointer-2 h-14px w-14px text-on-accent" />
+            </span>
+          </div>
+        }
+        description={
+          <div>
+            <h3 className="m-0 text-20px font-600 leading-30px text-text">
+              {hasApplications ? '选择应用，查看参数' : '当前系统暂无应用'}
+            </h3>
+            <p className="m-0 mt-3 text-14px leading-24px text-text-secondary">
+              {hasApplications
+                ? compact
+                  ? '打开应用列表，选择一个应用后查看各环境的参数配置。'
+                  : '从左侧应用列表中选择一个应用，查看各环境的参数配置。'
+                : '应用接入后，可在此查看参数配置。刷新列表可获取最新应用。'}
+            </p>
+          </div>
+        }
+      >
+        {compact ? (
+          <Button
+            type="primary"
+            onClick={onOpenList}
+            icon={<span className="i-lucide-panel-left-open h-14px w-14px" aria-hidden="true" />}
+          >
+            打开应用列表
+          </Button>
+        ) : !hasApplications ? (
+          <Button
+            onClick={onRefresh}
+            loading={refreshing}
+            icon={<span className="i-lucide-refresh-cw h-14px w-14px" aria-hidden="true" />}
+          >
+            刷新应用列表
+          </Button>
+        ) : null}
+      </Empty>
+    </div>
+  );
+}
+
 export function ApplicationParametersToolbar({
   selectedEnvironments,
   onChange,
@@ -25,8 +91,8 @@ export function ApplicationParametersToolbar({
   ).length;
   const allSelected = selectedCount === previewEnvironments.length;
   return (
-    <div className="grid min-w-0 flex-1 basis-520px grid-cols-1 items-center gap-x-16px gap-y-10px md:grid-cols-[minmax(0,1fr)_auto]">
-      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-12px">
+    <div className="grid min-w-0 flex-1 basis-520px grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5">
+      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
         <Checkbox
           className="m-0! whitespace-nowrap text-13px!"
           checked={allSelected}
@@ -39,13 +105,13 @@ export function ApplicationParametersToolbar({
         </Checkbox>
         <Checkbox.Group
           aria-label="选择显示的应用环境"
-          className="flex flex-wrap gap-x-4px gap-y-6px [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-4px [&_.ant-checkbox-wrapper]:px-7px [&_.ant-checkbox-wrapper]:py-4px [&_.ant-checkbox-wrapper]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-hover [&_.ant-checkbox-wrapper-checked]:text-accent [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px [&_.ant-checkbox-wrapper]:transition-colors [&_.ant-checkbox-wrapper]:duration-150 motion-reduce:[&_.ant-checkbox-wrapper]:transition-none [&_.ant-checkbox-wrapper:hover]:bg-hover"
+          className="flex flex-wrap gap-x-1 gap-y-1.5 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-4px [&_.ant-checkbox-wrapper]:px-1.75 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-hover [&_.ant-checkbox-wrapper-checked]:text-accent [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px [&_.ant-checkbox-wrapper]:transition-colors [&_.ant-checkbox-wrapper]:duration-150 motion-reduce:[&_.ant-checkbox-wrapper]:transition-none [&_.ant-checkbox-wrapper:hover]:bg-hover"
           value={selectedEnvironments}
           options={previewEnvironments.map((item) => ({ label: item.key, value: item.key }))}
           onChange={(values) => onChange(values.map(String))}
         />
       </div>
-      <div className="flex shrink-0 items-center justify-self-end gap-8px">
+      <div className="flex shrink-0 items-center justify-self-end gap-2">
         <Tooltip title="参数接入后可进行跨环境比对">
           <Button
             size="small"
@@ -83,21 +149,19 @@ export function ApplicationParametersWorkspace({
     <div className="flex min-w-0 min-h-full flex-col">
       <OverlayHorizontalScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
         {environments.length ? (
-          <div
-            className={`grid min-w-0 flex-1 grid-cols-[minmax(500px,1fr)] md:grid-cols-none md:grid-flow-col md:auto-cols-[minmax(500px,1fr)] ${compact ? '' : 'gap-4px'}`}
-          >
+          <div className="grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(500px,1fr)] gap-layout">
             {environments.map((environment) => (
               <EnvironmentPanel key={environment.key} environment={environment} compact={compact} />
             ))}
           </div>
         ) : (
-          <div className="grid flex-1 place-items-center min-h-320px p-24px bg-surface">
+          <div className="grid flex-1 place-items-center min-h-320px p-6 bg-surface">
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
                 <div className="text-text-secondary">
                   <p className="m-0 text-14px font-500">选择要查看的环境</p>
-                  <p className="m-0 mt-6px text-13px">勾选上方环境，查看应用参数</p>
+                  <p className="m-0 mt-1.5 text-13px">勾选上方环境，查看应用参数</p>
                 </div>
               }
             >
@@ -124,15 +188,15 @@ function EnvironmentPanel({
 }) {
   return (
     <article
-      className={`flex min-w-0 flex-col overflow-hidden ${compact ? 'border-b border-b-solid border-divider last:border-b-0 md:border-b-0 md:border-r md:border-r-solid md:last:border-r-0' : 'workspace-panel'}`}
+      className={`flex min-w-0 flex-col overflow-hidden ${compact ? 'border-r border-r-solid border-divider last:border-r-0' : 'workspace-panel'}`}
       aria-label={`${environment.key} 环境参数配置`}
     >
       <header
         className={`shrink-0 border-b border-b-solid bg-surface ${compact ? 'border-divider' : 'border-border-subtle'}`}
       >
-        <div className="flex items-center justify-between gap-12px px-16px pt-16px pb-12px">
-          <div className="flex min-w-0 items-center gap-10px">
-            <h3 className="m-0 shrink-0 rounded-4px bg-hover px-8px text-accent font-mono text-14px font-600 leading-28px">
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <h3 className="m-0 shrink-0 rounded-4px bg-hover px-2 text-accent font-mono text-14px font-600 leading-28px">
               {environment.key}
             </h3>
             <span className="text-13px text-text-secondary">{environment.name}</span>
@@ -147,9 +211,9 @@ function EnvironmentPanel({
             />
           </Tooltip>
         </div>
-        <div className="flex items-center justify-between gap-12px px-16px pb-12px">
+        <div className="flex items-center justify-between gap-3 px-4 pb-3">
           <span className="text-12px leading-20px text-text-secondary">参数待接入</span>
-          <div className="flex items-center gap-8px">
+          <div className="flex items-center gap-2">
             <Tooltip title="参数接入后可创建配置快照">
               <Button size="small" disabled>
                 快照
@@ -163,9 +227,9 @@ function EnvironmentPanel({
           </div>
         </div>
       </header>
-      <div className="grid flex-1 place-items-center min-h-280px px-24px py-40px bg-surface">
+      <div className="grid flex-1 place-items-center min-h-280px px-6 py-10 bg-surface">
         <Empty
-          className="m-0! max-w-240px [&_.ant-empty-image]:h-28px! [&_.ant-empty-image]:mb-16px!"
+          className="m-0! max-w-240px [&_.ant-empty-image]:h-28px! [&_.ant-empty-image]:mb-4!"
           image={
             <span
               className="i-lucide-sliders-horizontal h-28px w-28px text-text-muted"
@@ -175,7 +239,7 @@ function EnvironmentPanel({
           description={
             <div className="text-text-secondary">
               <p className="m-0 text-14px font-500 leading-22px">{environment.name}参数</p>
-              <p className="m-0 mt-6px text-13px leading-22px">参数数据尚未接入</p>
+              <p className="m-0 mt-1.5 text-13px leading-22px">参数数据尚未接入</p>
             </div>
           }
         />

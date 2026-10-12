@@ -1,5 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 import { requestData } from '../../lib/http';
+import { routeQueryMountOptions } from '../../lib/routeQuery';
 import type { ApplicationItem, ParameterItem } from '../grouped-list/types';
 import type { ParameterType, SystemInfo } from './types';
 
@@ -13,6 +14,7 @@ export async function loadSystems(signal?: AbortSignal): Promise<SystemInfo[]> {
 
 export const systemsOptions = () =>
   queryOptions({
+    ...routeQueryMountOptions,
     queryKey: ['systems', 'mine'],
     queryFn: ({ signal }) => loadSystems(signal),
   });
@@ -36,6 +38,7 @@ export function applicationsOptions(systemName: string) {
 
 export function parameterTypesOptions(systemName: string) {
   return queryOptions({
+    ...routeQueryMountOptions,
     queryKey: ['systems', systemName, 'database-types'],
     queryFn: async ({ signal }): Promise<ParameterType[]> => {
       let items: ParameterItem[];

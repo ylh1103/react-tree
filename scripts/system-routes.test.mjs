@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { matchRoutes } from 'react-router';
-import { routeManifest } from '../src/routeManifest.ts';
+import test, { before, after } from 'node:test';
+import { matchRoutes, createMemoryRouter, RouterProvider, Outlet } from 'react-router';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createServer } from 'vite';
+import { navigationItems, databaseNavigationItems } from '../src/layouts/navigation.ts';
 import {
   applicationPath,
   databasePath,
@@ -11,7 +14,21 @@ import {
 import { filterSystems, isAccessDenied, roleLabel } from '../src/features/systems/model.ts';
 import { mockSystems } from '../src/features/systems/mock.ts';
 
-const match = (path) => matchRoutes(routeManifest, path)?.at(-1);
+let vite;
+let routes;
+before(async () => {
+  vite = await createServer({
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+    optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  ({ routes } = await vite.ssrLoadModule('/src/router/routes.tsx'));
+});
+after(async () => {
+  await vite?.close();
+});
+
+const match = (path) => matchRoutes(routes, path)?.at(-1);
 
 test('系统首页、默认入口及所有应用菜单匹配实际路由', () => {
   assert.equal(match('/').route.id, 'home');
@@ -82,4 +99,339 @@ test('识别请求封装后的 403，网络和其他错误保留重试路径', (
   );
   assert.equal(isAccessDenied(new Error('网络请求失败')), false);
   assert.equal(isAccessDenied({ response: { status: 500 } }), false);
+});
+
+test('导航菜单都对应显式路由，动态页面具有懒加载入口', () => {
+  for (const { to } of navigationItems) {
+    const route = match('/systems/CAC' + to).route;
+    assert.equal(route.id, to.slice(1));
+    assert.equal(typeof route.lazy, 'function');
+    assert.equal(route.Component, undefined);
+    assert.equal(typeof route.HydrateFallback, 'function');
+    assert.equal(route.handle.Skeleton, route.HydrateFallback);
+  }
+  for (const { to } of databaseNavigationItems) {
+    assert.equal(typeof match('/systems/CAC' + to).route.lazy, 'function');
+  }
+  assert.equal(typeof match('/').route.lazy, 'function');
+});
+
+test('实际懒加载页面可解析默认和具名导出，占位页面保留标题和分栏', async () => {
+  for (const path of [
+    '/',
+    '/systems/CAC/overview',
+    '/systems/CAC/application/app',
+    '/systems/CAC/db/customer',
+    '/systems/CAC/setting',
+    '/systems/CAC/db/setting',
+  ]) {
+    const { Component } = await match(path).route.lazy();
+    assert.equal(typeof Component, 'function', path);
+  }
+  const { Component: Search } = await match('/systems/CAC/search').route.lazy();
+  const search = Search();
+  assert.equal(search.props.title, '搜索');
+  assert.equal(search.props.splitPane, true);
+  const { Component: Params } = await match('/systems/CAC/params').route.lazy();
+  assert.equal(Params().props.title, '参数项');
+  assert.equal(Params().props.splitPane, false);
+});
+
+test('首次加载及导航使用目标骨架，加载完成显示页面，取消导航恢复原页面', async (t) => {
+  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/RouteOutlet.tsx');
+  const { pageLoading, RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading.ts');
+  function deferred() {
+    let resolve;
+    const promise = new Promise((yes) => {
+      resolve = yes;
+    });
+    return { promise, resolve };
+  }
+  const page = deferred();
+  const started = deferred();
+  const cancelled = deferred();
+  const cancelStarted = deferred();
+  const marker = (text) => () => createElement('div', null, text);
+  const First = marker('first-page');
+  const Second = marker('second-page');
+  const SecondSkeleton = marker('second-skeleton');
+  const ThirdSkeleton = marker('third-skeleton');
+  function Layout() {
+    return createElement(
+      'section',
+      null,
+      createElement('header', null, 'persistent-header'),
+      createElement(RouteOutlet, { layoutId: 'workspace', delayMs: 0 }),
+    );
+  }
+  const testRoutes = [
+    {
+      id: 'workspace',
+      Component: Layout,
+      children: [
+        { path: 'one', Component: First },
+        {
+          path: 'two',
+          ...pageLoading(SecondSkeleton),
+          lazy: () => {
+            started.resolve();
+            return page.promise;
+          },
+        },
+        {
+          path: 'three',
+          ...pageLoading(ThirdSkeleton),
+          lazy: () => {
+            cancelStarted.resolve();
+            return cancelled.promise;
+          },
+        },
+      ],
+    },
+  ];
+  const initial = createMemoryRouter(testRoutes, { initialEntries: ['/two'] });
+  const router = createMemoryRouter(testRoutes, { initialEntries: ['/one'] });
+  t.after(() => {
+    initial.dispose();
+    router.dispose();
+  });
+  const render = (target = router) =>
+    renderToStaticMarkup(
+      createElement(
+        RouteLoadingContext,
+        { value: testRoutes },
+        createElement(RouterProvider, { router: target }),
+      ),
+    );
+  const initialHtml = render(initial);
+  assert.match(initialHtml, /persistent-header/);
+  assert.match(initialHtml, /second-skeleton/);
+  assert.doesNotMatch(initialHtml, /second-page/);
+  const navigation = router.navigate('/two');
+  await started.promise;
+  const loading = render();
+  assert.match(loading, /persistent-header/);
+  assert.match(loading, /second-skeleton/);
+  page.resolve({ Component: Second });
+  await navigation;
+  assert.match(render(), /second-page/);
+  assert.doesNotMatch(render(), /second-skeleton/);
+
+  const pending = router.navigate('/three');
+  await cancelStarted.promise;
+  assert.match(render(), /third-skeleton/);
+  await router.navigate('/one');
+  assert.match(render(), /first-page/);
+  assert.doesNotMatch(render(), /third-skeleton/);
+  cancelled.resolve({ Component: marker('third-page') });
+  await pending;
+  assert.match(render(), /first-page/);
+  assert.doesNotMatch(render(), /third-page/);
+});
+
+test('静态 loader 在模块完成前并行预取，完成后共用新鲜 Query 缓存', async (t) => {
+  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  queryClient.clear();
+  t.after(() => queryClient.clear());
+  const requests = [];
+  let releaseModule;
+  const modulePromise = new Promise((resolve) => {
+    releaseModule = resolve;
+  });
+  const original = queryClient.prefetchQuery.bind(queryClient);
+  t.mock.method(queryClient, 'prefetchQuery', (options) => {
+    requests.push(options.queryKey);
+    return original({ ...options, queryFn: async () => [] });
+  });
+  const router = createMemoryRouter(
+    [
+      {
+        path: 'systems/:systemName',
+        loader: routes[0].children.find((route) => route.id === 'system').loader,
+        children: [
+          {
+            path: 'db',
+            loader: match('/systems/CAC/db').route.loader,
+            lazy: () => modulePromise,
+          },
+        ],
+      },
+    ],
+    { initialEntries: ['/systems/CAC/db'] },
+  );
+  t.after(() => router.dispose());
+  assert.deepEqual(requests, [
+    ['systems', 'mine'],
+    ['systems', 'CAC', 'database-types'],
+  ]);
+  assert.equal(router.state.initialized, false);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(queryClient.getQueryData(['systems', 'CAC', 'database-types']), []);
+  const initialized = new Promise((resolve) => {
+    const unsubscribe = router.subscribe((state) => {
+      if (state.initialized) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+  releaseModule({ Component: () => null });
+  await initialized;
+  let refetched = false;
+  const data = await queryClient.fetchQuery({
+    queryKey: ['systems', 'CAC', 'database-types'],
+    queryFn: async () => {
+      refetched = true;
+      return ['unexpected'];
+    },
+  });
+  assert.deepEqual(data, []);
+  assert.equal(refetched, false);
+});
+
+test('应用列表写入期间导航预取遵守同一个写入锁', async (t) => {
+  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  let lock;
+  t.mock.method(queryClient, 'isMutating', (options) => {
+    lock = options.mutationKey;
+    return 1;
+  });
+  const prefetch = t.mock.method(queryClient, 'prefetchQuery', async () => {});
+  await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
+  assert.deepEqual(lock, ['grouped-list-write', 'applications:CAC']);
+  assert.equal(prefetch.mock.callCount(), 0);
+});
+
+test('页面 chunk 失败显示静态恢复入口，并保留父级布局', async (t) => {
+  function Layout() {
+    return createElement(
+      'section',
+      null,
+      createElement('header', null, 'persistent-header'),
+      createElement(Outlet),
+    );
+  }
+  const router = createMemoryRouter(
+    [
+      {
+        Component: Layout,
+        children: [
+          {
+            path: 'broken',
+            HydrateFallback: () => null,
+            ErrorBoundary: match('/systems/CAC/overview').route.ErrorBoundary,
+            lazy: async () => {
+              throw new TypeError('Failed to fetch dynamically imported module');
+            },
+          },
+        ],
+      },
+    ],
+    { initialEntries: ['/broken'] },
+  );
+  t.after(() => router.dispose());
+  if (!router.state.initialized) {
+    await new Promise((resolve) => {
+      const unsubscribe = router.subscribe((state) => {
+        if (state.initialized) {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+  }
+  const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+  assert.match(html, /persistent-header/);
+  assert.match(html, /页面资源加载失败/);
+  assert.match(html, /刷新页面/);
+  assert.match(html, /返回我的系统/);
+  assert.doesNotMatch(html, /Unexpected Application Error/);
+});
+
+test('同系统切换应用或类型不替换整页骨架，跨系统和跨页面仍显示骨架', async () => {
+  const { matchPageSkeleton, matchLoadingParams } =
+    await vite.ssrLoadModule('/src/router/loading.ts');
+  assert.equal(
+    matchPageSkeleton(
+      routes,
+      '/systems/CAC/application/b',
+      'workspace',
+      '/systems/CAC/application/a',
+    ),
+    null,
+  );
+  assert.equal(
+    matchPageSkeleton(
+      routes,
+      '/systems/CAC/application/a',
+      'workspace',
+      '/systems/CAC/application',
+    ),
+    null,
+  );
+  assert.equal(
+    matchPageSkeleton(routes, '/systems/CAC/db/b', 'workspace', '/systems/CAC/db/a'),
+    null,
+  );
+  assert.ok(
+    matchPageSkeleton(
+      routes,
+      '/systems/OTHER/application/b',
+      'workspace',
+      '/systems/CAC/application/a',
+    ),
+  );
+  assert.ok(
+    matchPageSkeleton(routes, '/systems/CAC/application/b', 'workspace', '/systems/CAC/overview'),
+  );
+  for (const name of ['公共配置', '核心 / 100% #?', '字面%25']) {
+    assert.equal(matchLoadingParams(routes, applicationPath('CAC', name)).appName, name);
+    assert.equal(matchLoadingParams(routes, databasePath('CAC', name)).paramTypeName, name);
+  }
+});
+
+test('列表 loader 仅因应用参数变化不重跑，跨系统和显式刷新仍重跑', async (t) => {
+  const { revalidateSystemCollection } = await vite.ssrLoadModule('/src/router/loaders.ts');
+  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  queryClient.clear();
+  queryClient.setQueryData(
+    ['grouped-list', 'applications:CAC'],
+    [{ key: 'a' }, { key: '公共配置' }],
+  );
+  t.after(() => queryClient.clear());
+  let loads = 0;
+  const router = createMemoryRouter(
+    [
+      {
+        path: 'systems/:systemName/application/:appName?',
+        loader: async () => {
+          loads++;
+          return null;
+        },
+        shouldRevalidate: revalidateSystemCollection,
+        Component: () => null,
+      },
+    ],
+    { initialEntries: ['/systems/CAC/application/a'] },
+  );
+  t.after(() => router.dispose());
+  if (!router.state.initialized) {
+    await new Promise((resolve) => {
+      const unsubscribe = router.subscribe((state) => {
+        if (state.initialized) {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+  }
+  assert.equal(loads, 1);
+  await router.navigate('/systems/CAC/application/' + encodeURIComponent('公共配置'));
+  assert.equal(loads, 1);
+  await router.navigate('/systems/CAC/application/new');
+  assert.equal(loads, 2);
+  await router.navigate('/systems/OTHER/application/b');
+  assert.equal(loads, 3);
+  await router.navigate('/systems/OTHER/application/b');
+  assert.equal(loads, 4);
 });

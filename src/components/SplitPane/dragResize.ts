@@ -5,7 +5,7 @@ export interface DragResizeState {
   pointerId: number;
 }
 
-/** 切换显隐后重置拖拽起点，保留反向拖动的缓冲距离，避免阈值附近抖动。 */
+/** 和 VS Code 一样，整次手势使用固定起点及吸附阈值，显隐切换不重置位移。 */
 export function dragResize(
   drag: DragResizeState,
   x: number,
@@ -14,16 +14,9 @@ export function dragResize(
   threshold = Math.floor(min / 2),
 ) {
   const clamp = (width: number) => Math.max(min, Math.min(max, width));
-  if (!drag.visible) {
-    if (max > 0 && x - drag.x >= threshold) {
-      const width = clamp(drag.width);
-      return { drag: { ...drag, x, width, visible: true }, width, visible: true };
-    }
-    return { drag, width: drag.width, visible: false };
-  }
-  const next = drag.width + x - drag.x;
-  if (next <= min - threshold) {
-    return { drag: { ...drag, x, width: min, visible: false }, width: min, visible: false };
-  }
-  return { drag, width: clamp(next), visible: true };
+  const next = (drag.visible ? drag.width : 0) + x - drag.x;
+  const snapWidth = drag.visible ? min - threshold : threshold;
+  const visible = max > 0 && next >= snapWidth;
+  // 隐藏时保留手势开始前的宽度供按钮恢复；拖动展开则直接跟随鼠标。
+  return { drag, width: clamp(visible ? next : drag.width), visible };
 }

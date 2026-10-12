@@ -174,7 +174,7 @@ export const GroupedListRow = memo(function GroupedListRow({
             }}
             aria-hidden="true"
           >
-            <span className="tree-drop-dot absolute -left-1 -top-0.75 w-2 h-2 border-2 border-solid border-[var(--accent)] bg-white rounded-full" />
+            <span className="tree-drop-dot absolute -left-1 -top-0.75 w-2 h-2 border-2 border-solid border-[var(--accent)] bg-surface rounded-full" />
           </div>
         )}
 
@@ -189,7 +189,7 @@ export const GroupedListRow = memo(function GroupedListRow({
               event.stopPropagation();
               onToggleExpand(node.key);
             }}
-            className="tree-switcher-button flex items-center justify-center w-7 min-w-7 h-full -ml-2 -mr-1 text-[#8a9aa3] p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded-[var(--tree-focus-radius,6px)] shrink-0 hover:text-[var(--accent)] hover:bg-[var(--accent-bg)]"
+            className="tree-switcher-button flex items-center justify-center w-7 min-w-7 h-full -ml-2 -mr-1 text-tree-switcher p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded-[var(--tree-focus-radius,6px)] shrink-0 hover:text-[var(--accent)] hover:bg-[var(--accent-bg)]"
           >
             <span
               aria-hidden="true"
@@ -348,7 +348,7 @@ function RenameInput({
       status={isNameEmpty ? 'error' : undefined}
       suffix={
         isNameEmpty ? (
-          <span role="alert" className="text-xs text-red-500">
+          <span role="alert" className="text-xs text-danger">
             分组名称不能为空
           </span>
         ) : null
@@ -369,7 +369,7 @@ function RenameInput({
 function Highlight({ text, query }: { text: string; query: string }) {
   return highlightText(text, query).map((part, index) =>
     part.match ? (
-      <mark className="bg-[#fff1f0] text-[#cf1322] rounded-[2px]" key={index}>
+      <mark className="bg-tree-search-bg text-tree-search-text rounded-[2px]" key={index}>
         {part.text}
       </mark>
     ) : (
@@ -502,7 +502,7 @@ const GroupContent = memo(function GroupContent({
     <span className="flex items-center gap-2.25 min-w-0 w-full">
       <span
         aria-hidden="true"
-        className={`shrink-0 text-[#77939e] text-[16px] ${expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'}`}
+        className={`shrink-0 text-tree-folder text-[16px] ${expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'}`}
       />
       <Tooltip
         trigger={showTooltip ? ['hover', 'focus'] : []}
@@ -526,7 +526,7 @@ const GroupContent = memo(function GroupContent({
           {node.title}
         </span>
       </Tooltip>
-      <span className="group-count ml-auto shrink-0 text-[#7d8e98] bg-[#f1f5f7] rounded-1 px-1.5 text-[11px] leading-[19px] tabular-nums">
+      <span className="group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-1 px-1.5 text-[11px] leading-[19px] tabular-nums">
         {node.children.length}
       </span>
     </span>
