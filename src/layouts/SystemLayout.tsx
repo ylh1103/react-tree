@@ -1,10 +1,14 @@
+/**
+ * 系统工作区访问入口，校验 URL 中的系统是否属于可访问清单。
+ * 不存在、无权限和请求错误分别展示；只有确认有效后才提供 SystemContext 和子路由。
+ */
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
-import { systemsOptions } from '../features/systems/api';
-import { SystemContext } from '../features/systems/SystemContext';
-import { isAccessDenied } from '../features/systems/model';
-import RouteStatusPage from '../pages/RouteStatusPage';
+import { systemsOptions } from '../queries/systems';
+import { SystemContext } from '../contexts/SystemContext';
+import { isAccessDenied } from '../utils/systems';
+import RouteStatusPage from '../pages/RouteStatus';
 
 export default function SystemLayout() {
   const { systemName } = useParams();

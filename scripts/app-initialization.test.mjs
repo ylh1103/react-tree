@@ -6,7 +6,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { createServer } from 'vite';
 import { createAppStore } from '../src/store/index.ts';
-import { loadUserSettings, saveLayoutMode } from '../src/store/preferencesSlice.ts';
+import { loadUserSettings, saveLayoutMode } from '../src/store/slices/preferencesSlice.ts';
 
 function deferred() {
   let resolve;
@@ -26,9 +26,7 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   });
   t.after(() => vite.close());
   const { default: App } = await vite.ssrLoadModule('/src/App.tsx');
-  const { LayoutSettings } = await vite.ssrLoadModule(
-    '/src/features/preferences/LayoutSettings.tsx',
-  );
+  const { LayoutSettings } = await vite.ssrLoadModule('/src/components/LayoutSettings/index.tsx');
   const loading = deferred();
   const saving = deferred();
   let nextLoad = loading.promise;
@@ -114,8 +112,8 @@ test('路由首屏和配置等待骨架均在缓存暗色主题内渲染', async
     optimizeDeps: { noDiscovery: true, include: [] },
   });
   t.after(() => vite.close());
-  const { AppThemeProvider } = await vite.ssrLoadModule('/src/components/AppThemeProvider.tsx');
-  const { ResourceLoading } = await vite.ssrLoadModule('/src/components/ResourceLoading.tsx');
+  const { AppThemeProvider } = await vite.ssrLoadModule('/src/providers/AppThemeProvider.tsx');
+  const { ResourceLoading } = await vite.ssrLoadModule('/src/components/ResourceLoading/index.tsx');
   const { default: App } = await vite.ssrLoadModule('/src/App.tsx');
   const { theme } = await import('antd');
   const loading = deferred();

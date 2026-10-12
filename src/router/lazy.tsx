@@ -8,7 +8,7 @@ export function lazyPage(load: () => Promise<{ default: ComponentType }>) {
 /** 尚未实现的工作区共用页面，保留各自标题和分栏设置。 */
 export function lazyWorkspace(title: string, splitPane = false) {
   return async () => {
-    const { default: LayoutPage } = await import('../pages/LayoutPage');
-    return { Component: () => <LayoutPage title={title} splitPane={splitPane} /> };
+    const { default: PlaceholderWorkspace } = await import('../components/PlaceholderWorkspace');
+    return { Component: () => <PlaceholderWorkspace title={title} splitPane={splitPane} /> };
   };
 }

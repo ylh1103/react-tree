@@ -1,11 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router';
 import { lazyPage, lazyWorkspace } from './lazy';
 import { pageLoading } from './loading';
-import {
-  OverviewSkeleton,
-  ApplicationsSkeleton,
-  CollectionSkeleton,
-} from '../components/PageSkeleton';
+import { OverviewSkeleton, ApplicationsSkeleton, CollectionSkeleton } from './skeletons';
 import { preloadApplications, revalidateSystemCollection } from './loaders';
 
 /** 应用参数平台，路径相对于 systems/:systemName。 */
@@ -15,7 +11,7 @@ export const applicationRoutes: RouteObject[] = [
     id: 'overview',
     path: 'overview',
     ...pageLoading(OverviewSkeleton),
-    lazy: lazyPage(() => import('../pages/SystemOverviewPage')),
+    lazy: lazyPage(() => import('../pages/SystemOverview')),
   },
   {
     id: 'application',
@@ -23,7 +19,7 @@ export const applicationRoutes: RouteObject[] = [
     ...pageLoading(ApplicationsSkeleton),
     loader: preloadApplications,
     shouldRevalidate: revalidateSystemCollection,
-    lazy: lazyPage(() => import('../pages/SystemApplicationsPage')),
+    lazy: lazyPage(() => import('../pages/SystemApplications')),
   },
   { id: 'params', path: 'params', ...pageLoading(), lazy: lazyWorkspace('参数项') },
   {
@@ -45,6 +41,6 @@ export const applicationRoutes: RouteObject[] = [
     id: 'setting',
     path: 'setting',
     ...pageLoading(),
-    lazy: lazyPage(() => import('../pages/UserSettingsPage')),
+    lazy: lazyPage(() => import('../pages/UserSettings')),
   },
 ];

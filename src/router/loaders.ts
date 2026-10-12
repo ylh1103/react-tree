@@ -1,14 +1,18 @@
+/**
+ * 静态路由 loader：在页面 chunk 加载时预取数据，并与页面共用缓存。
+ * 同系统切换选中项通常复用清单；缓存缺少目标时重新验证，应用写入期间暂缓预取。
+ */
 import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router';
-import { queryClient } from '../lib/queryClient';
-import { preloadRouteQuery } from '../lib/routeQuery';
-import { systemsOptions, parameterTypesOptions } from '../features/systems/api';
-import type { ListNode } from '../features/grouped-list/types';
+import { queryClient } from '../queries/client';
+import { preloadRouteQuery } from '../queries/routeQuery';
+import { systemsOptions, parameterTypesOptions } from '../queries/systems';
+import type { ListNode } from '../components/GroupedList/types';
 import {
   applicationListId,
   groupedListKeys,
   groupedListOptions,
   hasApplication,
-} from '../features/grouped-list/queries';
+} from '../queries/groupedList';
 
 /** 列表按系统缓存，切换列表中的应用/类型无需重新运行整页 loader。 */
 export const revalidateSystemCollection: ShouldRevalidateFunction = ({
@@ -76,7 +80,7 @@ export async function preloadApplications({ params }: LoaderFunctionArgs) {
   const id = applicationListId(params.systemName);
   // 与页面共用写入锁，避免导航预取读取尚未提交的数据。
   if (queryClient.isMutating({ mutationKey: groupedListKeys.write(id) })) return null;
-  const { createSystemApplicationService } = await import('../features/applications/api');
+  const { createSystemApplicationService } = await import('../queries/applications');
   if (queryClient.isMutating({ mutationKey: groupedListKeys.write(id) })) return null;
   await preloadRouteQuery(
     queryClient,

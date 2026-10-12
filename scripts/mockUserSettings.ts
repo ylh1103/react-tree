@@ -4,7 +4,7 @@ import {
   parseUserSettings,
   defaultUserSettings,
   type UserSettings,
-} from '../src/features/preferences/types.ts';
+} from '../src/types/preferences.ts';
 
 /** 服务端内存模拟当前用户的配置；刷新页面保留，重启服务重置。 */
 export function createMockUserSettingsMiddleware(delayMs = 350) {

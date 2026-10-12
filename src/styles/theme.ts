@@ -1,5 +1,9 @@
+/**
+ * 集中定义 Ant Design 主题与 UnoCSS 使用的根节点 CSS 变量。
+ * 主题切换以同一配置更新组件 token 和全局变量，修改配色时从这里维护。
+ */
 import { theme, type ThemeConfig } from 'antd';
-import type { ResolvedThemeMode } from '../features/preferences/types';
+import type { ResolvedThemeMode } from '../types/preferences';
 
 export const appTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,

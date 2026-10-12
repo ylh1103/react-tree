@@ -1,7 +1,11 @@
+/**
+ * 为路由登记静态骨架，并根据目标地址及当前布局选择加载提示。
+ * 骨架必须在页面 chunk 加载之前可用；同一清单内只切换选中项时保留当前工作区。
+ */
 import { createContext, createElement, type ComponentType } from 'react';
 import { matchRoutes, type RouteObject } from 'react-router';
-import { PageSkeleton } from '../components/PageSkeleton';
-import RouteErrorPage from '../pages/RouteErrorPage';
+import { PageSkeleton } from './skeletons';
+import RouteErrorPage from '../pages/RouteError';
 
 export interface PageLoadingHandle {
   Skeleton: ComponentType;

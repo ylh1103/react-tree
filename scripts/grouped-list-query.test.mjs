@@ -5,8 +5,8 @@ import {
   groupedListKeys,
   groupedListOptions,
   refreshGroupedList,
-} from '../src/features/grouped-list/queries.ts';
-import { toTreeData } from '../src/features/grouped-list/model.ts';
+} from '../src/queries/groupedList.ts';
+import { toTreeData } from '../src/components/GroupedList/model/model.ts';
 
 function setup(t) {
   const client = new QueryClient({

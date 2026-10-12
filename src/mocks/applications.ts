@@ -1,0 +1,67 @@
+/**
+ * 应用清单示例和按系统隔离的 Mock 接口工厂。
+ * 默认小清单供开发；环境变量可生成压力测试数据，生成发生在首次 Mock 请求时。
+ */
+import type { ApplicationItem } from '../types/applications';
+
+export function createMockApplications() {
+  const applications: ApplicationItem[] = [
+    { appName: 'ABS-BFF', appDesc: 'ABS 系统的 BFF 服务', appType: '0' },
+    { appName: '用户中心', appDesc: '统一身份与用户信息管理', appType: '1' },
+    { appName: '核心服务', appDesc: '核心业务参数配置', appType: '0' },
+    { appName: 'CICI服务', appDesc: '持续集成与发布服务', appType: '1' },
+    { appName: '公共配置', appDesc: '跨应用共享参数', appType: '1' },
+    { appName: '自动化任务', appDesc: '批量作业与任务调度', appType: '0' },
+    {
+      appName: '企业级统一应用参数配置与跨环境发布管理平台—长名称测试',
+      appType: '0',
+      appDesc: '开发、测试、预发布及生产环境的配置同步与版本管理，末尾搜索关键词：尾部命中LW641',
+    },
+  ];
+
+  const requestedCount = Number(import.meta.env.VITE_MOCK_APPLICATION_COUNT);
+  const mockApplicationCount =
+    Number.isSafeInteger(requestedCount) && requestedCount > applications.length
+      ? requestedCount
+      : applications.length;
+  const initialApplicationCount = applications.length;
+  for (let index = 0; index < mockApplicationCount - initialApplicationCount; index++) {
+    const number = String(index + initialApplicationCount + 1).padStart(3, '0');
+    const appType = index % 3 === 0 ? '1' : '0';
+    const category = appType === '1' ? 'public' : 'bussiness';
+    applications.push({
+      appName: `${category}-${number}`,
+      appDesc: `${category} ${number} 的参数配置、服务管理与发布设置`,
+      appType,
+    });
+  }
+
+  return applications;
+}
+
+export async function createApi(systemName?: string) {
+  if (systemName !== undefined) {
+    const storageKey = `react-tree:mock:appGroupInfo:system:${encodeURIComponent(systemName)}`;
+    return {
+      async getItems(signal?: AbortSignal) {
+        const { mockSystems } = await import('./systems');
+        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+        return mockSystems.find((system) => system.systemName === systemName)?.appCount === 0
+          ? []
+          : createMockApplications();
+      },
+      async getGroups(signal?: AbortSignal) {
+        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+        return { appGroupInfo: localStorage.getItem(storageKey) };
+      },
+      async saveGroups(payload: { appGroupInfo: string }) {
+        localStorage.setItem(storageKey, payload.appGroupInfo);
+      },
+      async deleteItem() {
+        throw new Error('应用删除接口尚未接入');
+      },
+    };
+  }
+  const { createMockListApi } = await import('./groupedList');
+  return createMockListApi('/mock-api/applications', createMockApplications(), 'appGroupInfo');
+}

@@ -5,12 +5,12 @@ import {
   loadUserSettings,
   refreshUserSettings,
   saveThemeMode,
-} from '../src/store/preferencesSlice.ts';
-import { defaultUserSettings } from '../src/features/preferences/types.ts';
+} from '../src/store/slices/preferencesSlice.ts';
+import { defaultUserSettings } from '../src/types/preferences.ts';
 import {
   readBootstrapTheme,
   startThemePersistence,
-} from '../src/features/preferences/themeBootstrap.ts';
+} from '../src/store/preferences/themeBootstrap.ts';
 
 function mockStorage(t) {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'window');

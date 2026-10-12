@@ -10,9 +10,9 @@ import {
   saveUserSettings,
   openUserSettings,
   closeUserSettings,
-} from '../src/store/preferencesSlice.ts';
-import { createUserSettingsApi } from '../src/features/preferences/api.ts';
-import { parseUserSettings, defaultUserSettings } from '../src/features/preferences/types.ts';
+} from '../src/store/slices/preferencesSlice.ts';
+import { createUserSettingsApi } from '../src/api/preferences.ts';
+import { parseUserSettings, defaultUserSettings } from '../src/types/preferences.ts';
 import { createMockUserSettingsMiddleware } from './mockUserSettings.ts';
 
 function deferred() {

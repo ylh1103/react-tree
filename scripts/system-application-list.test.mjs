@@ -6,8 +6,8 @@ import {
   groupedListKeys,
   groupedListOptions,
   refreshGroupedList,
-} from '../src/features/grouped-list/queries.ts';
-import { createHttpListApi } from '../src/features/grouped-list/service.ts';
+} from '../src/queries/groupedList.ts';
+import { createHttpListApi } from '../src/api/grouped-list/httpApi.ts';
 import { createServer } from 'node:http';
 
 test('系统应用列表与旧列表的查询和写入锁完全隔离', async () => {

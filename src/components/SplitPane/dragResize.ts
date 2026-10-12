@@ -1,3 +1,7 @@
+/**
+ * 不依赖 DOM 的分栏拖拽状态计算，处理最小宽度、折叠缓冲与重新展开。
+ * 拖拽原点和吸附位置在同一次手势中保持一致，避免反向拖动或跳跃移动造成抖动。
+ */
 export interface DragResizeState {
   x: number;
   width: number;

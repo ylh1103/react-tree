@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLazyListApi } from '../src/features/grouped-list/lazyApi.ts';
+import { createLazyListApi } from '../src/api/grouped-list/lazyApi.ts';
 import {
   buildFlatIndex,
   flattenTree,
   createSearchMatcher,
   deriveTreeView,
-} from '../src/features/grouped-list/treeUtils.ts';
-import { toTreeData } from '../src/features/grouped-list/model.ts';
+} from '../src/components/GroupedList/model/treeUtils.ts';
+import { toTreeData } from '../src/components/GroupedList/model/model.ts';
 
 test('延迟接口：未访问不初始化，并发读取只初始化一次', async () => {
   let calls = 0;

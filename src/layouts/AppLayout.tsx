@@ -1,7 +1,7 @@
 import { RouteOutlet } from '../router/RouteOutlet';
 import { AppHeader } from './AppHeader';
 import { AppNavigation } from './AppNavigation';
-import { useLayoutPreferences } from '../features/preferences/useLayoutPreferences';
+import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
 
 /** 所有子页面共用的外壳；页面内部是否分栏由页面自己决定。 */
 export default function AppLayout() {

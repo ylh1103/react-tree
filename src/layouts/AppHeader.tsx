@@ -1,10 +1,10 @@
 import { App as AntdApp, Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
-import { SystemContext } from '../features/systems/SystemContext';
-import { platformHome } from '../features/systems/paths';
+import { SystemContext } from '../contexts/SystemContext';
+import { platformHome } from '../router/paths';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { openUserSettings } from '../store/preferencesSlice';
+import { openUserSettings } from '../store/slices/preferencesSlice';
 
 const headerTools = [
   { label: '友情链接', icon: 'i-lucide-panels-top-left', content: '暂无友情链接' },
@@ -22,11 +22,11 @@ const headerTools = [
 ] as const;
 
 function subscribeWideHeader(onChange: () => void) {
-  const media = window.matchMedia('(min-width: 1601px)');
+  const media = window.matchMedia('(min-width: 1280px)');
   media.addEventListener('change', onChange);
   return () => media.removeEventListener('change', onChange);
 }
-const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1601px)').matches;
+const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1280px)').matches;
 
 export function AppHeader() {
   const workspace = useContext(SystemContext);
@@ -152,10 +152,10 @@ export function AppHeader() {
                       />
                     }
                     aria-label={tool.label}
-                    className={`shrink-0 text-12px! gap-0! motion-reduce:transition-none! ${showToolTips ? 'w-44px! h-36px! px-3! rounded-8px!' : 'w-32px px-0! wide:w-auto wide:px-2! wide:gap-1.5!'}`}
+                    className={`shrink-0 text-12px! motion-reduce:transition-none! ${showToolTips ? 'w-44px! h-36px! px-3! gap-0! rounded-8px!' : 'w-auto px-2! gap-1.5!'}`}
                   >
                     {!headerToolsIconOnly && (
-                      <span className="hidden wide:inline">{tool.label}</span>
+                      <span className="hidden desktop:inline">{tool.label}</span>
                     )}
                   </Button>
                 </Tooltip>

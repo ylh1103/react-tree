@@ -6,7 +6,7 @@ import {
   getSystemTheme,
   subscribeSystemTheme,
   useResolvedTheme,
-} from '../src/features/preferences/useResolvedTheme.ts';
+} from '../src/hooks/useResolvedTheme.ts';
 
 function Theme({ mode }) {
   return createElement('span', null, useResolvedTheme(mode));

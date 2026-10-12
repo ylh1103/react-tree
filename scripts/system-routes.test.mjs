@@ -5,14 +5,9 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { navigationItems, databaseNavigationItems } from '../src/layouts/navigation.ts';
-import {
-  applicationPath,
-  databasePath,
-  platformHome,
-  systemPath,
-} from '../src/features/systems/paths.ts';
-import { filterSystems, isAccessDenied, roleLabel } from '../src/features/systems/model.ts';
-import { mockSystems } from '../src/features/systems/mock.ts';
+import { applicationPath, databasePath, platformHome, systemPath } from '../src/router/paths.ts';
+import { filterSystems, isAccessDenied, roleLabel } from '../src/utils/systems.ts';
+import { mockSystems } from '../src/mocks/systems.ts';
 
 let vite;
 let routes;
@@ -230,7 +225,7 @@ test('首次加载及导航使用目标骨架，加载完成显示页面，取�
 });
 
 test('静态 loader 在模块完成前并行预取，完成后共用新鲜 Query 缓存', async (t) => {
-  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   queryClient.clear();
   t.after(() => queryClient.clear());
   const requests = [];
@@ -290,7 +285,7 @@ test('静态 loader 在模块完成前并行预取，完成后共用新鲜 Query
 });
 
 test('应用列表写入期间导航预取遵守同一个写入锁', async (t) => {
-  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   let lock;
   t.mock.method(queryClient, 'isMutating', (options) => {
     lock = options.mutationKey;
@@ -392,7 +387,7 @@ test('同系统切换应用或类型不替换整页骨架，跨系统和跨页�
 
 test('列表 loader 仅因应用参数变化不重跑，跨系统和显式刷新仍重跑', async (t) => {
   const { revalidateSystemCollection } = await vite.ssrLoadModule('/src/router/loaders.ts');
-  const { queryClient } = await vite.ssrLoadModule('/src/lib/queryClient.ts');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   queryClient.clear();
   queryClient.setQueryData(
     ['grouped-list', 'applications:CAC'],

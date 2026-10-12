@@ -7,12 +7,12 @@ import {
   refreshUserSettings,
   saveUserSettings,
   openUserSettings,
-} from '../src/store/preferencesSlice.ts';
-import { defaultUserSettings } from '../src/features/preferences/types.ts';
+} from '../src/store/slices/preferencesSlice.ts';
+import { defaultUserSettings } from '../src/types/preferences.ts';
 import {
   createUserSettingsSyncTransport,
   startUserSettingsSync,
-} from '../src/features/preferences/sync.ts';
+} from '../src/store/preferences/sync.ts';
 
 function deferred() {
   let resolve;

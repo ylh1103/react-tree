@@ -1,11 +1,11 @@
 import { Button, Tooltip } from 'antd';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { openUserSettings } from '../store/preferencesSlice';
+import { openUserSettings } from '../store/slices/preferencesSlice';
 import { NavLink, useLocation } from 'react-router';
 import { navigationItems, databaseNavigationItems } from './navigation';
-import { useSystemWorkspace } from '../features/systems/SystemContext';
-import { systemPath } from '../features/systems/paths';
-import { useLayoutPreferences } from '../features/preferences/useLayoutPreferences';
+import { useSystemWorkspace } from '../contexts/SystemContext';
+import { systemPath } from '../router/paths';
+import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
 
 export function AppNavigation() {
   const { system, platform } = useSystemWorkspace();

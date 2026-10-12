@@ -6,7 +6,7 @@ import lucideIcons from '@iconify-json/lucide/icons.json';
 export default defineConfig({
   safelist: [...navigationItems, ...databaseNavigationItems].map(({ icon }) => icon),
   theme: {
-    // 桌面布局：1280px 为最小宽度，超过 1600px 显示完整工具文字。
+    // 1280px 起显示工具文字；超过 1600px 时放宽系统选择器。
     breakpoints: { desktop: '1280px', wide: '1601px' },
     spacing: { layout: 'var(--layout-gap)' },
     colors: Object.fromEntries(

@@ -12,7 +12,7 @@ import {
   moveNodeToDirectory,
   updateNodeTitle,
   deleteBranchAndPromoteChildren,
-} from '../src/features/grouped-list/treeUtils.ts';
+} from '../src/components/GroupedList/model/treeUtils.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
@@ -20,9 +20,10 @@ import {
   mergeParameters,
   fromTreeData,
   toTreeData,
-} from '../src/features/grouped-list/model.ts';
-import { createListService, createHttpListApi } from '../src/features/grouped-list/service.ts';
-import { reconcileGroupSave } from '../src/features/grouped-list/saveConflict.ts';
+} from '../src/components/GroupedList/model/model.ts';
+import { createListService } from '../src/components/GroupedList/model/service.ts';
+import { createHttpListApi } from '../src/api/grouped-list/httpApi.ts';
+import { reconcileGroupSave } from '../src/components/GroupedList/model/saveConflict.ts';
 
 test('并发保存：保留草稿结构、新增应用和最新业务字段，输入不变', () => {
   const baseline = [{ key: 'g', title: '组', children: [{ key: 'a', title: 'a', appType: '0' }] }];
@@ -733,7 +734,7 @@ for (const typeField of ['appType', 'maintType']) {
 
 // 固定视口原点的预览必须只跟随指针，不受源行重新测量影响。
 test('拖拽预览：展开、双向滚动及虚拟行卸载不改变指针偏移', async () => {
-  const { offsetDragPreview } = await import('../src/features/grouped-list/dragPreview.ts');
+  const { offsetDragPreview } = await import('../src/components/GroupedList/model/dragPreview.ts');
   const args = {
     activatorEvent: { clientX: 100, clientY: 200 },
     transform: { x: 30, y: 50, scaleX: 1, scaleY: 1 },
@@ -757,7 +758,7 @@ test('拖拽预览：展开、双向滚动及虚拟行卸载不改变指针偏�
 });
 
 test('拖拽预览：保留视口边缘避让及顶部提示空间', async () => {
-  const { offsetDragPreview } = await import('../src/features/grouped-list/dragPreview.ts');
+  const { offsetDragPreview } = await import('../src/components/GroupedList/model/dragPreview.ts');
   const args = {
     activatorEvent: { clientX: 950, clientY: 790 },
     transform: { x: 0, y: 0, scaleX: 1, scaleY: 1 },

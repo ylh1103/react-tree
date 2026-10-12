@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
-import { preloadRouteQuery, routeQueryMountOptions } from '../src/lib/routeQuery.ts';
+import { preloadRouteQuery, routeQueryMountOptions } from '../src/queries/routeQuery.ts';
 
 function setup(t) {
   const client = new QueryClient({

@@ -1,5 +1,9 @@
+/**
+ * 应用启动入口：建立唯一的 QueryClient、Redux Store、主题和路由上下文。
+ * 配置读取与路由预取同时开始；跨页签同步和主题持久化的订阅在 HMR 替换时清理。
+ */
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from './lib/queryClient';
+import { queryClient } from './queries/client';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import { createRoot } from 'react-dom/client';
@@ -10,16 +14,16 @@ import {
 } from '@ant-design/cssinjs';
 import { RouterProvider } from 'react-router/dom';
 import 'virtual:uno.css';
-import './index.css';
+import './styles/index.css';
 import { router } from './router';
 import { routes } from './router/routes';
 import { RouteLoadingContext } from './router/loading';
 import { applyTheme } from './styles/theme';
-import { loadUserSettings } from './store/preferencesSlice';
-import { AppThemeProvider } from './components/AppThemeProvider';
-import { getSystemTheme } from './features/preferences/useResolvedTheme';
-import { startThemePersistence } from './features/preferences/themeBootstrap';
-import { startUserSettingsSync } from './features/preferences/sync';
+import { loadUserSettings } from './store/slices/preferencesSlice';
+import { AppThemeProvider } from './providers/AppThemeProvider';
+import { getSystemTheme } from './hooks/useResolvedTheme';
+import { startThemePersistence } from './store/preferences/themeBootstrap';
+import { startUserSettingsSync } from './store/preferences/sync';
 
 const stopThemePersistence = startThemePersistence(store);
 import.meta.hot?.dispose(stopThemePersistence);
