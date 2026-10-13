@@ -21,7 +21,12 @@ export const applicationRoutes: RouteObject[] = [
     shouldRevalidate: revalidateSystemCollection,
     lazy: lazyPage(() => import('../pages/SystemApplications')),
   },
-  { id: 'params', path: 'params', ...pageLoading(), lazy: lazyWorkspace('参数项') },
+  {
+    id: 'params',
+    path: 'params',
+    ...pageLoading(),
+    lazy: lazyPage(() => import('../pages/SystemParameters')),
+  },
   {
     id: 'search',
     path: 'search',

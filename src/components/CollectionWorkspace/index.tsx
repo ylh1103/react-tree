@@ -285,7 +285,7 @@ export function CollectionWorkspace({
           {titleExtra}
         </div>
         <div
-          className={`layout-scroll ${layoutMode === 'compact' || integratedHeader ? '' : 'rounded-8px bg-surface'}`}
+          className={`layout-scroll ${layoutMode === 'compact' || integratedHeader ? '' : 'rounded-ui bg-surface'}`}
         >
           {content}
         </div>
@@ -305,7 +305,7 @@ export function CollectionWorkspace({
   return (
     <SplitPane
       storageKey={`react-tree:split-pane:${database ? 'database' : 'application'}:v1`}
-      defaultWidth={database ? 300 : 360}
+      defaultWidth={database ? 300 : 290}
       sidebarLabel={`${label}列表`}
       title={workspaceTitle}
       sidebar={sidebar}

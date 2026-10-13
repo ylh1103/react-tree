@@ -3,7 +3,7 @@
  * Ant Design 的消息/弹窗上下文在此建立；配置读取失败后的回退由 preferences Slice 负责。
  */
 import { App as AntdApp } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, type CSSProperties } from 'react';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { loadUserSettings } from './store/slices/preferencesSlice';
 import { Outlet } from 'react-router';
@@ -12,7 +12,7 @@ import { UserSettingsDrawer } from './layouts/UserSettingsDrawer';
 import { ResourceLoading } from './components/ResourceLoading';
 
 export default function App() {
-  const { layoutMode } = useLayoutPreferences();
+  const { layoutMode, layoutGap } = useLayoutPreferences();
   const initialized = useAppSelector((state) => state.preferences.initialized);
   const dispatch = useAppDispatch();
   useEffect(() => {
@@ -25,7 +25,13 @@ export default function App() {
       ) : (
         <>
           <div className="app-viewport">
-            <div className="app-desktop-shell" data-layout={layoutMode}>
+            <div
+              className="app-desktop-shell"
+              data-layout={layoutMode}
+              style={
+                { '--layout-gap': `${layoutMode === 'compact' ? 0 : layoutGap}px` } as CSSProperties
+              }
+            >
               <Outlet />
             </div>
           </div>

@@ -3,6 +3,7 @@
  * 乐观保存和失败状态不写缓存；完整用户配置仍由后端提供，存储不可用时安全回退。
  */
 import type { ThemeMode } from '../../types/preferences.ts';
+import { defaultUserSettings } from '../../types/preferences.ts';
 import type { createAppStore } from '../index.ts';
 
 const themeKey = 'react-tree:theme-mode:v1';
@@ -11,9 +12,11 @@ const themeKey = 'react-tree:theme-mode:v1';
 export function readBootstrapTheme(): ThemeMode {
   try {
     const value = window.localStorage.getItem(themeKey);
-    return value === 'light' || value === 'dark' || value === 'system' ? value : 'light';
+    return value === 'light' || value === 'dark' || value === 'system'
+      ? value
+      : defaultUserSettings.themeMode;
   } catch {
-    return 'light';
+    return defaultUserSettings.themeMode;
   }
 }
 
@@ -23,8 +26,9 @@ export function startThemePersistence(store: ReturnType<typeof createAppStore>) 
   return store.subscribe(() => {
     const current = store.getState().preferences;
     if (
-      current.status === 'ready' &&
-      (previous.status !== 'ready' || previous.themeMode !== current.themeMode)
+      current.initialized &&
+      (previous.savedThemeMode !== current.savedThemeMode ||
+        (!previous.initialized && current.status === 'ready'))
     ) {
       try {
         window.localStorage.setItem(themeKey, current.savedThemeMode);

@@ -1,6 +1,7 @@
 import { App as AntdApp, Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
+import logo from '../assets/logo.jpg';
 import { SystemContext } from '../contexts/SystemContext';
 import { platformHome } from '../router/paths';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -50,11 +51,14 @@ export function AppHeader() {
             title="返回主页"
             className="h-40px! px-1! gap-2.5! text-text! layout-focus motion-reduce:transition-none!"
           >
-            <svg className="w-28px h-28px" viewBox="0 0 32 32" aria-hidden="true">
-              <path d="M3 11 14 7v21L3 25Z" fill="var(--color-logo-red)" />
-              <path d="m14 2 9 4v24l-9-4Z" fill="var(--color-logo-blue)" />
-              <path d="m23 6 7-3v19l-7 4Z" fill="var(--color-logo-cyan)" />
-            </svg>
+            <img
+              src={logo}
+              alt=""
+              aria-hidden="true"
+              width={32}
+              height={32}
+              className="block w-32px h-32px shrink-0 object-contain"
+            />
             <span className="text-17px font-600 leading-24px tracking-0.2px whitespace-nowrap">
               灵动参数管家
             </span>
@@ -152,7 +156,7 @@ export function AppHeader() {
                       />
                     }
                     aria-label={tool.label}
-                    className={`shrink-0 text-12px! motion-reduce:transition-none! ${showToolTips ? 'w-44px! h-36px! px-3! gap-0! rounded-8px!' : 'w-auto px-2! gap-1.5!'}`}
+                    className={`shrink-0 text-12px! motion-reduce:transition-none! ${showToolTips ? 'w-44px! h-36px! px-3! gap-0! rounded-control!' : 'w-auto px-2! gap-1.5!'}`}
                   >
                     {!headerToolsIconOnly && (
                       <span className="hidden desktop:inline">{tool.label}</span>
@@ -169,7 +173,7 @@ export function AppHeader() {
             trigger={['click']}
             placement="bottomRight"
             popupRender={(menu) => (
-              <div className="min-w-200px rounded-6px bg-surface shadow-lg overflow-hidden">
+              <div className="min-w-200px rounded-ui bg-surface shadow-lg overflow-hidden">
                 <div className="px-4 py-3 border-b border-b-solid border-divider">
                   <div className="text-14px font-600 text-text">伟业</div>
                   <div className="mt-1 text-12px text-text-secondary">当前用户 · 暂无个人资料</div>
@@ -206,7 +210,7 @@ export function AppHeader() {
               type="text"
               htmlType="button"
               aria-label="打开用户菜单：伟业"
-              className="h-40px! w-auto! min-w-56px! px-3! rounded-10px! hover:bg-watermark! active:bg-hover! layout-focus motion-reduce:transition-none!"
+              className="h-40px! w-auto! min-w-56px! px-3! rounded-control! hover:bg-watermark! active:bg-hover! layout-focus motion-reduce:transition-none!"
               icon={
                 <Avatar
                   size={30}

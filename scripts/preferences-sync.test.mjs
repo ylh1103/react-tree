@@ -86,9 +86,13 @@ test('保存成功同步所有已打开页签，保留抽屉状态，不回写�
   stores[1].dispatch(openUserSettings());
   const settings = {
     layoutMode: 'compact',
+    layoutGap: 12,
+    borderRadius: 0,
+    controlBorderRadius: 8,
     themeMode: 'system',
     navigationIconOnly: true,
     headerToolsIconOnly: true,
+    navigationTheme: 'theme',
   };
   await stores[0].dispatch(saveUserSettings(settings));
   await settle();
@@ -197,6 +201,37 @@ test('本地保存使之前的后台响应失效，迟到旧配置不能覆盖�
   await refresh;
   assert.equal(store.getState().preferences.themeMode, 'system');
   assert.equal(store.getState().preferences.savedThemeMode, 'system');
+});
+
+test('连续保存中较早请求成功、最后请求失败，其他页签仍收到已确认配置', async (t) => {
+  const first = deferred();
+  let persisted = { ...defaultUserSettings };
+  let calls = 0;
+  const api = {
+    load: async () => ({ ...persisted }),
+    save: async (settings) => {
+      if (++calls === 1) await first.promise;
+      else throw Error('后续保存失败');
+      persisted = settings;
+      return settings;
+    },
+  };
+  const bus = createBus();
+  const writer = createAppStore(api);
+  const reader = createAppStore(api);
+  for (const store of [writer, reader]) {
+    t.after(startUserSettingsSync(store, bus.connect()));
+    await store.dispatch(loadUserSettings());
+  }
+  const theme = writer.dispatch(saveUserSettings({ themeMode: 'dark' }));
+  const radius = writer.dispatch(saveUserSettings({ borderRadius: 24 }));
+  first.resolve();
+  await Promise.all([theme, radius]);
+  await settle();
+  assert.equal(writer.getState().preferences.status, 'save-error');
+  assert.equal(reader.getState().preferences.themeMode, 'dark');
+  assert.equal(reader.getState().preferences.borderRadius, defaultUserSettings.borderRadius);
+  assert.equal(bus.publications, 1);
 });
 
 test('读取中的新通知合并为下一次读取，停止同步后不再监听或广播', async () => {

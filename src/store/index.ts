@@ -7,10 +7,11 @@ import preferencesReducer from './slices/preferencesSlice.ts';
 import { userSettingsApi } from '../api/preferences.ts';
 import { readBootstrapTheme } from './preferences/themeBootstrap.ts';
 import type { ThemeMode, UserSettingsApi } from '../types/preferences.ts';
+import { defaultUserSettings } from '../types/preferences.ts';
 
 export function createAppStore(
   api: UserSettingsApi = userSettingsApi,
-  themeMode: ThemeMode = 'light',
+  themeMode: ThemeMode = defaultUserSettings.themeMode,
 ) {
   return configureStore({
     reducer: { preferences: preferencesReducer },

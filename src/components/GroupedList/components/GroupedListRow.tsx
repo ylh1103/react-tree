@@ -161,18 +161,18 @@ export const GroupedListRow = memo(function GroupedListRow({
           }
         }}
         className={[
-          'tree-row flex items-center h-full cursor-pointer select-none relative',
+          'tree-row flex items-center h-full cursor-pointer select-none relative [padding-right:calc(16px-(100cqw-100%))]',
           isSelected ? 'tree-row-selected' : '',
 
           isEditing ? 'tree-row-editing cursor-grab!' : '',
         ].join(' ')}
-        style={{ paddingLeft: depth * INDENT + 8, paddingRight: 8 }}
+        style={{ paddingLeft: depth * INDENT }}
       >
         {(showBefore || showAfter) && (
           <div
-            className="tree-drop-line absolute right-5 h-0.5 bg-[var(--accent)] pointer-events-none z-5"
+            className="tree-drop-line absolute [right:calc(16px-(100cqw-100%))] h-0.5 bg-[var(--accent)] pointer-events-none z-5"
             style={{
-              left: (dropLine?.depth ?? depth) * INDENT + 24,
+              left: (dropLine?.depth ?? depth) * INDENT + 16,
               top: showBefore ? -rowGap / 2 : `calc(100% + ${rowGap / 2}px)`,
               transform: 'translateY(-50%)',
             }}
@@ -182,30 +182,33 @@ export const GroupedListRow = memo(function GroupedListRow({
           </div>
         )}
 
-        {isBranch ? (
-          <button
-            type="button"
+        {isBranch && (
+          <Button
+            type="text"
+            size="small"
+            className="tree-switcher-button absolute! z-2 w-8! min-w-8! h-8! p-0! text-tree-switcher! bg-transparent! hover:text-[var(--accent)]! focus-visible:outline-offset-[-2px]!"
+            style={{ left: depth * INDENT }}
             aria-label={`${isExpanded ? '收起' : '展开'} ${node.title}`}
             aria-expanded={isExpanded}
+            disabled={isDragActive}
             onPointerDown={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
               onToggleExpand(node.key);
             }}
-            className="tree-switcher-button flex items-center justify-center w-7 min-w-7 h-full -ml-2 -mr-1 text-tree-switcher p-0 border-0 bg-transparent [font:inherit] cursor-pointer rounded-[var(--tree-focus-radius,6px)] shrink-0 hover:text-[var(--accent)] hover:bg-[var(--accent-bg)]"
-          >
-            <span
-              aria-hidden="true"
-              className={`i-lucide-chevron-right transition-transform duration-150 motion-reduce:transition-none ${isExpanded ? 'rotate-90' : ''}`}
-            />
-          </button>
-        ) : (
-          <span className="mr-1 w-3 min-w-3 h-4 inline-block" />
+            icon={
+              <span
+                aria-hidden="true"
+                className={`i-lucide-chevron-right w-4 h-4 -translate-x-2 transition-transform duration-150 motion-reduce:transition-none ${isExpanded ? 'rotate-90' : ''}`}
+              />
+            }
+          />
         )}
+        <span aria-hidden="true" className="w-4 min-w-4 shrink-0" />
 
         <div
-          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-[6px] bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none ${isBranch ? 'py-1.75' : 'py-1 border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
+          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-ui bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
           data-has-actions={!isRenaming || undefined}
           data-menu-open={isMenuOpen || undefined}
           data-has-badge={
@@ -373,7 +376,7 @@ function RenameInput({
 function Highlight({ text, query }: { text: string; query: string }) {
   return highlightText(text, query).map((part, index) =>
     part.match ? (
-      <mark className="bg-tree-search-bg text-tree-search-text rounded-[2px]" key={index}>
+      <mark className="bg-tree-search-bg text-tree-search-text rounded-ui" key={index}>
         {part.text}
       </mark>
     ) : (
@@ -467,7 +470,7 @@ const GroupedLeaf = memo(function GroupedLeaf({
             </span>
             {kind === config.badgeType && (
               <span
-                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 rounded-[0_5px_0_7px] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
+                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--ui-radius)_0_var(--ui-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
                 data-color={typeColor}
                 title={typeLabel}
                 role="img"
@@ -530,7 +533,7 @@ const GroupContent = memo(function GroupContent({
           {node.title}
         </span>
       </Tooltip>
-      <span className="group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-1 px-1.5 text-[11px] leading-[19px] tabular-nums">
+      <span className="group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-control px-1.5 text-[11px] leading-[19px] tabular-nums">
         {node.children.length}
       </span>
     </span>

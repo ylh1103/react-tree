@@ -45,7 +45,7 @@ export function createMockUserSettingsMiddleware(delayMs = 350) {
       settings = nextSettings;
       send(200, settings);
     } catch {
-      send(400, { error: '用户设置格式错误：布局、主题或图标显示选项无效' });
+      send(400, { error: '用户设置格式错误：布局、间距、圆角、主题、导航配色或图标显示选项无效' });
     }
   };
 }

@@ -36,7 +36,7 @@ export function ApplicationParametersEmptyState({
         className="m-0! [&_.ant-empty-image]:h-auto! [&_.ant-empty-image]:mb-6!"
         image={
           <div
-            className="relative mx-auto grid h-80px w-80px place-items-center rounded-20px border border-solid border-accent-border bg-hover"
+            className="relative mx-auto grid h-80px w-80px place-items-center rounded-ui border border-solid border-accent-border bg-hover"
             aria-hidden="true"
           >
             <span className="i-lucide-panels-top-left h-32px w-32px text-accent" />
@@ -105,7 +105,7 @@ export function ApplicationParametersToolbar({
         </Checkbox>
         <Checkbox.Group
           aria-label="选择显示的应用环境"
-          className="flex flex-wrap gap-x-1 gap-y-1.5 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-4px [&_.ant-checkbox-wrapper]:px-1.75 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-hover [&_.ant-checkbox-wrapper-checked]:text-accent [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px [&_.ant-checkbox-wrapper]:transition-colors [&_.ant-checkbox-wrapper]:duration-150 motion-reduce:[&_.ant-checkbox-wrapper]:transition-none [&_.ant-checkbox-wrapper:hover]:bg-hover"
+          className="flex flex-wrap gap-x-1 gap-y-1.5 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-control [&_.ant-checkbox-wrapper]:px-1.75 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-hover [&_.ant-checkbox-wrapper-checked]:text-accent [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px [&_.ant-checkbox-wrapper]:transition-colors [&_.ant-checkbox-wrapper]:duration-150 motion-reduce:[&_.ant-checkbox-wrapper]:transition-none [&_.ant-checkbox-wrapper:hover]:bg-hover"
           value={selectedEnvironments}
           options={previewEnvironments.map((item) => ({ label: item.key, value: item.key }))}
           onChange={(values) => onChange(values.map(String))}
@@ -196,7 +196,7 @@ function EnvironmentPanel({
       >
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <h3 className="m-0 shrink-0 rounded-4px bg-hover px-2 text-accent font-mono text-14px font-600 leading-28px">
+            <h3 className="m-0 shrink-0 rounded-ui bg-hover px-2 text-accent font-mono text-14px font-600 leading-28px">
               {environment.key}
             </h3>
             <span className="text-13px text-text-secondary">{environment.name}</span>

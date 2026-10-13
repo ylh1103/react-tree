@@ -36,7 +36,7 @@ export function SplitPane({
   titleExtra,
   integratedHeader = false,
   readOnly = false,
-  defaultWidth = 340,
+  defaultWidth = 290,
   minWidth = 260,
   maxWidth = 640,
   minContentWidth = 240,
@@ -223,7 +223,7 @@ export function SplitPane({
       </aside>
       <div
         ref={separatorRef}
-        className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_var(--layout-gap)] rounded-sm bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
+        className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_var(--layout-gap)] rounded-ui bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
         role="separator"
         tabIndex={readOnly ? -1 : 0}
         aria-label={`调整${sidebarLabel}宽度`}
@@ -360,7 +360,7 @@ export function SplitPane({
           {titleExtra}
         </div>
         <div
-          className={`layout-scroll ${compact || integratedHeader ? '' : 'rounded-8px bg-surface'}`}
+          className={`layout-scroll ${compact || integratedHeader ? '' : 'rounded-ui bg-surface'}`}
         >
           {children}
         </div>

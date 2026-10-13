@@ -92,7 +92,7 @@ export function SystemsHomeSkeleton() {
 /** 使用实际分栏读取同一份宽度、收起状态和布局偏好。 */
 export function CollectionSkeleton({
   storageKey = 'react-tree:split-pane:搜索:v1',
-  defaultWidth = 340,
+  defaultWidth = 290,
   title = '搜索',
   integratedHeader = false,
 }: {
@@ -137,7 +137,7 @@ export function CollectionSkeleton({
             <Skeleton.Input active size="small" />
           </div>
           <div
-            className={`layout-scroll ${layoutMode === 'compact' || integratedHeader ? '' : 'rounded-8px bg-surface'}`}
+            className={`layout-scroll ${layoutMode === 'compact' || integratedHeader ? '' : 'rounded-ui bg-surface'}`}
           >
             {content}
           </div>
@@ -174,7 +174,7 @@ export function ApplicationsSkeleton() {
   return (
     <CollectionSkeleton
       storageKey="react-tree:split-pane:application:v1"
-      defaultWidth={360}
+      defaultWidth={290}
       title={appName || '应用参数'}
       integratedHeader={!appName}
     />

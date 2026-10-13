@@ -19,7 +19,7 @@ export default function AppLayout() {
         <AppNavigation />
         <main
           id="app-page"
-          className={`layout-scroll ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-8px [&:has([data-split-pane])]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:border-l-0'}`}
+          className={`layout-scroll ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-ui [&:has([data-split-pane])]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:border-l-0'}`}
           tabIndex={-1}
         >
           <RouteOutlet layoutId="workspace" />

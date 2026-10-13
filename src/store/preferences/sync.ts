@@ -64,7 +64,7 @@ export function startUserSettingsSync(
   let queued = false;
   let refreshing = false;
   let activeRequest: { abort: () => void } | null = null;
-  let previousStatus = store.getState().preferences.status;
+  let previousSaveRevision = store.getState().preferences.saveRevision;
 
   const flush = async () => {
     const { initialized, status } = store.getState().preferences;
@@ -96,9 +96,9 @@ export function startUserSettingsSync(
   };
   const unsubscribeTransport = transport?.subscribe(receive);
   const unsubscribeStore = store.subscribe(() => {
-    const status = store.getState().preferences.status;
-    const saved = previousStatus === 'saving' && status === 'ready';
-    previousStatus = status;
+    const revision = store.getState().preferences.saveRevision;
+    const saved = previousSaveRevision !== revision;
+    previousSaveRevision = revision;
     if (saved) {
       try {
         transport?.publish();

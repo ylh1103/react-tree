@@ -5,6 +5,7 @@ import {
   loadUserSettings,
   refreshUserSettings,
   saveThemeMode,
+  saveUserSettings,
 } from '../src/store/slices/preferencesSlice.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import {
@@ -30,19 +31,19 @@ function mockStorage(t) {
 
 test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t) => {
   const values = mockStorage(t);
-  assert.equal(readBootstrapTheme(), 'light');
+  assert.equal(readBootstrapTheme(), 'system');
   for (const mode of ['light', 'dark', 'system']) {
     values.set('react-tree:theme-mode:v1', mode);
     assert.equal(readBootstrapTheme(), mode);
   }
   values.set('react-tree:theme-mode:v1', 'invalid');
-  assert.equal(readBootstrapTheme(), 'light');
+  assert.equal(readBootstrapTheme(), 'system');
   Object.defineProperty(globalThis.window, 'localStorage', {
     get() {
       throw new Error('blocked');
     },
   });
-  assert.equal(readBootstrapTheme(), 'light');
+  assert.equal(readBootstrapTheme(), 'system');
 });
 
 test('刷新等待服务端时保留暗色缓存，读取成功后使用服务端主题', async (t) => {
@@ -88,7 +89,7 @@ test('只缓存成功保存及同步的主题，乐观切换和失败保存不�
   assert.equal(readBootstrapTheme(), 'system');
   persisted = { ...defaultUserSettings };
   await store.dispatch(refreshUserSettings());
-  assert.equal(readBootstrapTheme(), 'light');
+  assert.equal(readBootstrapTheme(), 'system');
 });
 
 test('服务端读取失败保留启动暗色，避免再次闪为浅色', async (t) => {
@@ -106,4 +107,29 @@ test('服务端读取失败保留启动暗色，避免再次闪为浅色', async
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.themeMode, 'dark');
   assert.equal(store.getState().preferences.status, 'load-error');
+});
+
+test('连续保存后续失败时，首屏主题缓存仍保留较早已确认的主题', async (t) => {
+  mockStorage(t);
+  let release;
+  const first = new Promise((resolve) => {
+    release = resolve;
+  });
+  let calls = 0;
+  const store = createAppStore({
+    load: async () => ({ ...defaultUserSettings }),
+    save: async (settings) => {
+      if (++calls === 1) await first;
+      else throw Error('后续保存失败');
+      return settings;
+    },
+  });
+  t.after(startThemePersistence(store));
+  await store.dispatch(loadUserSettings());
+  const theme = store.dispatch(saveThemeMode('dark'));
+  const radius = store.dispatch(saveUserSettings({ borderRadius: 24 }));
+  release();
+  await Promise.all([theme, radius]);
+  assert.equal(store.getState().preferences.status, 'save-error');
+  assert.equal(readBootstrapTheme(), 'dark');
 });

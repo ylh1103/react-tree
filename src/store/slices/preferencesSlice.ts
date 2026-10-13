@@ -4,8 +4,10 @@
  */
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import {
+  defaultUserSettings,
   parseUserSettings,
   type ThemeMode,
+  type NavigationTheme,
   type LayoutMode,
   type UserSettings,
   type UserSettingsApi,
@@ -16,10 +18,25 @@ import {
 interface PreferencesState {
   initialized: boolean;
   refreshRequestId: string | null;
+  saveRequestId: string | null;
+  saveRevision: number;
+  saveChanges: Partial<UserSettings> | null;
   layoutMode: LayoutMode;
   savedLayoutMode: LayoutMode;
+  layoutGap: number;
+  savedLayoutGap: number;
+  // 滑块拖动中的临时预览，不写入服务端配置。
+  previewLayoutGap: number | null;
+  borderRadius: number;
+  savedBorderRadius: number;
+  previewBorderRadius: number | null;
+  controlBorderRadius: number;
+  savedControlBorderRadius: number;
+  previewControlBorderRadius: number | null;
   themeMode: ThemeMode;
   savedThemeMode: ThemeMode;
+  navigationTheme: NavigationTheme;
+  savedNavigationTheme: NavigationTheme;
   navigationIconOnly: boolean;
   savedNavigationIconOnly: boolean;
   headerToolsIconOnly: boolean;
@@ -57,46 +74,110 @@ export const refreshUserSettings = createAsyncThunk<UserSettings, void, ThunkCon
   },
 );
 
-// 调用方只传变更字段；请求仍携带完整配置，避免修改主题时覆盖布局等其他选项。
+// 每个 Store 独立串行保存完整快照；连续修改立即进入 Redux，后续请求不会被丢弃。
+const saveQueues = new WeakMap<() => ThunkConfig['state'], Promise<void>>();
+function currentSettings(state: PreferencesState): UserSettings {
+  const {
+    layoutMode,
+    layoutGap,
+    borderRadius,
+    controlBorderRadius,
+    themeMode,
+    navigationTheme,
+    navigationIconOnly,
+    headerToolsIconOnly,
+  } = state;
+  return {
+    layoutMode,
+    layoutGap,
+    borderRadius,
+    controlBorderRadius,
+    themeMode,
+    navigationTheme,
+    navigationIconOnly,
+    headerToolsIconOnly,
+  };
+}
 export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSettings>, ThunkConfig>(
   'preferences/save',
   async (changes, { extra, signal, getState }) => {
-    const { layoutMode, themeMode, navigationIconOnly, headerToolsIconOnly } =
-      getState().preferences;
-    return parseUserSettings(
-      await extra.userSettingsApi.save(
-        { layoutMode, themeMode, navigationIconOnly, headerToolsIconOnly, ...changes },
-        signal,
-      ),
+    const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
+    const send = async () => {
+      signal.throwIfAborted();
+      return parseUserSettings(await extra.userSettingsApi.save(settings, signal));
+    };
+    const previous = saveQueues.get(getState);
+    const request = previous ? previous.then(send) : send();
+    const settled = request.then(
+      () => {},
+      () => {},
     );
+    saveQueues.set(getState, settled);
+    try {
+      return await request;
+    } finally {
+      if (saveQueues.get(getState) === settled) saveQueues.delete(getState);
+    }
   },
   {
-    condition: (_, { getState }) => ['ready', 'save-error'].includes(getState().preferences.status),
+    condition: (_, { getState }) =>
+      ['ready', 'saving', 'save-error'].includes(getState().preferences.status),
   },
 );
 
 const initialState: PreferencesState = {
   initialized: false,
   refreshRequestId: null,
+  saveRequestId: null,
+  saveRevision: 0,
+  saveChanges: null,
   layoutMode: 'default',
   savedLayoutMode: 'default',
-  themeMode: 'light',
-  savedThemeMode: 'light',
-  navigationIconOnly: false,
-  savedNavigationIconOnly: false,
-  headerToolsIconOnly: false,
-  savedHeaderToolsIconOnly: false,
+  layoutGap: defaultUserSettings.layoutGap,
+  savedLayoutGap: defaultUserSettings.layoutGap,
+  previewLayoutGap: null,
+  borderRadius: defaultUserSettings.borderRadius,
+  savedBorderRadius: defaultUserSettings.borderRadius,
+  previewBorderRadius: null,
+  controlBorderRadius: defaultUserSettings.controlBorderRadius,
+  savedControlBorderRadius: defaultUserSettings.controlBorderRadius,
+  previewControlBorderRadius: null,
+  themeMode: defaultUserSettings.themeMode,
+  savedThemeMode: defaultUserSettings.themeMode,
+  navigationTheme: defaultUserSettings.navigationTheme,
+  savedNavigationTheme: defaultUserSettings.navigationTheme,
+  navigationIconOnly: defaultUserSettings.navigationIconOnly,
+  savedNavigationIconOnly: defaultUserSettings.navigationIconOnly,
+  headerToolsIconOnly: defaultUserSettings.headerToolsIconOnly,
+  savedHeaderToolsIconOnly: defaultUserSettings.headerToolsIconOnly,
   failedSettings: null,
   settingsOpen: false,
   status: 'idle',
   error: null,
   failedLayoutMode: null,
 };
-function applySavedSettings(state: PreferencesState, action: PayloadAction<UserSettings>) {
-  state.layoutMode = state.savedLayoutMode = action.payload.layoutMode;
-  state.themeMode = state.savedThemeMode = action.payload.themeMode;
-  state.navigationIconOnly = state.savedNavigationIconOnly = action.payload.navigationIconOnly;
-  state.headerToolsIconOnly = state.savedHeaderToolsIconOnly = action.payload.headerToolsIconOnly;
+function updateSavedSettings(state: PreferencesState, settings: UserSettings) {
+  state.savedLayoutMode = settings.layoutMode;
+  state.savedLayoutGap = settings.layoutGap;
+  state.savedBorderRadius = settings.borderRadius;
+  state.savedControlBorderRadius = settings.controlBorderRadius;
+  state.savedThemeMode = settings.themeMode;
+  state.savedNavigationTheme = settings.navigationTheme;
+  state.savedNavigationIconOnly = settings.navigationIconOnly;
+  state.savedHeaderToolsIconOnly = settings.headerToolsIconOnly;
+}
+function applySavedSettings(
+  state: PreferencesState,
+  action: PayloadAction<UserSettings>,
+  preservePreview = false,
+) {
+  Object.assign(state, action.payload);
+  updateSavedSettings(state, action.payload);
+  if (!preservePreview) {
+    state.previewLayoutGap = null;
+    state.previewBorderRadius = null;
+    state.previewControlBorderRadius = null;
+  }
   state.initialized = true;
   state.status = 'ready';
   state.error = null;
@@ -113,6 +194,18 @@ const preferencesSlice = createSlice({
     },
     closeUserSettings(state) {
       state.settingsOpen = false;
+      state.previewLayoutGap = null;
+      state.previewBorderRadius = null;
+      state.previewControlBorderRadius = null;
+    },
+    previewLayoutGap(state, action: PayloadAction<number | null>) {
+      state.previewLayoutGap = action.payload;
+    },
+    previewControlBorderRadius(state, action: PayloadAction<number | null>) {
+      state.previewControlBorderRadius = action.payload;
+    },
+    previewBorderRadius(state, action: PayloadAction<number | null>) {
+      state.previewBorderRadius = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -120,17 +213,25 @@ const preferencesSlice = createSlice({
       .addCase(loadUserSettings.pending, (state) => {
         state.refreshRequestId = null;
         state.status = 'loading';
+        state.previewLayoutGap = null;
+        state.previewBorderRadius = null;
+        state.previewControlBorderRadius = null;
         state.error = null;
       })
       .addCase(loadUserSettings.fulfilled, (state, action) => {
         applySavedSettings(state, action);
       })
       .addCase(loadUserSettings.rejected, (state, action) => {
+        state.navigationTheme = state.savedNavigationTheme = initialState.navigationTheme;
         state.navigationIconOnly = state.savedNavigationIconOnly = initialState.navigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly =
           initialState.headerToolsIconOnly;
         state.initialized = true;
         state.layoutMode = state.savedLayoutMode = initialState.layoutMode;
+        state.layoutGap = state.savedLayoutGap = initialState.layoutGap;
+        state.borderRadius = state.savedBorderRadius = initialState.borderRadius;
+        state.controlBorderRadius = state.savedControlBorderRadius =
+          initialState.controlBorderRadius;
         state.themeMode = state.savedThemeMode;
         state.status = 'load-error';
         state.error = action.error.message || '用户设置读取失败';
@@ -148,10 +249,27 @@ const preferencesSlice = createSlice({
         // 同步失败保留当前配置，下一次通知或回到页签时重试。
       })
       .addCase(saveUserSettings.pending, (state, action) => {
-        // 开始本地写入后，之前的后台读取结果已失效。
+        state.saveChanges = {
+          ...(state.status === 'saving' ? state.saveChanges : {}),
+          ...action.meta.arg,
+        };
+        state.saveRequestId = action.meta.requestId;
+        // 开始本地写入后，之前的后台读取结果已失效；只清理本次提交字段的预览。
         state.refreshRequestId = null;
+        if (action.meta.arg.layoutGap !== undefined) state.previewLayoutGap = null;
+        if (action.meta.arg.borderRadius !== undefined) state.previewBorderRadius = null;
+        if (action.meta.arg.controlBorderRadius !== undefined)
+          state.previewControlBorderRadius = null;
         if (action.meta.arg.layoutMode) state.layoutMode = action.meta.arg.layoutMode;
+        if (typeof action.meta.arg.layoutGap === 'number')
+          state.layoutGap = action.meta.arg.layoutGap;
+        if (typeof action.meta.arg.controlBorderRadius === 'number')
+          state.controlBorderRadius = action.meta.arg.controlBorderRadius;
+        if (typeof action.meta.arg.borderRadius === 'number')
+          state.borderRadius = action.meta.arg.borderRadius;
         if (action.meta.arg.themeMode) state.themeMode = action.meta.arg.themeMode;
+        if (action.meta.arg.navigationTheme)
+          state.navigationTheme = action.meta.arg.navigationTheme;
         if (typeof action.meta.arg.navigationIconOnly === 'boolean')
           state.navigationIconOnly = action.meta.arg.navigationIconOnly;
         if (typeof action.meta.arg.headerToolsIconOnly === 'boolean')
@@ -162,21 +280,39 @@ const preferencesSlice = createSlice({
         state.failedSettings = null;
       })
       .addCase(saveUserSettings.fulfilled, (state, action) => {
-        applySavedSettings(state, action);
+        state.saveRevision++;
+        updateSavedSettings(state, action.payload);
+        if (state.saveRequestId !== action.meta.requestId) return;
+        applySavedSettings(state, action, true);
+        state.saveRequestId = null;
+        state.saveChanges = null;
       })
       .addCase(saveUserSettings.rejected, (state, action) => {
+        if (state.saveRequestId !== action.meta.requestId) return;
+        state.saveRequestId = null;
         state.layoutMode = state.savedLayoutMode;
+        state.layoutGap = state.savedLayoutGap;
+        state.borderRadius = state.savedBorderRadius;
+        state.controlBorderRadius = state.savedControlBorderRadius;
         state.navigationIconOnly = state.savedNavigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly;
         state.themeMode = state.savedThemeMode;
+        state.navigationTheme = state.savedNavigationTheme;
         state.status = 'save-error';
         state.error = action.error.message || '用户设置保存失败';
-        state.failedLayoutMode = action.meta.arg.layoutMode ?? null;
-        state.failedSettings = action.meta.arg;
+        state.failedSettings = state.saveChanges ?? action.meta.arg;
+        state.failedLayoutMode = state.failedSettings.layoutMode ?? null;
+        state.saveChanges = null;
       });
   },
 });
-export const { openUserSettings, closeUserSettings } = preferencesSlice.actions;
+export const {
+  openUserSettings,
+  closeUserSettings,
+  previewLayoutGap,
+  previewBorderRadius,
+  previewControlBorderRadius,
+} = preferencesSlice.actions;
 export default preferencesSlice.reducer;
 
 export const saveLayoutMode = (layoutMode: LayoutMode) => saveUserSettings({ layoutMode });

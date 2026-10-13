@@ -9,10 +9,13 @@ import type { LayoutMode } from '../types/preferences';
 
 export function useLayoutPreferences() {
   const layoutMode = useAppSelector((state) => state.preferences.layoutMode);
+  const layoutGap = useAppSelector(
+    (state) => state.preferences.previewLayoutGap ?? state.preferences.layoutGap,
+  );
   const dispatch = useAppDispatch();
   const updateLayoutMode = useCallback(
     (mode: LayoutMode) => dispatch(saveLayoutMode(mode)),
     [dispatch],
   );
-  return { layoutMode, setLayoutMode: updateLayoutMode };
+  return { layoutMode, layoutGap, setLayoutMode: updateLayoutMode };
 }

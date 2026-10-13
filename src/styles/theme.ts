@@ -3,11 +3,16 @@
  * 主题切换以同一配置更新组件 token 和全局变量，修改配色时从这里维护。
  */
 import { theme, type ThemeConfig } from 'antd';
-import type { ResolvedThemeMode } from '../types/preferences';
+import type { NavigationTheme, ResolvedThemeMode } from '../types/preferences';
+import { defaultUserSettings } from '../types/preferences.ts';
 
 export const appTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
-  token: { borderRadius: 6, fontSize: 14 },
+  token: {
+    colorPrimary: '#0d99ff',
+    borderRadius: defaultUserSettings.controlBorderRadius,
+    fontSize: 14,
+  },
 };
 
 /** Dracula Theme Official：蓝紫灰表面、紫色强调和高对比语义色。 */
@@ -117,12 +122,42 @@ export const darkAppTheme: ThemeConfig = {
 };
 export const appThemes = { light: appTheme, dark: darkAppTheme };
 
+/** 常用圆角保留 Ant Design 层级；大圆角按高度比例扩展，避免 SM/LG 上限使各尺寸外观不一致。 */
+export function createAppTheme(mode: ResolvedThemeMode, borderRadius: number): ThemeConfig {
+  const base = appThemes[mode];
+  const config: ThemeConfig = {
+    ...base,
+    token: {
+      ...base.token,
+      borderRadius,
+    },
+  };
+  if (borderRadius <= 8) return config;
+  const tokens = theme.getDesignToken(config);
+  return {
+    ...config,
+    token: {
+      ...config.token,
+      borderRadiusSM: Math.max(
+        tokens.borderRadiusSM,
+        Math.round((borderRadius * tokens.controlHeightSM) / tokens.controlHeight),
+      ),
+      borderRadiusLG: Math.max(
+        tokens.borderRadiusLG,
+        Math.round((borderRadius * tokens.controlHeightLG) / tokens.controlHeight),
+      ),
+    },
+  };
+}
+
 function createThemeVariables(mode: ResolvedThemeMode) {
   const tokens = theme.getDesignToken(appThemes[mode]);
 
   /** 全局主题变量的唯一入口：统一配色、间距和交互参数。 */
   const variables = {
     '--layout-gap': '4px',
+    '--ui-radius': `${defaultUserSettings.borderRadius}px`,
+    '--control-radius': `${defaultUserSettings.controlBorderRadius}px`,
     '--color-canvas': tokens.colorBgLayout,
     '--color-header': tokens.colorBgContainer,
     '--color-surface': tokens.colorBgContainer,
@@ -135,6 +170,8 @@ function createThemeVariables(mode: ResolvedThemeMode) {
     '--color-accent-hover': tokens.colorPrimaryHover,
     '--color-accent-active': tokens.colorPrimaryActive,
     '--color-accent-text': tokens.colorPrimaryText,
+    '--color-settings-accent-text': mode === 'light' ? '#0068b5' : tokens.colorPrimaryText,
+    '--color-settings-surface': tokens.colorBgElevated,
     '--color-on-accent': tokens.colorTextLightSolid,
     '--color-hover': tokens.colorPrimaryBg,
     '--color-accent-bg-hover': tokens.colorPrimaryBgHover,
@@ -287,12 +324,36 @@ function createThemeVariables(mode: ResolvedThemeMode) {
 export const themeVariables = createThemeVariables('light');
 export const themeVariablesByMode = { light: themeVariables, dark: createThemeVariables('dark') };
 
+/** 仅在导航及其预览作用域覆盖，跟随全局主题变量自动切换浅色和暗色。 */
+export const navigationThemeVariables: Record<NavigationTheme, Record<string, string>> = {
+  contrast: {},
+  theme: {
+    '--color-nav': 'var(--color-surface)',
+    '--color-nav-hover': 'var(--color-sidebar)',
+    '--color-nav-active': 'var(--color-hover)',
+    '--color-nav-active-text': 'var(--color-accent-text)',
+    '--color-nav-active-hover': 'var(--color-accent-bg-hover)',
+    '--color-nav-pressed': 'var(--color-accent-bg-hover)',
+    '--color-nav-text': 'var(--color-text-secondary)',
+    '--color-nav-emphasis': 'var(--color-text)',
+  },
+};
+
 /** 同步根节点变量，让页面和挂载到 body 的弹层使用同一主题。 */
-export function applyTheme(mode: ResolvedThemeMode) {
+export function applyTheme(
+  mode: ResolvedThemeMode,
+  borderRadius = defaultUserSettings.borderRadius,
+  controlBorderRadius = defaultUserSettings.controlBorderRadius,
+) {
   const root = document.documentElement;
   for (const [name, value] of Object.entries(themeVariablesByMode[mode])) {
-    root.style.setProperty(name, value);
+    // 圆角由用户设置覆盖，避免拖动时先恢复主题默认值再写入预览值。
+    if (name !== '--ui-radius' && name !== '--control-radius' && name !== '--tree-focus-radius')
+      root.style.setProperty(name, value);
   }
+  root.style.setProperty('--ui-radius', `${borderRadius}px`);
+  root.style.setProperty('--control-radius', `${controlBorderRadius}px`);
+  root.style.setProperty('--tree-focus-radius', `${controlBorderRadius}px`);
   root.style.colorScheme = mode;
   root.dataset.theme = mode;
 }
