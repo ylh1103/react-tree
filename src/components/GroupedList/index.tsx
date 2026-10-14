@@ -42,6 +42,8 @@ const dragMeasuring = {
 
 const ROW_HEIGHT = 42;
 const ROW_GAP = 10;
+// 与筛选区、分组编辑区的 12px 间距一致，独立于列表项之间的间距。
+const LIST_PADDING = 12;
 const getSearchText = (node: LeafNode) => `${node.title} ${node.data.desc ?? ''}`;
 const matchesSearch = createSearchMatcher(getSearchText);
 
@@ -191,8 +193,8 @@ export function GroupedList({
     getScrollElement: () => parentScrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     gap: ROW_GAP,
-    paddingStart: ROW_GAP,
-    paddingEnd: ROW_GAP,
+    paddingStart: LIST_PADDING,
+    paddingEnd: LIST_PADDING,
     overscan: 8,
   });
 
@@ -201,13 +203,28 @@ export function GroupedList({
   // 索引并滚动，避免用旧的 flat 数据算出错误的 index。
   const pendingLocateRef = useRef<'reveal' | 'locate' | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectionRevealRef = useRef<{
+    listId: GroupedListId;
+    key: string | null | undefined;
+    requested: boolean;
+  } | null>(null);
 
   useEffect(() => {
+    let selection = selectionRevealRef.current;
+    if (selection?.listId !== listId || selection.key !== controlledSelectedKey) {
+      selection = { listId, key: controlledSelectedKey, requested: false };
+      selectionRevealRef.current = selection;
+      if (pendingLocateRef.current === 'reveal') pendingLocateRef.current = null;
+    }
+    // 树索引在排序、分组编辑后会变化，但同一次选中只请求一次自动定位。
+    // 数据尚未就绪时保留待请求状态，首次加载完成后仍能展开并定位。
+    if (selection.requested) return;
     if (!controlledSelectedKey || !ready || !treeIndex.nodeByKey.has(controlledSelectedKey)) return;
+    selection.requested = true;
     expandPath(treeIndex.ancestors(controlledSelectedKey));
     // URL 选中同步只展开、滚动，不触发主动定位的临时高亮。
     pendingLocateRef.current = 'reveal';
-  }, [controlledSelectedKey, ready, treeIndex, expandPath]);
+  }, [listId, controlledSelectedKey, ready, treeIndex, expandPath]);
 
   // 高亮计时独立于 flat，避免展开、搜索或拖拽更新提前清理计时器。
   useEffect(
@@ -319,7 +336,7 @@ export function GroupedList({
               cancel: handleCancel,
             }}
           />
-          <div className="flex items-center gap-2 px-4 pb-3.5 bg-surface">
+          <div className="flex items-center gap-2 px-4 bg-surface">
             <Input.Search
               placeholder={`请输入${config.label}名称或描述`}
               aria-label={`请输入${config.label}名称或描述`}

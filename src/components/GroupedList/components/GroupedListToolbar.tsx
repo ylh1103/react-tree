@@ -78,7 +78,7 @@ export function GroupedListToolbar({
   return (
     <>
       <div className="shrink-0 min-w-0 [container-type:inline-size]">
-        <header className="flex items-center gap-2 px-4 pt-4.5 pb-2.5">
+        <header className="workspace-titlebar-layout flex-nowrap! gap-x-2!">
           <GroupedListHeading
             context={context}
             config={config}
@@ -97,7 +97,7 @@ export function GroupedListToolbar({
               />
             </Tooltip>
             {secondaryActions.slice(0, 2).map((action) => (
-              <span key={action.key} className="inline-flex [@container(max-width:319px)]:hidden">
+              <span key={action.key} className="inline-flex [@container(max-width:279px)]:hidden">
                 <Tooltip title={action.tooltip ?? action.label}>
                   <Button
                     size="small"
@@ -119,7 +119,7 @@ export function GroupedListToolbar({
                 icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
               />
             </Tooltip>
-            <span className="inline-flex [@container(max-width:319px)]:hidden">
+            <span className="inline-flex [@container(max-width:279px)]:hidden">
               <Tooltip title={secondaryActions[2].label}>
                 <Button
                   size="small"
@@ -137,7 +137,7 @@ export function GroupedListToolbar({
                 />
               </Tooltip>
             </span>
-            <span className="hidden [@container(max-width:319px)]:inline-flex">
+            <span className="hidden [@container(max-width:279px)]:inline-flex">
               <Dropdown
                 trigger={['click']}
                 placement="bottomRight"
@@ -177,11 +177,11 @@ export function GroupedListToolbar({
           options={config.options.map((option) => ({
             value: option.value,
             label: (
-              <span className="flex min-w-0 flex-col items-center justify-center gap-0.5">
-                <span className="max-w-full truncate" title={option.label}>
+              <span className="flex min-w-0 items-center justify-center gap-1">
+                <span className="min-w-0 truncate" title={option.label}>
                   {option.label}
                 </span>
-                <span className="application-type-filter-count min-w-4.5 max-w-full truncate px-1 rounded-ui bg-canvas text-text-muted text-[11px] font-600 leading-[18px] tabular-nums">
+                <span className="application-type-filter-count inline-flex min-w-4.5 shrink-0 items-center justify-center rounded-control bg-surface px-1 text-text-muted text-11px font-500 leading-18px tabular-nums">
                   {option.value === 'all'
                     ? totalLeafCount
                     : (totalLeafCountsByCategory.get(option.value) ?? 0)}

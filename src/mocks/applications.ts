@@ -1,41 +1,49 @@
 /**
- * 应用清单示例和按系统隔离的 Mock 接口工厂。
- * 默认小清单供开发；环境变量可生成压力测试数据，生成发生在首次 Mock 请求时。
+ * 默认生成 785 条应用以预览长列表；环境变量可覆盖数量。
+ * 使用固定种子的随机英文名，保证刷新后选择、路由和分组引用稳定。
  */
 import type { ApplicationItem } from '../types/applications';
 
 export function createMockApplications() {
-  const applications: ApplicationItem[] = [
-    { appName: 'ABS-BFF', appDesc: 'ABS 系统的 BFF 服务', appType: '0' },
-    { appName: '用户中心', appDesc: '统一身份与用户信息管理', appType: '1' },
-    { appName: '核心服务', appDesc: '核心业务参数配置', appType: '0' },
-    { appName: 'CICI服务', appDesc: '持续集成与发布服务', appType: '1' },
-    { appName: '公共配置', appDesc: '跨应用共享参数', appType: '1' },
-    { appName: '自动化任务', appDesc: '批量作业与任务调度', appType: '0' },
-    {
-      appName: '企业级统一应用参数配置与跨环境发布管理平台—长名称测试',
-      appType: '0',
-      appDesc: '开发、测试、预发布及生产环境的配置同步与版本管理，末尾搜索关键词：尾部命中LW641',
-    },
-  ];
-
-  const requestedCount = Number(import.meta.env.VITE_MOCK_APPLICATION_COUNT);
+  const requestedCount = Number(import.meta.env?.VITE_MOCK_APPLICATION_COUNT);
   const mockApplicationCount =
-    Number.isSafeInteger(requestedCount) && requestedCount > applications.length
-      ? requestedCount
-      : applications.length;
-  const initialApplicationCount = applications.length;
-  for (let index = 0; index < mockApplicationCount - initialApplicationCount; index++) {
-    const number = String(index + initialApplicationCount + 1).padStart(3, '0');
-    const appType = index % 3 === 0 ? '1' : '0';
-    const category = appType === '1' ? 'public' : 'bussiness';
+    Number.isSafeInteger(requestedCount) && requestedCount > 0 ? requestedCount : 785;
+  const descriptions = [
+    '系统的 BFF 服务',
+    '统一身份与用户信息管理',
+    '核心业务参数配置',
+    '持续集成与发布服务',
+    '跨应用共享参数',
+    '批量作业与任务调度',
+    '开发、测试、预发布及生产环境的配置同步与版本管理，末尾搜索关键词：尾部命中LW641',
+  ];
+  let seed = 785;
+  const random = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 0x100000000;
+  };
+  const usedNames = new Set<string>();
+  const nameCharacters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+  const applications: ApplicationItem[] = [];
+  for (let index = 0; index < mockApplicationCount; index++) {
+    let appName: string;
+    do {
+      const length = 1 + Math.floor(random() * 30);
+      appName = Array.from(
+        { length },
+        () => nameCharacters[Math.floor(random() * nameCharacters.length)],
+      ).join('');
+    } while (usedNames.has(appName));
+    usedNames.add(appName);
+    const appType = index % 3 === 1 ? '1' : '0';
     applications.push({
-      appName: `${category}-${number}`,
-      appDesc: `${category} ${number} 的参数配置、服务管理与发布设置`,
+      appName,
+      appDesc:
+        descriptions[index] ??
+        `${appType === '1' ? '公共应用' : '业务应用'} ${index + 1} 的参数配置、服务管理与发布设置`,
       appType,
     });
   }
-
   return applications;
 }
 
