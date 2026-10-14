@@ -41,7 +41,7 @@ export function OverviewSkeleton() {
 
 export function SystemsHomeSkeleton() {
   return (
-    <section className="page-skeleton max-w-1600px mx-auto p-8" aria-busy>
+    <section className="page-skeleton max-w-1600px mx-auto p-5 desktop:p-8" aria-busy>
       <span className="sr-only" role="status">
         系统列表加载中…
       </span>
@@ -59,29 +59,15 @@ export function SystemsHomeSkeleton() {
         <Skeleton.Input active className="w-160px!" />
         <Skeleton.Button active />
       </div>
-      <div className="workspace-panel overflow-hidden" aria-hidden="true">
-        <div className="system-row-grid px-6 py-3 border-b border-b-solid border-divider bg-sidebar text-12px text-text-muted">
-          <span>系统信息</span>
-          <span>我的角色</span>
-          <span>系统负责人</span>
-          <span>参数工作区</span>
-        </div>
+      <div className="system-card-grid" aria-hidden="true">
         {Array.from({ length: 8 }, (_, index) => (
-          <div
-            key={index}
-            className="system-row-grid px-6 py-4.5 border-b border-b-solid border-divider last:border-b-0"
-          >
-            <Skeleton active title={{ width: '45%' }} paragraph={{ rows: 2 }} />
-            <Skeleton.Input
-              active
-              size="small"
-              className="w-full! min-w-0! [&_.ant-skeleton-input]:w-full! [&_.ant-skeleton-input]:min-w-0!"
-            />
-            <Skeleton active title={false} paragraph={{ rows: 2 }} />
-            <div className="flex items-start gap-2">
-              <Skeleton.Button active />
-              <Skeleton.Button active />
+          <div key={index} className="workspace-panel p-5">
+            <Skeleton active title={{ width: '45%' }} paragraph={{ rows: 3 }} />
+            <div className="grid grid-cols-2 gap-2 mt-4 [&_.ant-skeleton-button]:w-full! [&_.ant-skeleton-button]:h-88px!">
+              <Skeleton.Button active block />
+              <Skeleton.Button active block />
             </div>
+            <Skeleton active title={false} paragraph={{ rows: 1 }} className="mt-4" />
           </div>
         ))}
       </div>
@@ -126,13 +112,13 @@ export function CollectionSkeleton({
           className={`flex flex-col h-full min-h-0 ${integratedHeader ? (layoutMode === 'compact' ? 'bg-surface' : 'workspace-panel') : `gap-layout ${layoutMode === 'compact' ? 'bg-surface' : 'bg-canvas'}`}`}
         >
           <div
-            className={
+            className={`workspace-collection-titlebar ${
               integratedHeader
-                ? 'workspace-titlebar-layout'
+                ? `workspace-titlebar-layout ${layoutMode === 'compact' ? '' : 'workspace-titlebar-frame-edge'}`
                 : layoutMode === 'compact'
                   ? 'workspace-titlebar'
                   : 'workspace-titlebar-detached'
-            }
+            }`}
           >
             <Skeleton.Input active size="small" />
           </div>

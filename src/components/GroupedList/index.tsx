@@ -6,7 +6,7 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
-import { Alert, Button, Input, Spin } from 'antd';
+import { Alert, Button, Dropdown, Input, Space, Spin, Tooltip } from 'antd';
 import type {
   LeafNode,
   DropIndicator,
@@ -42,7 +42,7 @@ const dragMeasuring = {
 
 const ROW_HEIGHT = 42;
 const ROW_GAP = 10;
-// 与筛选区、分组编辑区的 12px 间距一致，独立于列表项之间的间距。
+// 列表底部留白；顶部间距放在搜索区内，滚动时保持固定。
 const LIST_PADDING = 12;
 const getSearchText = (node: LeafNode) => `${node.title} ${node.data.desc ?? ''}`;
 const matchesSearch = createSearchMatcher(getSearchText);
@@ -79,6 +79,7 @@ export function GroupedList({
     runNodeAction,
   } = useGroupedList(listId, service);
   const [typeFilter, setTypeFilter] = useState<'all' | '0' | '1'>('all');
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const matchesType = useCallback(
     (node: LeafNode) => node.data[config.typeField] === typeFilter,
     [config.typeField, typeFilter],
@@ -193,7 +194,7 @@ export function GroupedList({
     getScrollElement: () => parentScrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     gap: ROW_GAP,
-    paddingStart: LIST_PADDING,
+    paddingStart: 0,
     paddingEnd: LIST_PADDING,
     overscan: 8,
   });
@@ -315,8 +316,6 @@ export function GroupedList({
             busy={disabled}
             listId={listId}
             refresh={refresh}
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
             context={{
               totalLeafCount,
               filteredLeafCount,
@@ -336,15 +335,60 @@ export function GroupedList({
               cancel: handleCancel,
             }}
           />
-          <div className="flex items-center gap-2 px-4 bg-surface">
-            <Input.Search
-              placeholder={`请输入${config.label}名称或描述`}
-              aria-label={`请输入${config.label}名称或描述`}
-              allowClear
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-none"
-            />
+          <div className="flex shrink-0 items-center gap-2 px-4 pb-3 bg-surface">
+            <Space.Compact className="w-full">
+              <Input
+                placeholder={`请输入${config.label}名称或描述`}
+                aria-label={`请输入${config.label}名称或描述`}
+                allowClear
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                prefix={
+                  <span
+                    className="i-lucide-search h-14px w-14px text-text-muted"
+                    aria-hidden="true"
+                  />
+                }
+                className="min-w-0"
+              />
+              <Dropdown
+                trigger={['click']}
+                placement="bottomRight"
+                onOpenChange={setFilterMenuOpen}
+                menu={{
+                  selectable: true,
+                  selectedKeys: [typeFilter],
+                  items: config.options.map((option) => ({
+                    key: option.value,
+                    label: (
+                      <span className="flex min-w-160px items-center justify-between gap-6">
+                        <span>{option.label}</span>
+                        <span className="text-12px tabular-nums text-text-muted">
+                          {option.value === 'all'
+                            ? totalLeafCount
+                            : (treeIndex.leafCountsByCategory.get(option.value) ?? 0)}
+                        </span>
+                      </span>
+                    ),
+                    onClick: () => setTypeFilter(option.value),
+                  })),
+                }}
+              >
+                <Tooltip
+                  open={filterMenuOpen ? false : undefined}
+                  title={`${config.filterLabel}：${config.options.find((option) => option.value === typeFilter)?.label}`}
+                >
+                  <Button
+                    type={typeFilter === 'all' ? 'default' : 'primary'}
+                    aria-label={config.filterLabel}
+                    aria-pressed={typeFilter !== 'all'}
+                    icon={
+                      <span className="i-lucide-list-filter h-16px w-16px" aria-hidden="true" />
+                    }
+                  />
+                </Tooltip>
+              </Dropdown>
+            </Space.Compact>
           </div>
 
           <div

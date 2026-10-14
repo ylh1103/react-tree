@@ -1,15 +1,13 @@
 /**
- * 展示统计、类型筛选及分组编辑控制，回调由列表入口传入。
+ * 展示统计及分组编辑控制，回调由列表入口传入。
  * 工具栏只消费当前视图状态，查询和树修改由对应 Hook 处理。
  */
 import { useIsFetching } from '@tanstack/react-query';
 import { groupedListKeys, type GroupedListId } from '../../../queries/groupedList';
-import { useId, useState } from 'react';
-import { Button, Dropdown, Segmented, Tooltip } from 'antd';
+import { useLayoutPreferences } from '../../../hooks/useLayoutPreferences';
+import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TreeToolbarContext, GroupedListConfig } from '../types';
-
-type FilterValue = 'all' | '0' | '1';
 
 export function GroupedListToolbar({
   context,
@@ -17,23 +15,16 @@ export function GroupedListToolbar({
   busy,
   listId,
   refresh,
-  typeFilter,
-  setTypeFilter,
 }: {
   context: TreeToolbarContext;
   config: GroupedListConfig;
   busy: boolean;
   listId: GroupedListId;
   refresh: () => Promise<void>;
-  typeFilter: 'all' | '0' | '1';
-  setTypeFilter: (value: 'all' | '0' | '1') => void;
 }) {
+  const { layoutMode } = useLayoutPreferences();
   const refreshing = useIsFetching({ queryKey: groupedListKeys.list(listId), exact: true }) > 0;
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const filterPanelId = useId();
   const {
-    totalLeafCount,
-    totalLeafCountsByCategory,
     selectedKey,
     locateSelected,
     allExpanded,
@@ -75,29 +66,23 @@ export function GroupedListToolbar({
       onClick: isEditing ? cancel : enterEdit,
     },
   ];
+  // 筛选统计需要显示“匹配 / 总数”，优先为标题和完整统计留出空间。
+  const fullActionsClass = context.isFiltered
+    ? 'inline-flex [@container(max-width:319px)]:hidden'
+    : 'inline-flex [@container(max-width:255px)]:hidden';
+  const compactActionsClass = context.isFiltered
+    ? 'hidden [@container(max-width:319px)]:inline-flex'
+    : 'hidden [@container(max-width:255px)]:inline-flex';
   return (
     <>
       <div className="shrink-0 min-w-0 [container-type:inline-size]">
-        <header className="workspace-titlebar-layout flex-nowrap! gap-x-2!">
-          <GroupedListHeading
-            context={context}
-            config={config}
-            showDetails={typeFilter === 'all'}
-          />
-          <div className="flex shrink-0 gap-1.5 ml-auto">
-            <Tooltip title={filtersExpanded ? '收起' : '展开'}>
-              <Button
-                size="small"
-                type={filtersExpanded || typeFilter !== 'all' ? 'primary' : 'default'}
-                aria-label={filtersExpanded ? '收起类型选项' : '展开类型选项'}
-                aria-expanded={filtersExpanded}
-                aria-controls={filterPanelId}
-                onClick={() => setFiltersExpanded((current) => !current)}
-                icon={<span aria-hidden="true" className="i-lucide-list-filter" />}
-              />
-            </Tooltip>
+        <header
+          className={`${layoutMode === 'compact' ? 'workspace-titlebar mb-3' : 'workspace-titlebar-layout workspace-titlebar-frame-edge'} workspace-collection-titlebar`}
+        >
+          <GroupedListHeading context={context} config={config} />
+          <div className="flex shrink-0 gap-1 ml-auto [@container(min-width:320px)]:gap-1.5">
             {secondaryActions.slice(0, 2).map((action) => (
-              <span key={action.key} className="inline-flex [@container(max-width:279px)]:hidden">
+              <span key={action.key} className={fullActionsClass}>
                 <Tooltip title={action.tooltip ?? action.label}>
                   <Button
                     size="small"
@@ -119,7 +104,7 @@ export function GroupedListToolbar({
                 icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
               />
             </Tooltip>
-            <span className="inline-flex [@container(max-width:279px)]:hidden">
+            <span className="inline-flex">
               <Tooltip title={secondaryActions[2].label}>
                 <Button
                   size="small"
@@ -137,18 +122,20 @@ export function GroupedListToolbar({
                 />
               </Tooltip>
             </span>
-            <span className="hidden [@container(max-width:279px)]:inline-flex">
+            <span className={compactActionsClass}>
               <Dropdown
                 trigger={['click']}
                 placement="bottomRight"
                 menu={{
-                  items: secondaryActions.map(({ key, label, disabled, icon, onClick }) => ({
-                    key,
-                    label,
-                    disabled,
-                    icon,
-                    onClick,
-                  })),
+                  items: secondaryActions
+                    .slice(0, 2)
+                    .map(({ key, label, disabled, icon, onClick }) => ({
+                      key,
+                      label,
+                      disabled,
+                      icon,
+                      onClick,
+                    })),
                 }}
               >
                 <Button
@@ -161,35 +148,6 @@ export function GroupedListToolbar({
             </span>
           </div>
         </header>
-      </div>
-      <div
-        id={filterPanelId}
-        hidden={!filtersExpanded}
-        className="application-type-filter shrink-0 mx-4 mb-3"
-      >
-        <Segmented<FilterValue>
-          className="grouped-list-type-control"
-          block
-          aria-label={config.filterLabel}
-          value={typeFilter}
-          disabled={busy}
-          onChange={setTypeFilter}
-          options={config.options.map((option) => ({
-            value: option.value,
-            label: (
-              <span className="flex min-w-0 items-center justify-center gap-1">
-                <span className="min-w-0 truncate" title={option.label}>
-                  {option.label}
-                </span>
-                <span className="application-type-filter-count inline-flex min-w-4.5 shrink-0 items-center justify-center rounded-control bg-surface px-1 text-text-muted text-11px font-500 leading-18px tabular-nums">
-                  {option.value === 'all'
-                    ? totalLeafCount
-                    : (totalLeafCountsByCategory.get(option.value) ?? 0)}
-                </span>
-              </span>
-            ),
-          }))}
-        />
       </div>
       {isEditing && (
         <div
@@ -225,11 +183,9 @@ export function GroupedListToolbar({
 function GroupedListHeading({
   context,
   config,
-  showDetails,
 }: {
   context: TreeToolbarContext;
   config: GroupedListConfig;
-  showDetails: boolean;
 }) {
   const {
     totalLeafCount,
@@ -259,34 +215,97 @@ function GroupedListHeading({
   ];
   const countDescription = countLines.join('；');
   return (
-    <h2 className="flex min-w-0 items-center gap-1.5 whitespace-nowrap m-0 text-[16px] font-[650] leading-7">
-      <span className="truncate" title={`${config.label}列表`}>
-        {config.label}列表
-      </span>
-      <Tooltip
-        title={
-          showDetails ? (
-            <div className="flex flex-col gap-1">
-              {countLines.map((line, index) => (
-                <div key={index}>{line}</div>
-              ))}
+    <h2 className="flex shrink-0 items-center gap-1.5 whitespace-nowrap m-0 text-[16px] font-[650] leading-7">
+      <span title={`${config.label}列表`}>{config.label}列表</span>
+      <Popover
+        trigger={['hover', 'click']}
+        placement="bottomLeft"
+        arrow={false}
+        classNames={{ container: 'p-0! overflow-hidden rounded-ui!' }}
+        content={
+          <div className="w-280px max-w-[calc(100vw-32px)] text-text text-12px font-400 leading-5">
+            <div className="px-2 pt-3 pb-2">
+              <table className="w-full border-collapse whitespace-nowrap text-left">
+                <thead>
+                  <tr className="text-11px text-text-muted">
+                    <th scope="col" className="px-2 pb-2 font-400">
+                      类型
+                    </th>
+                    {isFiltered && (
+                      <th scope="col" className="px-2 pb-2 text-right font-400">
+                        当前匹配
+                      </th>
+                    )}
+                    <th scope="col" className="px-2 pb-2 text-right font-400">
+                      总数
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="bg-hover">
+                    <th scope="row" className="rounded-l-control px-2 py-2 font-600">
+                      全部{config.label}
+                    </th>
+                    {isFiltered && (
+                      <td className="px-2 py-2 text-right text-16px font-600 tabular-nums text-accent-text">
+                        {filteredLeafCount.toLocaleString()}
+                      </td>
+                    )}
+                    <td
+                      className={`rounded-r-control px-2 py-2 text-right font-600 tabular-nums ${isFiltered ? 'text-text-secondary' : 'text-16px text-accent-text'}`}
+                    >
+                      {totalLeafCount.toLocaleString()}
+                    </td>
+                  </tr>
+                  {categories.map(({ key, label }) => (
+                    <tr key={key}>
+                      <th scope="row" className="px-2 py-2 font-400 text-text-secondary">
+                        {label}
+                      </th>
+                      {isFiltered && (
+                        <td className="px-2 py-2 text-right font-500 tabular-nums">
+                          {(filteredLeafCountsByCategory.get(key) ?? 0).toLocaleString()}
+                        </td>
+                      )}
+                      <td className="px-2 py-2 text-right tabular-nums text-text-secondary">
+                        {(totalLeafCountsByCategory.get(key) ?? 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ) : (
-            countDescription
-          )
+            {isFiltered && (
+              <p className="m-0 border-t border-t-solid border-divider bg-sidebar px-4 py-2.5 text-11px leading-4 text-text-muted whitespace-normal">
+                匹配数量随搜索和类型筛选实时更新
+              </p>
+            )}
+          </div>
         }
       >
-        <span
-          className="inline-flex shrink-0 items-center justify-center min-w-6 max-w-20 px-1.5 rounded-ui bg-[var(--accent-bg)] text-[var(--accent-text)] text-[12px] font-600 leading-[22px] tabular-nums [@container(max-width:319px)]:max-w-12"
-          role="status"
-          aria-atomic="true"
-          aria-label={countDescription}
+        <Button
+          type="text"
+          size="small"
+          aria-label={`查看${config.label}数量统计，${countDescription}`}
+          className="h-24px! min-w-6 px-1.5! gap-1! rounded-control! bg-hover! hover:bg-accent-bg-hover! text-12px! leading-5! font-600! tabular-nums layout-focus"
         >
-          <span className="min-w-0 truncate">
-            {isFiltered ? `${filteredLeafCount} / ${totalLeafCount}` : totalLeafCount}
+          <span role="status" aria-atomic="true" aria-label={countDescription}>
+            <span className="text-accent-text">
+              {(isFiltered ? filteredLeafCount : totalLeafCount).toLocaleString()}
+            </span>
+            {isFiltered && (
+              <>
+                <span aria-hidden="true" className="mx-1 text-text-muted font-400">
+                  /
+                </span>
+                <span className="text-text-secondary font-400">
+                  {totalLeafCount.toLocaleString()}
+                </span>
+              </>
+            )}
           </span>
-        </span>
-      </Tooltip>
+        </Button>
+      </Popover>
     </h2>
   );
 }

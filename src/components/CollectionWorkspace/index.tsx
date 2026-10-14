@@ -3,7 +3,19 @@
  * 业务查询由页面提供；应用工具栏与内容通过回调接入，未知选中项在数据确认后展示状态。
  */
 import { useState, type ReactNode } from 'react';
-import { Alert, Button, Descriptions, Drawer, Empty, Grid, Input, Menu, Spin, Tag } from 'antd';
+import {
+  Alert,
+  Button,
+  Descriptions,
+  Drawer,
+  Empty,
+  Grid,
+  Input,
+  Menu,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd';
 import { NavLink, useNavigate } from 'react-router';
 import { SplitPane } from '../SplitPane';
 import { useSystemWorkspace } from '../../contexts/SystemContext';
@@ -151,7 +163,7 @@ export function CollectionWorkspace({
     </div>
   );
   const sidebar = renderSidebar ? renderSidebar(() => setDrawerOpen(false)) : defaultSidebar;
-  const titleExtra =
+  const toolbar =
     !database && selected && !pending && !blockingError
       ? renderApplicationToolbar?.({ selectedEnvironments, onChange: selectEnvironments })
       : null;
@@ -259,30 +271,32 @@ export function CollectionWorkspace({
         className={`flex flex-col h-full min-h-0 ${integratedHeader ? (layoutMode === 'compact' ? 'bg-surface' : 'workspace-panel') : `gap-layout ${layoutMode === 'compact' ? 'bg-surface' : 'bg-canvas'}`}`}
       >
         <div
-          className={
+          className={`workspace-collection-titlebar ${
             integratedHeader
-              ? 'workspace-titlebar-layout'
+              ? `workspace-titlebar-layout ${layoutMode === 'compact' ? '' : 'workspace-titlebar-frame-edge'}`
               : layoutMode === 'compact'
                 ? 'workspace-titlebar'
                 : 'workspace-titlebar-detached'
-          }
+          }`}
         >
-          <div className="workspace-title-identity">
+          <div className="workspace-title-identity shrink! flex-[0_1_220px]!">
             <Button
               onClick={() => setDrawerOpen(true)}
               aria-label={`打开${label}列表`}
               icon={<span className="i-lucide-panel-left-open w-16px h-16px" aria-hidden="true" />}
             />
             {workspaceTitle && (
-              <h2
-                className="workspace-page__title min-w-0 max-w-200px truncate"
-                title={workspaceTitle}
-              >
-                {workspaceTitle}
+              <h2 className="workspace-page__title min-w-0 max-w-200px">
+                <Typography.Text
+                  className="block! text-inherit! text-14px! font-600! leading-22px!"
+                  ellipsis={{ tooltip: workspaceTitle }}
+                >
+                  {workspaceTitle}
+                </Typography.Text>
               </h2>
             )}
           </div>
-          {titleExtra}
+          {toolbar}
         </div>
         <div
           className={`layout-scroll ${layoutMode === 'compact' || integratedHeader ? '' : 'rounded-ui bg-surface'}`}
@@ -309,7 +323,7 @@ export function CollectionWorkspace({
       sidebarLabel={`${label}列表`}
       title={workspaceTitle}
       sidebar={sidebar}
-      titleExtra={titleExtra}
+      toolbar={toolbar}
       integratedHeader={integratedHeader}
     >
       {content}

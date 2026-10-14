@@ -1,4 +1,6 @@
-import { Button, Checkbox, Empty, Tooltip } from 'antd';
+import { App as AntdApp, Button, Checkbox, Empty, Popover, Switch, Tooltip } from 'antd';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
+import { fitEnvironmentCount, getToolbarActionLabelMode } from './toolbarLayout';
 import { useLayoutPreferences } from '../../../hooks/useLayoutPreferences';
 import { OverlayHorizontalScroll } from '../../../components/OverlayHorizontalScroll';
 
@@ -86,51 +88,279 @@ export function ApplicationParametersToolbar({
   selectedEnvironments,
   onChange,
 }: EnvironmentSelectionProps) {
+  const [comparisonEnabled, setComparisonEnabled] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const comparisonRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(previewEnvironments.length);
+  const [actionLabelMode, setActionLabelMode] = useState<'icons' | 'primary' | 'all'>('icons');
+  const [showMoreLabel, setShowMoreLabel] = useState(false);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowId = useId();
+  // 应用切换会重新挂载工具栏，首帧绘制前完成测量，避免图标先显示再补上文字。
+  useLayoutEffect(() => {
+    const header = toolbarRef.current?.parentElement;
+    const actions = actionsRef.current;
+    const comparison = comparisonRef.current;
+    const measure = measureRef.current;
+    if (!header || !actions || !comparison || !measure) return;
+    let previousContentWidth = 0;
+    function updateLayout() {
+      if (!header || !actions || !comparison || !measure) return;
+      const style = getComputedStyle(header);
+      setActionLabelMode(getToolbarActionLabelMode(header.getBoundingClientRect().width));
+      const contentWidth =
+        header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const resizing =
+        previousContentWidth !== 0 && Math.abs(contentWidth - previousContentWidth) > 0.5;
+      previousContentWidth = contentWidth;
+      const labels = Array.from(measure.querySelectorAll('label'));
+      const allWidth = labels[0]?.getBoundingClientRect().width ?? 50;
+      const environmentWidths = labels.slice(1).map((label) => label.getBoundingClientRect().width);
+      const reserveTitle = contentWidth < 680 ? 100 : 220;
+      const availableWidth =
+        contentWidth -
+        reserveTitle -
+        actions.getBoundingClientRect().width -
+        comparison.getBoundingClientRect().width -
+        45;
+      const more = measure.querySelector('button');
+      const moreWidth = more?.getBoundingClientRect().width ?? 70;
+      setShowMoreLabel(contentWidth >= 760);
+      setVisibleCount((previousCount) =>
+        fitEnvironmentCount({
+          availableWidth,
+          allWidth,
+          environmentWidths,
+          moreWidth,
+          previousCount: resizing ? previousCount : environmentWidths.length,
+        }),
+      );
+    }
+    const observer = new ResizeObserver(updateLayout);
+    [header, actions, comparison, measure].forEach((element) => observer.observe(element));
+    updateLayout();
+    return () => observer.disconnect();
+  }, []);
+  const visibleEnvironments = previewEnvironments.slice(0, visibleCount);
+  const overflowEnvironments = previewEnvironments.slice(visibleCount);
+  const overflowSelectedCount = overflowEnvironments.filter((item) =>
+    selectedEnvironments.includes(item.key),
+  ).length;
+  const { message } = AntdApp.useApp();
   const selectedCount = previewEnvironments.filter((item) =>
     selectedEnvironments.includes(item.key),
   ).length;
-  const allSelected = selectedCount === previewEnvironments.length;
+  const comparisonHint = comparisonEnabled
+    ? `正在比对 ${selectedEnvironments.join(' / ')}，关闭比对后可调整环境`
+    : selectedCount === 2
+      ? '开启所选两个环境的比对'
+      : '请恰好勾选两个环境后开启比对';
+  const selectionProps = {
+    selectedEnvironments,
+    disabled: comparisonEnabled,
+    onChange: (keys: string[]) => {
+      if (!comparisonEnabled) onChange(keys);
+    },
+  };
   return (
-    <div className="grid min-w-0 flex-1 basis-520px grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2.5">
-      <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+    <div
+      ref={toolbarRef}
+      className="flex min-w-0 flex-[1_0_auto] items-center justify-between gap-3"
+    >
+      <div
+        aria-hidden="true"
+        inert
+        ref={measureRef}
+        className="absolute left-0 top-0 invisible pointer-events-none w-max"
+      >
+        <EnvironmentCheckboxes
+          selectedEnvironments={[]}
+          onChange={() => {}}
+          disabled={false}
+          environments={previewEnvironments}
+          inline
+        />
+        <Button
+          type="text"
+          className="px-1.5! gap-1! text-12px!"
+          icon={<span className="i-lucide-ellipsis w-16px h-16px" />}
+        >
+          更多 <span className="text-12px">5</span>
+        </Button>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="flex items-center gap-1">
+          <EnvironmentCheckboxes {...selectionProps} environments={visibleEnvironments} inline />
+          {overflowEnvironments.length > 0 && (
+            <Popover
+              trigger="click"
+              placement="bottomLeft"
+              open={overflowOpen}
+              onOpenChange={setOverflowOpen}
+              content={
+                <div id={overflowId} className="min-w-100px max-w-240px">
+                  <EnvironmentCheckboxes
+                    {...selectionProps}
+                    environments={overflowEnvironments}
+                    showAll={false}
+                  />
+                </div>
+              }
+            >
+              <Tooltip
+                title={
+                  overflowOpen
+                    ? undefined
+                    : `收起 ${overflowEnvironments.length} 个环境，已选 ${overflowSelectedCount} 个`
+                }
+                trigger={['hover', 'focus']}
+              >
+                <Button
+                  type="text"
+                  className="px-1.5! gap-1! text-12px! text-text-secondary!"
+                  aria-label={`更多环境，${overflowEnvironments.length} 个环境中已选 ${overflowSelectedCount} 个`}
+                  aria-expanded={overflowOpen}
+                  aria-controls={overflowId}
+                  icon={<span className="i-lucide-ellipsis w-16px h-16px" aria-hidden="true" />}
+                >
+                  {showMoreLabel && <span>更多</span>}
+                  {overflowSelectedCount > 0 && (
+                    <span className="min-w-16px rounded-control bg-hover px-1 text-11px text-accent-text tabular-nums">
+                      {overflowSelectedCount}
+                    </span>
+                  )}
+                </Button>
+              </Tooltip>
+            </Popover>
+          )}
+        </div>
+        <span className="h-18px w-1px bg-divider" aria-hidden="true" />
+        <Tooltip title={comparisonHint} trigger={['hover', 'focus']}>
+          <div
+            ref={comparisonRef}
+            role="group"
+            aria-label={comparisonHint}
+            tabIndex={!comparisonEnabled && selectedCount !== 2 ? 0 : undefined}
+            className="flex shrink-0 items-center gap-2 rounded-control layout-focus"
+          >
+            {comparisonEnabled ? (
+              <span
+                role="status"
+                className="flex items-center gap-1.5 text-13px text-text whitespace-nowrap"
+              >
+                <span
+                  className="i-lucide-lock-keyhole w-12px h-12px text-text-muted"
+                  aria-hidden="true"
+                />
+                {selectedEnvironments.join(' ↔ ')}
+              </span>
+            ) : (
+              <span className="text-13px whitespace-nowrap">环境比对</span>
+            )}
+            <Switch
+              aria-label="环境比对"
+              aria-description={comparisonHint}
+              checked={comparisonEnabled}
+              disabled={!comparisonEnabled && selectedCount !== 2}
+              onChange={(checked) => {
+                if (!checked || selectedCount === 2) setComparisonEnabled(checked);
+              }}
+            />
+          </div>
+        </Tooltip>
+      </div>
+      <div ref={actionsRef} className="ml-auto flex shrink-0 items-center gap-2">
+        <Tooltip title="快照对比" trigger={['hover', 'focus']}>
+          <Button
+            type="primary"
+            aria-label="快照对比"
+            className={actionLabelMode === 'icons' ? 'w-32px! px-0! gap-0!' : undefined}
+            icon={<span className="i-lucide-git-compare-arrows h-16px w-16px" aria-hidden="true" />}
+            onClick={() => void message.info('快照对比功能尚未接入')}
+          >
+            {actionLabelMode !== 'icons' && <span>快照对比</span>}
+          </Button>
+        </Tooltip>
+        <Tooltip title="参数值加密及验证" trigger={['hover', 'focus']}>
+          <Button
+            aria-label="参数值加密及验证"
+            className={actionLabelMode !== 'all' ? 'w-32px! px-0! gap-0!' : undefined}
+            icon={<span className="i-lucide-shield-check h-16px w-16px" aria-hidden="true" />}
+            onClick={() => void message.info('参数值加密及验证功能尚未接入')}
+          >
+            {actionLabelMode === 'all' && <span>参数值加密及验证</span>}
+          </Button>
+        </Tooltip>
+        <Tooltip title="一键修改多环境配置" trigger={['hover', 'focus']}>
+          <Button
+            aria-label="一键修改多环境配置"
+            className={actionLabelMode !== 'all' ? 'w-32px! px-0! gap-0!' : undefined}
+            icon={<span className="i-lucide-file-pen-line h-16px w-16px" aria-hidden="true" />}
+            onClick={() => void message.info('多环境配置修改功能尚未接入')}
+          >
+            {actionLabelMode === 'all' && <span>一键修改多环境配置</span>}
+          </Button>
+        </Tooltip>
+      </div>
+    </div>
+  );
+}
+
+function EnvironmentCheckboxes({
+  selectedEnvironments,
+  onChange,
+  disabled,
+  environments,
+  inline = false,
+  showAll = true,
+}: EnvironmentSelectionProps & {
+  disabled: boolean;
+  environments: typeof previewEnvironments;
+  inline?: boolean;
+  showAll?: boolean;
+}) {
+  const selectedCount = previewEnvironments.filter((item) =>
+    selectedEnvironments.includes(item.key),
+  ).length;
+  return (
+    <div className={inline ? 'flex shrink-0 items-center gap-2' : 'flex flex-col gap-3'}>
+      {showAll && (
         <Checkbox
           className="m-0! whitespace-nowrap text-13px!"
-          checked={allSelected}
-          indeterminate={selectedCount > 0 && !allSelected}
+          disabled={disabled}
+          checked={selectedCount === previewEnvironments.length}
+          indeterminate={selectedCount > 0 && selectedCount < previewEnvironments.length}
           onChange={(event) =>
             onChange(event.target.checked ? previewEnvironments.map((item) => item.key) : [])
           }
         >
           全选
         </Checkbox>
-        <Checkbox.Group
-          aria-label="选择显示的应用环境"
-          className="flex flex-wrap gap-x-1 gap-y-1.5 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-control [&_.ant-checkbox-wrapper]:px-1.75 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-hover [&_.ant-checkbox-wrapper-checked]:text-accent [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px [&_.ant-checkbox-wrapper]:transition-colors [&_.ant-checkbox-wrapper]:duration-150 motion-reduce:[&_.ant-checkbox-wrapper]:transition-none [&_.ant-checkbox-wrapper:hover]:bg-hover"
-          value={selectedEnvironments}
-          options={previewEnvironments.map((item) => ({ label: item.key, value: item.key }))}
-          onChange={(values) => onChange(values.map(String))}
-        />
-      </div>
-      <div className="flex shrink-0 items-center justify-self-end gap-2">
-        <Tooltip title="参数接入后可进行跨环境比对">
-          <Button
-            size="small"
-            disabled
-            icon={<span className="i-lucide-columns-2 h-13px w-13px" aria-hidden="true" />}
+      )}
+      <div
+        role="group"
+        aria-label={showAll ? '选择显示的应用环境' : '收起的应用环境'}
+        className={`gap-1 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-control [&_.ant-checkbox-wrapper]:px-1.5 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:text-text! [&_.ant-checkbox-wrapper:hover]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-sidebar [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px ${inline ? 'flex flex-nowrap' : 'flex flex-wrap'}`}
+      >
+        {environments.map((environment) => (
+          <Checkbox
+            key={environment.key}
+            disabled={disabled}
+            checked={selectedEnvironments.includes(environment.key)}
+            onChange={(event) => {
+              const next = new Set(selectedEnvironments);
+              if (event.target.checked) next.add(environment.key);
+              else next.delete(environment.key);
+              onChange(
+                previewEnvironments.filter((item) => next.has(item.key)).map((item) => item.key),
+              );
+            }}
           >
-            环境比对
-          </Button>
-        </Tooltip>
-        <Tooltip title="参数接入后可批量修改配置">
-          <Button
-            size="small"
-            type="primary"
-            disabled
-            icon={<span className="i-lucide-list-filter h-13px w-13px" aria-hidden="true" />}
-          >
-            批量修改
-          </Button>
-        </Tooltip>
+            {environment.key}
+          </Checkbox>
+        ))}
       </div>
     </div>
   );

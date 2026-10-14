@@ -110,8 +110,6 @@ export default defineConfig({
     ),
   },
   shortcuts: {
-    'grouped-list-type-control':
-      'w-full p-1! rounded-control! border! border-solid! border-border-subtle! bg-sidebar! [&_.ant-segmented-item]:min-w-0 [&_.ant-segmented-item]:rounded-control [&_.ant-segmented-item]:text-text-secondary [&_.ant-segmented-item-label]:flex [&_.ant-segmented-item-label]:items-center [&_.ant-segmented-item-label]:justify-center [&_.ant-segmented-item-label]:min-h-32px [&_.ant-segmented-item-label]:px-1 [&_.ant-segmented-item-label]:py-1 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-label]:leading-5 [&_.ant-segmented-item-label]:whitespace-nowrap [&_.ant-segmented-item-selected]:text-accent-text [&_.ant-segmented-item-selected]:bg-hover [&_.ant-segmented-item-selected]:shadow-none [&_.ant-segmented-item-selected]:font-600 [&_.ant-segmented-thumb]:rounded-control [&_.ant-segmented-thumb]:bg-hover [&_.ant-segmented-thumb]:shadow-none [&_.ant-segmented-item-selected_.application-type-filter-count]:text-accent-text [&_.ant-segmented-item-selected_.application-type-filter-count]:bg-surface [&_.ant-segmented-item-selected_.application-type-filter-count]:font-600 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-[var(--accent)] [&_.ant-segmented-item:focus-within]:outline-offset-1 [&.ant-segmented-disabled]:opacity-50 motion-reduce:[&_.ant-segmented-thumb]:transition-none motion-reduce:[&_.ant-segmented-thumb]:animate-none motion-reduce:[&_.ant-segmented-item]:transition-none motion-reduce:[&_.ant-segmented-item]:animate-none',
     'brand-loading-red':
       'animate-brand-red [transform-origin:98px_92px] motion-reduce:animate-none',
     'brand-loading-blue':
@@ -138,11 +136,10 @@ export default defineConfig({
       "flex-[0_0_1px] rounded-0 bg-divider before:content-[''] before:absolute before:inset-y-0 before:left-1/2 before:translate-x-[-50%] before:w-4px before:transition-colors before:duration-100 motion-reduce:before:transition-none [&.hover]:before:bg-accent [&.active]:before:bg-accent [&:focus-visible:not([aria-disabled=true])]:before:bg-accent",
     'tree-scrollbar':
       '[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:w-8px [&::-webkit-scrollbar]:h-8px [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-4px [&:hover::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-corner]:bg-transparent',
-    'system-entry':
-      'h-38px! gap-1.5! px-2.25! text-12px! rounded-control! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-2 motion-reduce:transition-none!',
-    'system-entry-count':
-      'min-w-20px px-1 rounded-control bg-sidebar text-text-muted text-11px leading-18px tabular-nums',
-    'system-row-grid': 'grid grid-cols-[minmax(0,1fr)_90px_160px_300px] gap-x-6 gap-y-3',
+    'system-card-grid': 'grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] gap-4',
+    'system-parameter-entry':
+      'flex! w-full! justify-start! gap-2! rounded-control! whitespace-normal! text-left! bg-hover! border-accent-border! text-accent-text! shadow-none! hover:bg-accent-bg-hover! hover:border-accent-border-hover! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-2 motion-reduce:transition-none!',
+    'system-row-grid': 'grid grid-cols-[minmax(0,1fr)_90px_140px_360px] gap-x-5 gap-y-3',
     'workspace-frame': 'border border-solid border-border-subtle rounded-ui',
     'workspace-panel': 'workspace-frame bg-surface',
     'workspace-muted': 'text-text-muted text-13px leading-22px',
@@ -151,6 +148,9 @@ export default defineConfig({
       'flex flex-wrap items-center gap-x-4 gap-y-2.5 shrink-0 min-h-52px px-4 py-2.5',
     'workspace-titlebar': 'workspace-titlebar-layout border-b border-b-solid border-divider',
     'workspace-titlebar-detached': 'workspace-titlebar-layout workspace-panel',
+    'workspace-collection-titlebar':
+      'h-48px min-h-48px! py-0! flex-nowrap! gap-x-2! [container-type:inline-size]',
+    'workspace-titlebar-frame-edge': '-mt-1px border-t border-t-solid border-border-subtle',
     'workspace-title-identity': 'flex min-w-0 max-w-full shrink-0 items-center gap-2',
     'layout-focus':
       'focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-[-2px]',

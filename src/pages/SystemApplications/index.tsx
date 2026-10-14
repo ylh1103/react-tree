@@ -43,7 +43,9 @@ export default function SystemApplicationsPage() {
       refreshing={query.isFetching}
       error={query.error}
       refresh={() => void query.refetch()}
-      renderApplicationToolbar={(props) => <ApplicationParametersToolbar {...props} />}
+      renderApplicationToolbar={(props) => (
+        <ApplicationParametersToolbar key={appName} {...props} />
+      )}
       renderApplicationContent={(props) => <ApplicationParametersWorkspace {...props} />}
       renderApplicationEmptyState={(props) => <ApplicationParametersEmptyState {...props} />}
       renderSidebar={(close) => (

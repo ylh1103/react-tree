@@ -10,6 +10,8 @@ export const appTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
   token: {
     colorPrimary: '#0d99ff',
+    colorBorder: '#e5e5e5',
+    colorBorderSecondary: '#e5e5e5',
     borderRadius: defaultUserSettings.controlBorderRadius,
     fontSize: 14,
   },
@@ -81,8 +83,8 @@ export const darkAppTheme: ThemeConfig = {
     colorWarningText: dracula.orange,
     colorError: dracula.red,
     colorErrorText: '#ff8585',
-    colorBorder: dracula.selection,
-    colorBorderSecondary: dracula.surfaceLight,
+    colorBorder: '#414249',
+    colorBorderSecondary: '#414249',
     colorFill: dracula.selection,
     colorFillSecondary: dracula.surfaceLight,
     colorFillTertiary: '#303340',
@@ -98,7 +100,7 @@ export const darkAppTheme: ThemeConfig = {
       // 默认按钮使用同色系表面与中性边框，避免在弹层上形成突兀的深色块。
       defaultBg: dracula.surfaceLight,
       defaultColor: '#c0c5dc',
-      defaultBorderColor: dracula.selection,
+      defaultBorderColor: '#414249',
       defaultShadow: 'none',
       // 禁用按钮降低表面与边框亮度，并使用中性灰字，与可点击按钮清晰区分。
       defaultBgDisabled: dracula.surfaceDark,
@@ -194,7 +196,7 @@ function createThemeVariables(mode: ResolvedThemeMode) {
     '--color-warning': tokens.colorWarning,
     '--color-danger': tokens.colorError,
     // 树列表与应用类型的专用配色；组件和样式仅引用语义变量。
-    '--color-tree-panel-border': '#edf0f2',
+    '--color-tree-panel-border': tokens.colorBorderSecondary,
     '--color-tree-empty': '#75838d',
     '--color-tree-switcher': '#8a9aa3',
     '--color-tree-folder': '#77939e',

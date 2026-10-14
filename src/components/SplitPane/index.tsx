@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from 'antd';
+import { Button, Typography } from 'antd';
 import { dragResize } from './dragResize';
 import type { DragResizeState } from './dragResize';
 import { useLayoutPreferences } from '../../hooks/useLayoutPreferences';
@@ -14,7 +14,8 @@ export interface SplitPaneProps {
   children: ReactNode;
   sidebarLabel?: string;
   title?: string;
-  titleExtra?: ReactNode;
+  /** 同行操作区，按标题栏容器宽度适配显示。 */
+  toolbar?: ReactNode;
   /** 标题栏与主体共用面板，不显示分隔线或间距。 */
   integratedHeader?: boolean;
   /** 加载占位只读取布局，不注册交互或写入偏好。 */
@@ -33,7 +34,7 @@ export function SplitPane({
   children,
   sidebarLabel = '侧边栏',
   title,
-  titleExtra,
+  toolbar,
   integratedHeader = false,
   readOnly = false,
   defaultWidth = 290,
@@ -223,7 +224,7 @@ export function SplitPane({
       </aside>
       <div
         ref={separatorRef}
-        className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? 'compact-split-divider' : 'flex-[0_0_var(--layout-gap)] rounded-ui bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
+        className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? `compact-split-divider ${expanded ? '' : 'basis-0! bg-transparent!'}` : 'flex-[0_0_var(--layout-gap)] rounded-ui bg-transparent'} ${upper > 0 && !compact ? 'split-grip' : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
         role="separator"
         tabIndex={readOnly ? -1 : 0}
         aria-label={`调整${sidebarLabel}宽度`}
@@ -325,15 +326,15 @@ export function SplitPane({
         aria-label="页面内容"
       >
         <div
-          className={
+          className={`workspace-collection-titlebar ${
             integratedHeader
-              ? 'workspace-titlebar-layout'
+              ? `workspace-titlebar-layout ${compact ? '' : 'workspace-titlebar-frame-edge'}`
               : compact
                 ? 'workspace-titlebar'
                 : 'workspace-titlebar-detached'
-          }
+          }`}
         >
-          <div className="workspace-title-identity">
+          <div className="workspace-title-identity shrink! flex-[0_1_220px]!">
             <Button
               ref={toggleRef}
               type="text"
@@ -352,12 +353,17 @@ export function SplitPane({
               }
             />
             {title && (
-              <h2 className="workspace-page__title min-w-0 max-w-200px truncate" title={title}>
-                {title}
+              <h2 className="workspace-page__title min-w-0 max-w-200px">
+                <Typography.Text
+                  className="block! text-inherit! text-14px! font-600! leading-22px!"
+                  ellipsis={{ tooltip: title }}
+                >
+                  {title}
+                </Typography.Text>
               </h2>
             )}
           </div>
-          {titleExtra}
+          {toolbar}
         </div>
         <div
           className={`layout-scroll ${compact || integratedHeader ? '' : 'rounded-ui bg-surface'}`}
