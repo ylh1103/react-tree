@@ -1,5 +1,5 @@
 /**
- * 数据库类型清单示例，仅供未配置真实接口时按需加载。
+ * 数据库类型清单示例，由统一 Mock adapter 按需加载。
  * 类型名称、描述和维护方式沿用真实接口字段，UI 转换在查询层完成。
  */
 import type { ParameterItem } from '../types/parameters';

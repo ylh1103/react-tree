@@ -6,6 +6,8 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { createServer } from 'vite';
 import { createAppStore } from '../src/store/index.ts';
+import { initializeSession } from '../src/store/slices/sessionSlice.ts';
+import { currentMockUser } from '../src/mocks/session.ts';
 import { loadUserSettings, saveLayoutMode } from '../src/store/slices/preferencesSlice.ts';
 
 function deferred() {
@@ -34,6 +36,8 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
     load: () => nextLoad,
     save: () => saving.promise,
   });
+  store.dispatch(initializeSession.pending('test-session', undefined));
+  store.dispatch(initializeSession.fulfilled(currentMockUser(), 'test-session', undefined));
   let pageRenders = 0;
   function Page() {
     pageRenders++;
@@ -73,7 +77,8 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   const failed = render();
   assert.match(failed, /data-layout="default"/);
   assert.match(failed, /workspace-content/);
-  assert.doesNotMatch(failed, /模拟读取失败|重新读取|资源加载中/);
+  assert.doesNotMatch(failed, /资源加载中/);
+  assert.match(failed, /模拟读取失败|重新读取/);
   assert.equal(store.getState().preferences.initialized, true);
   const settings = renderToStaticMarkup(
     createElement(Provider, { store }, createElement(LayoutSettings)),

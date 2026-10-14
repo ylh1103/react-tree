@@ -1,13 +1,11 @@
 /**
- * 默认生成 785 条应用以预览长列表；环境变量可覆盖数量。
+ * 固定种子应用示例；数量由模拟配置或测试参数提供。
  * 使用固定种子的随机英文名，保证刷新后选择、路由和分组引用稳定。
  */
-import type { ApplicationItem } from '../types/applications';
+import type { ApplicationItem } from '../types/applications.ts';
+import { mockConfig } from './config.ts';
 
-export function createMockApplications() {
-  const requestedCount = Number(import.meta.env?.VITE_MOCK_APPLICATION_COUNT);
-  const mockApplicationCount =
-    Number.isSafeInteger(requestedCount) && requestedCount > 0 ? requestedCount : 785;
+export function createMockApplications(mockApplicationCount = mockConfig.applicationCount) {
   const descriptions = [
     '系统的 BFF 服务',
     '统一身份与用户信息管理',
@@ -45,31 +43,4 @@ export function createMockApplications() {
     });
   }
   return applications;
-}
-
-export async function createApi(systemName?: string) {
-  if (systemName !== undefined) {
-    const storageKey = `react-tree:mock:appGroupInfo:system:${encodeURIComponent(systemName)}`;
-    return {
-      async getItems(signal?: AbortSignal) {
-        const { mockSystems } = await import('./systems');
-        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
-        return mockSystems.find((system) => system.systemName === systemName)?.appCount === 0
-          ? []
-          : createMockApplications();
-      },
-      async getGroups(signal?: AbortSignal) {
-        if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
-        return { appGroupInfo: localStorage.getItem(storageKey) };
-      },
-      async saveGroups(payload: { appGroupInfo: string }) {
-        localStorage.setItem(storageKey, payload.appGroupInfo);
-      },
-      async deleteItem() {
-        throw new Error('应用删除接口尚未接入');
-      },
-    };
-  }
-  const { createMockListApi } = await import('./groupedList');
-  return createMockListApi('/mock-api/applications', createMockApplications(), 'appGroupInfo');
 }

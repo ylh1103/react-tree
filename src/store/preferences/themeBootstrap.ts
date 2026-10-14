@@ -6,12 +6,12 @@ import type { ThemeMode } from '../../types/preferences.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
 import type { createAppStore } from '../index.ts';
 
-const themeKey = 'react-tree:theme-mode:v1';
+const themeKey = 'react-tree:theme-mode:v2';
 
 /** 仅缓存主题选择用于首屏配色，完整用户配置仍由服务端提供。 */
-export function readBootstrapTheme(): ThemeMode {
+export function readBootstrapTheme(identity = 'anonymous'): ThemeMode {
   try {
-    const value = window.localStorage.getItem(themeKey);
+    const value = window.localStorage.getItem(`${themeKey}:${identity}`);
     return value === 'light' || value === 'dark' || value === 'system'
       ? value
       : defaultUserSettings.themeMode;
@@ -23,19 +23,29 @@ export function readBootstrapTheme(): ThemeMode {
 /** 订阅配置状态，只持久化已确认的 savedThemeMode；返回取消订阅函数供 HMR 或卸载调用。 */
 export function startThemePersistence(store: ReturnType<typeof createAppStore>) {
   let previous = store.getState().preferences;
+  let previousIdentity = store.getState().session.user?.ystId;
   return store.subscribe(() => {
     const current = store.getState().preferences;
+    const session = store.getState().session;
+    const identity = session.user?.ystId;
     if (
+      session.status !== 'loading' &&
+      session.status !== 'expired' &&
       current.initialized &&
-      (previous.savedThemeMode !== current.savedThemeMode ||
+      (identity !== previousIdentity ||
+        previous.savedThemeMode !== current.savedThemeMode ||
         (!previous.initialized && current.status === 'ready'))
     ) {
       try {
-        window.localStorage.setItem(themeKey, current.savedThemeMode);
+        window.localStorage.setItem(
+          `${themeKey}:${store.getState().session.user?.ystId ?? 'anonymous'}`,
+          current.savedThemeMode,
+        );
       } catch {
         // 禁用存储时仍可以正常加载、切换主题。
       }
     }
     previous = current;
+    previousIdentity = identity;
   });
 }

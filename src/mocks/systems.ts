@@ -1,4 +1,4 @@
-import type { SystemInfo } from '../types/systems';
+import type { SystemInfo } from '../types/systems.ts';
 
 const cac: SystemInfo = {
   ystId: '310798',

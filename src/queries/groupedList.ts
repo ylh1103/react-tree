@@ -3,8 +3,9 @@
  * 相同列表的订阅共用缓存及写入锁；写入期间的刷新只标记过期，交由写入完成后的流程处理。
  */
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
-import type { GroupedListService, ListNode } from '../components/GroupedList/types';
+import type { GroupedListService, ListNode } from '../components/GroupedList/types.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
+import { store } from '../store/index.ts';
 
 export type GroupedListId = 'applications' | 'parameters' | `applications:${string}`;
 
@@ -18,8 +19,10 @@ export function hasApplication(nodes: ListNode[], name: string): boolean {
 }
 
 export const groupedListKeys = {
-  list: (id: GroupedListId) => ['grouped-list', id] as const,
-  write: (id: GroupedListId) => ['grouped-list-write', id] as const,
+  list: (id: GroupedListId) =>
+    ['grouped-list', store.getState().session.user?.ystId ?? 'anonymous', id] as const,
+  write: (id: GroupedListId) =>
+    ['grouped-list-write', store.getState().session.user?.ystId ?? 'anonymous', id] as const,
 };
 
 export function groupedListOptions(id: GroupedListId, service: GroupedListService) {

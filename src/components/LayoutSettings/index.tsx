@@ -87,7 +87,7 @@ function SettingsPreview({
           '--ui-radius': `${radius}px`,
         } as CSSProperties
       }
-      className={`settings-choice-preview bg-canvas ${className}`}
+      className={`relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border bg-canvas ${className}`}
     >
       <span className="flex h-17px items-center gap-1 border-b border-b-solid border-divider bg-header px-2">
         <span className="h-5px w-5px rounded-full bg-accent" />
@@ -131,7 +131,10 @@ function SystemThemePreview({
   selected: boolean;
 }) {
   return (
-    <span aria-hidden="true" className="settings-choice-preview isolate">
+    <span
+      aria-hidden="true"
+      className="relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border isolate"
+    >
       <span className="absolute inset-0">
         <SettingsPreview
           layoutMode={layoutMode}
@@ -169,7 +172,7 @@ function NavigationColorPreview({
       style={
         { ...themeVariablesByMode[themeMode], ...navigationThemeVariables[mode] } as CSSProperties
       }
-      className="settings-choice-preview flex! bg-surface"
+      className="relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border flex! bg-surface"
     >
       <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 bg-nav p-1.5">
         <span className="flex h-7 items-center gap-2 rounded-control bg-nav-active px-2 text-nav-active-text">
@@ -429,7 +432,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             ),
             children: (
               <section className="flex flex-col gap-4 pb-2" aria-labelledby={themeLabelId}>
-                <h3 id={themeLabelId} className="settings-section-title">
+                <h3 id={themeLabelId} className="m-0 text-13px font-600 leading-5 text-text">
                   主题模式
                 </h3>
                 <Radio.Group
@@ -449,9 +452,9 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                       key={mode}
                       value={mode}
                       aria-label={label}
-                      className={`settings-choice ${mode === 'system' ? 'col-span-2' : ''}`}
+                      className={`flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none! ${mode === 'system' ? 'col-span-2' : ''}`}
                     >
-                      <span className="settings-choice-content">
+                      <span className="flex w-full min-w-0 flex-col gap-3">
                         {mode === 'system' ? (
                           <SystemThemePreview
                             layoutMode={layoutMode}
@@ -464,17 +467,22 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                             selected={themeMode === mode}
                           />
                         )}
-                        <span className="settings-choice-title">
+                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                           <span aria-hidden="true" className={`${icon} text-16px`} />
                           {label}
                           {mode === defaultUserSettings.themeMode && <SettingsDefaultBadge />}
                         </span>
-                        <span className="settings-choice-description">{description}</span>
+                        <span className="text-12px leading-18px text-text-muted">
+                          {description}
+                        </span>
                       </span>
                     </Radio.Button>
                   ))}
                 </Radio.Group>
-                <h3 id={navigationThemeLabelId} className="settings-section-title mt-3!">
+                <h3
+                  id={navigationThemeLabelId}
+                  className="m-0 text-13px font-600 leading-5 text-text mt-3!"
+                >
                   导航栏配色
                 </h3>
                 <Radio.Group
@@ -491,27 +499,31 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   className="grid! w-full! grid-cols-2 gap-3"
                 >
                   {(['contrast', 'theme'] as const).map((value) => (
-                    <Radio.Button key={value} value={value} className="settings-choice">
-                      <span className="settings-choice-content">
+                    <Radio.Button
+                      key={value}
+                      value={value}
+                      className="flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!"
+                    >
+                      <span className="flex w-full min-w-0 flex-col gap-3">
                         <NavigationColorPreview
                           mode={value}
                           themeMode={resolvedTheme}
                           selected={navigationTheme === value}
                         />
-                        <span className="settings-choice-title">
+                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                           {value === 'contrast' ? '独立配色' : '跟随主题'}
                           {value === defaultUserSettings.navigationTheme && (
                             <SettingsDefaultBadge />
                           )}
                         </span>
-                        <span className="settings-choice-description">
+                        <span className="text-12px leading-18px text-text-muted">
                           {value === 'contrast' ? '保留独立底色，突出导航' : '与其他模块背景同步'}
                         </span>
                       </span>
                     </Radio.Button>
                   ))}
                 </Radio.Group>
-                <h3 className="settings-section-title mt-3!">圆角样式</h3>
+                <h3 className="m-0 text-13px font-600 leading-5 text-text mt-3!">圆角样式</h3>
                 <PreferenceSlider
                   setting="borderRadius"
                   id={radiusLabelId}
@@ -539,7 +551,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             ),
             children: (
               <section className="flex flex-col gap-2 pb-2" aria-labelledby={labelId}>
-                <h3 id={labelId} className="settings-section-title">
+                <h3 id={labelId} className="m-0 text-13px font-600 leading-5 text-text">
                   布局模式
                 </h3>
                 <Radio.Group
@@ -559,19 +571,19 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                       key={mode}
                       value={mode}
                       aria-label={mode === 'default' ? '标准布局' : '紧凑布局'}
-                      className="settings-choice"
+                      className="flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!"
                     >
-                      <span className="settings-choice-content">
+                      <span className="flex w-full min-w-0 flex-col gap-3">
                         <SettingsPreview
                           layoutMode={mode}
                           themeMode={resolvedTheme}
                           selected={layoutMode === mode}
                         />
-                        <span className="settings-choice-title">
+                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                           {mode === 'default' ? '标准布局' : '紧凑布局'}
                           {mode === defaultUserSettings.layoutMode && <SettingsDefaultBadge />}
                         </span>
-                        <span className="settings-choice-description">
+                        <span className="text-12px leading-18px text-text-muted">
                           {mode === 'default' ? '模块留有间距，层次分明' : '模块无间距，边框线分隔'}
                         </span>
                       </span>
@@ -586,7 +598,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   disabled={disabled || layoutMode === 'compact'}
                   onSave={onSave}
                 />
-                <h3 className="settings-section-title mt-1!">菜单显示</h3>
+                <h3 className="m-0 text-13px font-600 leading-5 text-text mt-1!">菜单显示</h3>
                 <p className="m-0 text-12px leading-5 text-text-muted">
                   默认仅显示图标，悬停可查看名称。
                 </p>

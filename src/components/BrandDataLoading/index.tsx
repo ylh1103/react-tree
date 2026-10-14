@@ -1,3 +1,4 @@
+import { animationKeyframes } from './model/animations';
 import { useId, type SVGProps } from 'react';
 import type { BrandDataLoadingVariant } from './model/styles';
 export type { BrandDataLoadingVariant } from './model/styles';
@@ -80,10 +81,11 @@ export function BrandDataLoading({
       focusable="false"
       className={`inline-block align-middle overflow-visible ${className}`}
     >
+      <style>{animationKeyframes}</style>
       {variant === 'beacon' && (
         <>
           <circle cx="100" cy="100" r="91" stroke="#249afc" strokeWidth="4" opacity=".12" />
-          <g className="animate-brand-beacon [transform-origin:100px_100px] motion-reduce:animate-none">
+          <g className="[animation:brand-beacon_1.8s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
             <circle
               cx="100"
               cy="100"
@@ -119,7 +121,7 @@ export function BrandDataLoading({
             <path
               d="M-80 -30H-28L65 220H13Z"
               fill={`url(#${id}-light)`}
-              className="animate-brand-shine motion-reduce:animate-none"
+              className="[animation:brand-shine_1.8s_cubic-bezier(.4,0,.3,1)_infinite] motion-reduce:animate-none"
             />
           </g>
         </g>
@@ -131,7 +133,7 @@ export function BrandDataLoading({
               key={String(delayed)}
               fill="none"
               strokeWidth="6"
-              className={`animate-brand-echo [transform-origin:98px_92px] motion-reduce:animate-none motion-reduce:opacity-0 ${delayed ? '[animation-delay:-1000ms]!' : ''}`}
+              className={`[animation:brand-echo_2s_ease-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none motion-reduce:opacity-0 ${delayed ? '[animation-delay:-1000ms]!' : ''}`}
             >
               <path d={red} stroke="#ff3159" />
               <path d={blue} stroke="#249afc" />
@@ -154,14 +156,14 @@ export function BrandDataLoading({
             cy="102"
             r="7"
             fill="#ff3159"
-            className="animate-brand-inflow-red motion-reduce:animate-none"
+            className="[animation:brand-inflow-red_1.4s_ease-in_infinite] motion-reduce:animate-none"
           />
           <circle
             cx="192"
             cy="102"
             r="7"
             fill="#249afc"
-            className="animate-brand-inflow-blue [animation-delay:-700ms]! motion-reduce:animate-none"
+            className="[animation:brand-inflow-blue_1.4s_ease-in_infinite] [animation-delay:-700ms]! motion-reduce:animate-none"
           />
           <g transform="translate(40 44) scale(.6)">
             <BrandMark />
@@ -169,7 +171,7 @@ export function BrandDataLoading({
         </>
       )}
       {variant === 'comet' && (
-        <g className="animate-loading-ring [transform-origin:100px_100px] motion-reduce:animate-none">
+        <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
           {cometDots.map((dot, index) => (
             <circle
               key={index}
@@ -195,14 +197,14 @@ export function BrandDataLoading({
             cy="100"
             r="14"
             fill="#ff3159"
-            className="animate-loading-relay-red motion-reduce:animate-none"
+            className="[animation:loading-relay-red_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
           />
           <circle
             cx="142"
             cy="100"
             r="14"
             fill="#249afc"
-            className="animate-loading-relay-blue motion-reduce:animate-none"
+            className="[animation:loading-relay-blue_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
           />
         </>
       )}
@@ -218,7 +220,7 @@ export function BrandDataLoading({
               strokeDasharray="7 93"
               strokeDashoffset={-index * 12.5}
               stroke={colors[Math.min(4, Math.floor((index * 5) / 8))]}
-              className={`animate-loading-segment motion-reduce:animate-none ${delay}`}
+              className={`[animation:loading-segment_1.2s_linear_infinite] motion-reduce:animate-none ${delay}`}
             />
           ))}
         </g>
@@ -234,7 +236,7 @@ export function BrandDataLoading({
             height="12"
             rx="6"
             fill="#ff3159"
-            className="animate-loading-shuttle motion-reduce:animate-none"
+            className="[animation:loading-shuttle_1.8s_cubic-bezier(.45,0,.55,1)_infinite] motion-reduce:animate-none"
           />
           <rect
             x="30"
@@ -243,7 +245,7 @@ export function BrandDataLoading({
             height="12"
             rx="6"
             fill="#249afc"
-            className="animate-loading-shuttle [animation-delay:-900ms]! motion-reduce:animate-none"
+            className="[animation:loading-shuttle_1.8s_cubic-bezier(.45,0,.55,1)_infinite] [animation-delay:-900ms]! motion-reduce:animate-none"
           />
         </>
       )}
@@ -256,14 +258,14 @@ export function BrandDataLoading({
             stroke="#ff3159"
             pathLength="100"
             strokeDasharray="30 70"
-            className="animate-loading-trace motion-reduce:animate-none"
+            className="[animation:loading-trace_1.8s_linear_infinite] motion-reduce:animate-none"
           />
           <path
             d={blue}
             stroke="#249afc"
             pathLength="100"
             strokeDasharray="30 70"
-            className="animate-loading-trace [animation-delay:-900ms]! motion-reduce:animate-none"
+            className="[animation:loading-trace_1.8s_linear_infinite] [animation-delay:-900ms]! motion-reduce:animate-none"
           />
         </g>
       )}
@@ -271,7 +273,7 @@ export function BrandDataLoading({
         <>
           <circle cx="100" cy="100" r="85" stroke="#249afc" strokeWidth="8" opacity="0.12" />
           <circle cx="100" cy="100" r="67" stroke="#ff3159" strokeWidth="8" opacity="0.12" />
-          <g className="animate-loading-ring [transform-origin:100px_100px] motion-reduce:animate-none">
+          <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
             <circle
               cx="100"
               cy="100"
@@ -283,7 +285,7 @@ export function BrandDataLoading({
               strokeLinecap="round"
             />
           </g>
-          <g className="animate-loading-ring [animation-direction:reverse]! [transform-origin:100px_100px] motion-reduce:animate-none">
+          <g className="[animation:loading-ring_1.6s_linear_infinite] [animation-direction:reverse]! [transform-origin:100px_100px] motion-reduce:animate-none">
             <circle
               cx="100"
               cy="100"
@@ -313,7 +315,7 @@ export function BrandDataLoading({
             height="82"
             rx="7"
             fill={color}
-            className={`animate-loading-wave [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${delays[index]}`}
+            className={`[animation:loading-wave_1.1s_ease-in-out_infinite] [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${delays[index]}`}
           />
         ))}
       {variant === 'matrix' &&
@@ -324,7 +326,7 @@ export function BrandDataLoading({
             cy={58 + Math.floor(index / 3) * 42}
             r="13"
             fill={colors[(index % 3) * 2]}
-            className={`animate-loading-dot [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${dotDelays[index]}`}
+            className={`[animation:loading-dot_1.4s_ease-in-out_infinite] [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${dotDelays[index]}`}
           />
         ))}
     </svg>

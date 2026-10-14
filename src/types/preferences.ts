@@ -29,8 +29,12 @@ export const defaultUserSettings: UserSettings = {
   headerToolsIconOnly: true,
 };
 export interface UserSettingsApi {
-  load: (signal?: AbortSignal) => Promise<UserSettings>;
-  save: (settings: UserSettings, signal?: AbortSignal) => Promise<UserSettings>;
+  load: (signal?: AbortSignal) => Promise<UserSettingsSnapshot>;
+  save: (settings: UserSettings, signal?: AbortSignal) => Promise<UserSettingsSnapshot>;
+}
+/** 完整文档只用于同步会话；布局 Slice 只保存自己负责的字段。 */
+export interface UserSettingsSnapshot extends UserSettings {
+  document?: string;
 }
 
 /** 校验配置；缺少新增选项时使用默认值，旧版 17–24px 间距收敛到当前上限。 */

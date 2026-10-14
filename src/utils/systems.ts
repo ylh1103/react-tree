@@ -10,11 +10,16 @@ export const roleOptions: { label: string; value: SystemRole }[] = [
   { label: '观察者', value: 'V' },
 ];
 
-export function roleLabel(role: string) {
+export function roleLabel(role: string | null) {
+  if (role === null) return '平台人员';
   return roleOptions.find((option) => option.value === role)?.label ?? '未知角色';
 }
 
-export function filterSystems(systems: SystemInfo[], search: string, role?: SystemRole) {
+export function filterSystems<T extends SystemInfo>(
+  systems: T[],
+  search: string,
+  role?: SystemRole,
+) {
   const keyword = search.trim().toLocaleLowerCase();
   return systems.filter(
     (system) =>
@@ -41,6 +46,7 @@ export function isAccessDenied(error: unknown): boolean {
   const candidate = error as { response?: { status?: number }; cause?: unknown };
   return (
     candidate.response?.status === 403 ||
+    ('status' in candidate && candidate.status === 403) ||
     (candidate.cause !== undefined && isAccessDenied(candidate.cause))
   );
 }

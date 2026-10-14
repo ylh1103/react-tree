@@ -1,10 +1,12 @@
-import { App as AntdApp, Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
+/** 全局页头：已授权系统切换、平台切换、用户资料及会话退出入口。 */
+import { Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import logo from '../assets/logo.jpg';
 import { SystemContext } from '../contexts/SystemContext';
 import { platformHome } from '../router/paths';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { invalidateSession } from '../store/session';
 import { openUserSettings } from '../store/slices/preferencesSlice';
 
 const headerTools = [
@@ -33,6 +35,7 @@ const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1280px)').mat
 
 export function AppHeader() {
   const workspace = useContext(SystemContext);
+  const user = useAppSelector((state) => state.session.user);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
@@ -44,7 +47,6 @@ export function AppHeader() {
   const contextControlClass =
     'h-36px! px-2.5! gap-2! text-13px! rounded-control! layout-focus motion-reduce:transition-none!';
   const toolControlClass = `shrink-0 h-36px! text-13px! text-text-secondary! rounded-control! layout-focus motion-reduce:transition-none! ${showToolTips ? 'w-36px! px-0! gap-0!' : 'px-2.5! gap-2!'}`;
-  const { message } = AntdApp.useApp();
 
   return (
     <header className="shrink-0 min-w-0 text-text bg-header border-b border-b-solid border-divider">
@@ -247,8 +249,19 @@ export function AppHeader() {
             popupRender={(menu) => (
               <div className="min-w-200px rounded-ui bg-surface shadow-lg overflow-hidden">
                 <div className="px-4 py-3 border-b border-b-solid border-divider">
-                  <div className="text-14px font-600 text-text">伟业</div>
-                  <div className="mt-1 text-12px text-text-secondary">当前用户 · 暂无个人资料</div>
+                  <div className="text-14px font-600 text-text">{user?.userName}</div>
+                  <div className="mt-1 text-12px text-text-secondary">
+                    {user?.userType === '0' ? '平台人员' : '普通用户'} ·{' '}
+                    {['1', '2'].includes(user?.cmbUserType ?? '') ? '正式员工' : '外包员工'}
+                    <br />
+                    {user?.department}
+                    <br />
+                    {
+                      ({ '0': '办公网', '1': '互联网', '2': '业务网' } as const)[
+                        user?.netEnv ?? '0'
+                      ]
+                    }
+                  </div>
                 </div>
                 {menu}
               </div>
@@ -273,7 +286,7 @@ export function AppHeader() {
               onClick: ({ key }) => {
                 if (key === 'settings') dispatch(openUserSettings());
                 if (key === 'logout') {
-                  void message.info('当前为演示环境，暂未接入登录服务');
+                  invalidateSession();
                 }
               },
             }}
@@ -281,7 +294,7 @@ export function AppHeader() {
             <Button
               type="text"
               htmlType="button"
-              aria-label="打开用户菜单：伟业"
+              aria-label={`打开用户菜单：${user?.userName ?? '用户'}`}
               className="h-36px! w-36px! px-0! rounded-control! hover:bg-watermark! active:bg-hover! layout-focus motion-reduce:transition-none!"
               icon={
                 <Avatar
@@ -289,7 +302,7 @@ export function AppHeader() {
                   aria-hidden="true"
                   className="bg-hover! text-accent-text! text-14px! font-500"
                 >
-                  伟
+                  {user?.userName.slice(0, 1)}
                 </Avatar>
               }
             />

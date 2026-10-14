@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:http';
-import { once } from 'node:events';
 import { createAppStore } from '../src/store/index.ts';
 import {
   loadUserSettings,
@@ -16,7 +15,9 @@ import {
 } from '../src/store/slices/preferencesSlice.ts';
 import { createUserSettingsApi } from '../src/api/preferences.ts';
 import { parseUserSettings, defaultUserSettings } from '../src/types/preferences.ts';
-import { createMockUserSettingsMiddleware } from './mockUserSettings.ts';
+import { requestData } from '../src/http/request.ts';
+import { mockConfig } from '../src/mocks/config.ts';
+import { readMock, writeMock } from '../src/mocks/storage.ts';
 
 function deferred() {
   let resolve;
@@ -215,75 +216,35 @@ test('异常后端布局响应不会进入 Redux', async () => {
   assert.equal(store.getState().preferences.layoutMode, 'default');
 });
 
-test('mock HTTP 接口读写、重新读取保留配置、错误响应不改动已保存值', async (t) => {
-  const middleware = createMockUserSettingsMiddleware(0);
-  const server = createServer((req, res) => {
-    void middleware(req, res, () => {
-      res.statusCode = 404;
-      res.end();
-    });
+test('统一 Mock 设置请求保留未知字段，错误不覆盖已有文档', async () => {
+  mockConfig.delayMs = 0;
+  const document = JSON.stringify({
+    theme: 'vs-dark',
+    defaultCheckAllEnvTag: true,
+    future: { enabled: true },
   });
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
-  t.after(() => {
-    server.closeAllConnections();
-    server.close();
-  });
-  const url = 'http://127.0.0.1:' + server.address().port + '/mock-api/user-settings';
-  const api = createUserSettingsApi(url);
-  assert.deepEqual(await api.load(), {
-    ...defaultUserSettings,
-    layoutMode: 'default',
-    themeMode: 'system',
-  });
-  await api.save({
-    ...defaultUserSettings,
-    layoutMode: 'compact',
-    layoutGap: 12,
-    themeMode: 'dark',
-  });
-  const reloaded = createAppStore(createUserSettingsApi(url));
-  await reloaded.dispatch(loadUserSettings());
-  assert.equal(reloaded.getState().preferences.layoutMode, 'compact');
-  assert.equal(reloaded.getState().preferences.themeMode, 'dark');
-  assert.equal(reloaded.getState().preferences.layoutGap, 12);
-  assert.equal(reloaded.getState().preferences.settingsOpen, false);
-  await api.save({ ...defaultUserSettings, themeMode: 'system' });
-  const systemReloaded = createAppStore(createUserSettingsApi(url));
-  await systemReloaded.dispatch(loadUserSettings());
-  assert.equal(systemReloaded.getState().preferences.themeMode, 'system');
-  await api.save({ ...defaultUserSettings, layoutMode: 'compact', themeMode: 'dark' });
-  assert.equal(
-    (await fetch(url, { method: 'PUT', body: JSON.stringify({ layoutMode: 'invalid' }) })).status,
-    400,
+  writeMock('settings:310798', document);
+  const api = createUserSettingsApi('/api/user-settings');
+  assert.equal((await api.load()).themeMode, 'system');
+  const saved = await api.save({ ...defaultUserSettings, themeMode: 'dark' });
+  assert.equal(saved.themeMode, 'dark');
+  const raw = JSON.parse(readMock('settings:310798', ''));
+  assert.equal(raw.theme, 'vs-dark');
+  assert.deepEqual(raw.future, { enabled: true });
+  assert.equal(raw.defaultCheckAllEnvTag, true);
+  await assert.rejects(
+    requestData({ url: '/api/user-settings', headers: { 'X-Mock-Error': 'load' } }),
+    (error) => error.status === 503,
   );
-  assert.equal(
-    (
-      await fetch(url, {
-        method: 'PUT',
-        body: JSON.stringify({ layoutMode: 'default', themeMode: 'invalid' }),
-      })
-    ).status,
-    400,
+  await assert.rejects(
+    requestData({ url: '/api/user-settings', method: 'PUT', data: { userSetting: '{' } }),
+    (error) => error.status === 400,
   );
-  assert.equal((await fetch(url, { method: 'PUT', body: '{' })).status, 400);
-  assert.equal((await fetch(url, { headers: { 'X-Mock-Error': 'load' } })).status, 503);
-  assert.equal(
-    (
-      await fetch(url, {
-        method: 'PUT',
-        headers: { 'X-Mock-Error': 'save' },
-        body: JSON.stringify({ layoutMode: 'default' }),
-      })
-    ).status,
-    503,
+  await assert.rejects(
+    requestData({ url: '/api/user-settings', method: 'POST' }),
+    (error) => error.status === 405,
   );
-  assert.deepEqual(await api.load(), {
-    ...defaultUserSettings,
-    layoutMode: 'compact',
-    themeMode: 'dark',
-  });
-  assert.equal((await fetch(url, { method: 'POST' })).status, 405);
+  assert.equal((await api.load()).themeMode, 'dark');
 });
 
 test('主题兼容旧配置，拒绝异常主题值', () => {

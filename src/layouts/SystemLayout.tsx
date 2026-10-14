@@ -1,11 +1,13 @@
 /**
- * 系统工作区访问入口，校验 URL 中的系统是否属于可访问清单。
+ * 系统工作区入口消费独立授权查询，身份与成员清单不替代访问结果。
  * 不存在、无权限和请求错误分别展示；只有确认有效后才提供 SystemContext 和子路由。
  */
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
-import { systemsOptions } from '../queries/systems';
+import { systemsOptions, allSystemsOptions, systemAccessOptions } from '../queries/systems';
+import { useAppSelector } from '../store/hooks';
+import { HttpError } from '../http/request';
 import { SystemContext } from '../contexts/SystemContext';
 import { isAccessDenied } from '../utils/systems';
 import RouteStatusPage from '../pages/RouteStatus';
@@ -13,15 +15,36 @@ import RouteStatusPage from '../pages/RouteStatus';
 export default function SystemLayout() {
   const { systemName } = useParams();
   const isDatabase = Boolean(useMatch('/systems/:systemName/db/*'));
-  const query = useQuery(systemsOptions());
-  const system = query.data?.find((item) => item.systemName === systemName);
+  const userId = useAppSelector((state) => state.session.user?.ystId);
+  const userType = useAppSelector((state) => state.session.user?.userType);
+  const query = useQuery(systemAccessOptions(systemName!));
+  const mine = useQuery(systemsOptions());
+  const all = useQuery({ ...allSystemsOptions(), enabled: userType === '0' });
+  const system = query.data && !('denied' in query.data) ? query.data : undefined;
+  const memberRoles = new Map((mine.data ?? []).map((item) => [item.systemName, item.role]));
+  const systems =
+    userType === '0'
+      ? (all.data ?? []).map((item) => ({
+          ...item,
+          ystId: userId!,
+          role: memberRoles.get(item.systemName) ?? null,
+        }))
+      : (mine.data ?? []);
+  const denied = query.data && 'denied' in query.data;
   if (query.isPending || (!system && query.isFetching))
     return (
       <div className="grid place-items-center flex-1" role="status" aria-label="正在加载系统">
         <Spin />
       </div>
     );
-  if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
+  // 授权失败优先于旧数据；失效的工作区不能继续保留 Outlet。
+  if (
+    denied ||
+    isAccessDenied(query.error) ||
+    (query.error instanceof HttpError && query.error.status === 403)
+  )
+    return <RouteStatusPage forbidden />;
+  if (query.error instanceof HttpError && query.error.status === 404) return <RouteStatusPage />;
   if (query.error && !system) {
     return (
       <div className="p-6">
@@ -37,9 +60,7 @@ export default function SystemLayout() {
   }
   if (!system) return <RouteStatusPage />;
   return (
-    <SystemContext
-      value={{ system, systems: query.data!, platform: isDatabase ? 'database' : 'application' }}
-    >
+    <SystemContext value={{ system, systems, platform: isDatabase ? 'database' : 'application' }}>
       <div className="flex flex-col h-full min-h-0">
         {query.error && (
           <Alert

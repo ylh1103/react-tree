@@ -1,3 +1,4 @@
+import { animationKeyframes } from './model/animations';
 import { useId, type HTMLAttributes } from 'react';
 import { panelSides } from './geometry';
 
@@ -13,9 +14,18 @@ const panelPaths = {
 };
 
 const motionClasses = {
-  magnet: ['animate-brand3d-magnet-red', 'animate-brand3d-magnet-blue'],
-  enamel: ['animate-brand3d-enamel-red', 'animate-brand3d-enamel-blue'],
-  orbital: ['animate-brand3d-orbit-red', 'animate-brand3d-orbit-blue'],
+  magnet: [
+    '[animation:brand3d-magnet-red_1.8s_cubic-bezier(.45,0,.25,1)_infinite]',
+    '[animation:brand3d-magnet-blue_1.8s_cubic-bezier(.45,0,.25,1)_infinite]',
+  ],
+  enamel: [
+    '[animation:brand3d-enamel-red_2.4s_cubic-bezier(.45,0,.25,1)_infinite]',
+    '[animation:brand3d-enamel-blue_2.4s_cubic-bezier(.45,0,.25,1)_infinite]',
+  ],
+  orbital: [
+    '[animation:brand3d-orbit-red_2.8s_linear_infinite]',
+    '[animation:brand3d-orbit-blue_2.8s_linear_infinite]',
+  ],
 };
 
 const sideColors = {
@@ -35,7 +45,8 @@ export function BrandLoading3D({
       aria-hidden="true"
       className={`relative inline-block w-1em h-1em align-middle overflow-visible [perspective:5em] ${className}`}
     >
-      <span className="absolute left-1/5 right-1/5 bottom-[-0.14em] h-0.12em rounded-full bg-text/15 blur-[0.06em] animate-brand3d-shadow motion-reduce:animate-none" />
+      <style>{animationKeyframes}</style>
+      <span className="absolute left-1/5 right-1/5 bottom-[-0.14em] h-0.12em rounded-full bg-text/15 blur-[0.06em] [animation:brand3d-shadow_1.8s_ease-in-out_infinite] motion-reduce:animate-none" />
       <span className="absolute inset-0 [transform-style:preserve-3d] [transform:rotateX(-18deg)_rotateY(-28deg)_rotateZ(-8deg)]">
         {(['red', 'blue'] as const).map((color, panelIndex) => {
           const faceId = `${id}-${color}-face`;

@@ -11,7 +11,10 @@ import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
 
 export function PageSkeleton() {
   return (
-    <section className="page-skeleton workspace-panel min-h-full p-6" aria-busy>
+    <section
+      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! workspace-panel min-h-full p-6"
+      aria-busy
+    >
       <span className="sr-only" role="status">
         资源加载中…
       </span>
@@ -22,7 +25,10 @@ export function PageSkeleton() {
 
 export function OverviewSkeleton() {
   return (
-    <section className="page-skeleton workspace-panel min-h-full p-8" aria-busy>
+    <section
+      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! workspace-panel min-h-full p-8"
+      aria-busy
+    >
       <span className="sr-only" role="status">
         概览资源加载中…
       </span>
@@ -41,7 +47,10 @@ export function OverviewSkeleton() {
 
 export function SystemsHomeSkeleton() {
   return (
-    <section className="page-skeleton max-w-1600px mx-auto p-5 desktop:p-8" aria-busy>
+    <section
+      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! max-w-1600px mx-auto p-5 desktop:p-8"
+      aria-busy
+    >
       <span className="sr-only" role="status">
         系统列表加载中…
       </span>
@@ -103,7 +112,10 @@ export function CollectionSkeleton({
     </div>
   );
   return (
-    <section className="page-skeleton h-full min-h-full min-w-0" aria-busy>
+    <section
+      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! h-full min-h-full min-w-0"
+      aria-busy
+    >
       <span className="sr-only" role="status">
         列表资源加载中…
       </span>

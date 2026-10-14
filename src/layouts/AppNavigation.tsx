@@ -1,3 +1,4 @@
+/** 导航消费统一路由定义，URL 决定选中项，设置动作显式打开抽屉。 */
 import { Button, Tooltip } from 'antd';
 import type { CSSProperties } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
@@ -26,22 +27,22 @@ export function AppNavigation() {
       className={`${navigationIconOnly ? 'w-48px' : 'w-60px'} shrink-0 overflow-y-auto bg-nav [scrollbar-width:thin] [scrollbar-color:var(--color-nav-hover)_var(--color-nav)] ${navigationTheme === 'theme' ? 'border-border-subtle' : 'border-nav-hover'} ${layoutMode === 'compact' ? 'rounded-0 border-r border-r-solid' : 'border border-solid rounded-ui'}`}
     >
       <nav className="flex flex-col gap-0.5 min-h-full py-2 px-0.75" aria-label="主导航">
-        {items.map(({ to, label, icon, bottom }) => (
+        {items.map(({ to, label, icon, bottom, action }) => (
           <Tooltip
             key={to}
             title={navigationIconOnly ? label : undefined}
             placement="right"
             trigger={['hover', 'focus']}
           >
-            {to.endsWith('/setting') ? (
+            {action === 'settings' ? (
               <Button
                 key={to}
                 type="text"
                 onClick={() => dispatch(openUserSettings())}
                 aria-label="用户设置"
-                className={`group navigation-settings ${navigationIconOnly ? 'min-h-44px!' : ''}`}
+                className={`group mt-auto! flex! flex-col! items-center! justify-center! gap-0.5! min-h-60px h-auto! w-full! py-1! px-0! rounded-control! border-0! bg-transparent! text-nav-text! hover:text-nav-emphasis! layout-focus motion-reduce:transition-none! ${navigationIconOnly ? 'min-h-44px!' : ''}`}
               >
-                <span className="navigation-icon group-hover:bg-nav-hover group-active:bg-nav-pressed">
+                <span className="flex items-center justify-center w-36px h-36px shrink-0 rounded-control transition-colors duration-140 motion-reduce:transition-none group-hover:bg-nav-hover group-active:bg-nav-pressed">
                   <span className={`${icon} ${iconSizeClass} shrink-0`} aria-hidden="true" />
                 </span>
                 {!navigationIconOnly && (
@@ -61,7 +62,7 @@ export function AppNavigation() {
                 {({ isActive, isPending }) => (
                   <>
                     <span
-                      className={`navigation-icon ${isActive ? 'bg-nav-active text-nav-active-text group-hover:bg-nav-active-hover group-active:bg-nav-active-hover' : 'group-hover:bg-nav-hover group-active:bg-nav-pressed'} ${isPending ? 'ring-1 ring-inset ring-nav-emphasis' : ''}`}
+                      className={`flex items-center justify-center w-36px h-36px shrink-0 rounded-control transition-colors duration-140 motion-reduce:transition-none ${isActive ? 'bg-nav-active text-nav-active-text group-hover:bg-nav-active-hover group-active:bg-nav-active-hover' : 'group-hover:bg-nav-hover group-active:bg-nav-pressed'} ${isPending ? 'ring-1 ring-inset ring-nav-emphasis' : ''}`}
                     >
                       <span
                         className={`${isPending ? 'i-lucide-loader-circle animate-spin motion-reduce:animate-none' : icon} ${iconSizeClass} shrink-0`}

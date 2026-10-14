@@ -11,12 +11,14 @@ import {
   type LayoutMode,
   type UserSettings,
   type UserSettingsApi,
+  type UserSettingsSnapshot,
 } from '../../types/preferences.ts';
 
 // initialized 决定是否结束首屏等待；读取失败也会置为 true，让页面使用回退配置。
 // refreshRequestId 只标识后台读取；本地保存开始时清空它，使迟到的旧响应失效。
 interface PreferencesState {
   initialized: boolean;
+  loadRequestId: string | null;
   refreshRequestId: string | null;
   saveRequestId: string | null;
   saveRevision: number;
@@ -48,22 +50,58 @@ interface PreferencesState {
   error: string | null;
   failedLayoutMode: LayoutMode | null;
 }
+
+// 控制器按 Store 隔离且不进入 Redux，退出会话时同时取消读取与排队中的写入。
+const activeRequests = new WeakMap<() => ThunkConfig['state'], Set<AbortController>>();
+const requestRevisions = new WeakMap<() => ThunkConfig['state'], number>();
+export function cancelPreferencesRequests(getState: () => ThunkConfig['state']) {
+  requestRevisions.set(getState, (requestRevisions.get(getState) ?? 0) + 1);
+  activeRequests.get(getState)?.forEach((controller) => controller.abort());
+}
+async function settingsRequest(
+  getState: () => ThunkConfig['state'],
+  signal: AbortSignal,
+  request: (signal: AbortSignal) => Promise<UserSettingsSnapshot>,
+) {
+  const controller = new AbortController();
+  const requests = activeRequests.get(getState) ?? new Set<AbortController>();
+  activeRequests.set(getState, requests);
+  requests.add(controller);
+  const cancel = () => controller.abort();
+  signal.addEventListener('abort', cancel, { once: true });
+  const identity = getState().session?.user?.ystId;
+  try {
+    signal.throwIfAborted();
+    const result = await request(controller.signal);
+    controller.signal.throwIfAborted();
+    if (getState().session?.user?.ystId !== identity) throw new Error('忽略旧用户设置响应');
+    return {
+      ...parseUserSettings(result),
+      ...(result.document ? { document: result.document } : {}),
+    };
+  } finally {
+    signal.removeEventListener('abort', cancel);
+    requests.delete(controller);
+  }
+}
 interface ThunkConfig {
-  state: { preferences: PreferencesState };
+  state: { preferences: PreferencesState; session?: { user: { ystId: string } | null } };
   extra: { userSettingsApi: UserSettingsApi };
 }
 
-export const loadUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
+export const loadUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
   'preferences/load',
-  async (_, { extra, signal }) => parseUserSettings(await extra.userSettingsApi.load(signal)),
+  async (_, { extra, signal, getState }) =>
+    settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
   {
     condition: (_, { getState }) => ['idle', 'load-error'].includes(getState().preferences.status),
   },
 );
 /** 后台同步不切换首屏或保存状态。 */
-export const refreshUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
+export const refreshUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
   'preferences/refresh',
-  async (_, { extra, signal }) => parseUserSettings(await extra.userSettingsApi.load(signal)),
+  async (_, { extra, signal, getState }) =>
+    settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
   {
     condition: (_, { getState }) => {
       const { initialized, status, refreshRequestId } = getState().preferences;
@@ -98,13 +136,28 @@ function currentSettings(state: PreferencesState): UserSettings {
     headerToolsIconOnly,
   };
 }
-export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSettings>, ThunkConfig>(
+export const saveUserSettings = createAsyncThunk<
+  UserSettingsSnapshot,
+  Partial<UserSettings>,
+  ThunkConfig
+>(
   'preferences/save',
   async (changes, { extra, signal, getState }) => {
+    const identity = getState().session?.user?.ystId;
+    const revision = requestRevisions.get(getState) ?? 0;
     const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
     const send = async () => {
       signal.throwIfAborted();
-      return parseUserSettings(await extra.userSettingsApi.save(settings, signal));
+      if (
+        getState().session?.user?.ystId !== identity ||
+        (requestRevisions.get(getState) ?? 0) !== revision
+      )
+        throw new Error('会话已变化，取消旧用户设置保存');
+      const saved = await settingsRequest(getState, signal, (requestSignal) =>
+        extra.userSettingsApi.save(settings, requestSignal),
+      );
+      if (getState().session?.user?.ystId !== identity) throw new Error('忽略旧用户设置响应');
+      return saved;
     };
     const previous = saveQueues.get(getState);
     const request = previous ? previous.then(send) : send();
@@ -127,6 +180,7 @@ export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSetti
 
 const initialState: PreferencesState = {
   initialized: false,
+  loadRequestId: null,
   refreshRequestId: null,
   saveRequestId: null,
   saveRevision: 0,
@@ -171,7 +225,7 @@ function applySavedSettings(
   action: PayloadAction<UserSettings>,
   preservePreview = false,
 ) {
-  Object.assign(state, action.payload);
+  Object.assign(state, parseUserSettings(action.payload));
   updateSavedSettings(state, action.payload);
   if (!preservePreview) {
     state.previewLayoutGap = null;
@@ -189,6 +243,18 @@ const preferencesSlice = createSlice({
   name: 'preferences',
   initialState,
   reducers: {
+    /** 登录响应初始化设置，避免首屏再次请求设置接口。 */
+    initializePreferences(state, action: PayloadAction<UserSettings>) {
+      applySavedSettings(state, action);
+    },
+    resetPreferences() {
+      return initialState;
+    },
+    invalidPreferences(state, action: PayloadAction<string>) {
+      state.initialized = true;
+      state.status = 'load-error';
+      state.error = action.payload;
+    },
     openUserSettings(state) {
       state.settingsOpen = true;
     },
@@ -210,7 +276,8 @@ const preferencesSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loadUserSettings.pending, (state) => {
+      .addCase(loadUserSettings.pending, (state, action) => {
+        state.loadRequestId = action.meta.requestId;
         state.refreshRequestId = null;
         state.status = 'loading';
         state.previewLayoutGap = null;
@@ -219,9 +286,13 @@ const preferencesSlice = createSlice({
         state.error = null;
       })
       .addCase(loadUserSettings.fulfilled, (state, action) => {
+        if (state.loadRequestId !== action.meta.requestId) return;
+        state.loadRequestId = null;
         applySavedSettings(state, action);
       })
       .addCase(loadUserSettings.rejected, (state, action) => {
+        if (state.loadRequestId !== action.meta.requestId) return;
+        state.loadRequestId = null;
         state.navigationTheme = state.savedNavigationTheme = initialState.navigationTheme;
         state.navigationIconOnly = state.savedNavigationIconOnly = initialState.navigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly =
@@ -280,6 +351,7 @@ const preferencesSlice = createSlice({
         state.failedSettings = null;
       })
       .addCase(saveUserSettings.fulfilled, (state, action) => {
+        if (!state.saveRequestId) return;
         state.saveRevision++;
         updateSavedSettings(state, action.payload);
         if (state.saveRequestId !== action.meta.requestId) return;
@@ -307,6 +379,9 @@ const preferencesSlice = createSlice({
   },
 });
 export const {
+  initializePreferences,
+  resetPreferences,
+  invalidPreferences,
   openUserSettings,
   closeUserSettings,
   previewLayoutGap,

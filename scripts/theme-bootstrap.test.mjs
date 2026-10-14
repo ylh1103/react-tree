@@ -33,10 +33,10 @@ test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t
   const values = mockStorage(t);
   assert.equal(readBootstrapTheme(), 'system');
   for (const mode of ['light', 'dark', 'system']) {
-    values.set('react-tree:theme-mode:v1', mode);
+    values.set('react-tree:theme-mode:v2:anonymous', mode);
     assert.equal(readBootstrapTheme(), mode);
   }
-  values.set('react-tree:theme-mode:v1', 'invalid');
+  values.set('react-tree:theme-mode:v2:anonymous', 'invalid');
   assert.equal(readBootstrapTheme(), 'system');
   Object.defineProperty(globalThis.window, 'localStorage', {
     get() {

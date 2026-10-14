@@ -15,11 +15,14 @@ const syncKey = 'react-tree:user-settings:v1';
 const changedMessage = 'user-settings-changed';
 
 /** 只传递变更通知，接收方始终以自己的服务端配置为准。 */
-export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | null {
+export function createUserSettingsSyncTransport(
+  identity = 'anonymous',
+): UserSettingsSyncTransport | null {
   if (typeof window === 'undefined') return null;
+  const userSyncKey = `${syncKey}:${identity}`;
   try {
     if (typeof window.BroadcastChannel === 'function') {
-      const channel = new window.BroadcastChannel(syncKey);
+      const channel = new window.BroadcastChannel(userSyncKey);
       return {
         publish: () => channel.postMessage(changedMessage),
         subscribe: (listener) => {
@@ -38,10 +41,14 @@ export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | n
   try {
     const storage = window.localStorage;
     return {
-      publish: () => storage.setItem(syncKey, `${Date.now()}:${Math.random()}`),
+      publish: () => storage.setItem(userSyncKey, `${Date.now()}:${Math.random()}`),
       subscribe: (listener) => {
         const receive = (event: StorageEvent) => {
-          if (event.key === syncKey && event.storageArea === storage && event.newValue !== null) {
+          if (
+            event.key === userSyncKey &&
+            event.storageArea === storage &&
+            event.newValue !== null
+          ) {
             listener();
           }
         };
@@ -58,7 +65,7 @@ export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | n
 /** 保存成功后通知其他页签；通知在本地请求期间排队并合并。 */
 export function startUserSettingsSync(
   store: ReturnType<typeof createAppStore>,
-  transport = createUserSettingsSyncTransport(),
+  transport = createUserSettingsSyncTransport(store.getState().session.user?.ystId),
 ) {
   let stopped = false;
   let queued = false;

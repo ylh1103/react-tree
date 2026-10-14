@@ -128,8 +128,10 @@ test('实际懒加载页面可解析默认和具名导出，占位页面保留�
   assert.equal(search.props.title, '搜索');
   assert.equal(search.props.splitPane, true);
   const { Component: Params } = await match('/systems/CAC/params').route.lazy();
-  assert.equal(Params().props.title, '参数项');
-  assert.equal(Params().props.splitPane, false);
+  const { default: LoadingGallery } = await vite.ssrLoadModule(
+    '/src/pages/SystemParameters/components/LoadingGallery.tsx',
+  );
+  assert.equal(Params().type, LoadingGallery);
 });
 
 test('首次加载及导航使用目标骨架，加载完成显示页面，取消导航恢复原页面', async (t) => {
@@ -224,57 +226,33 @@ test('首次加载及导航使用目标骨架，加载完成显示页面，取�
   assert.doesNotMatch(render(), /third-page/);
 });
 
-test('静态 loader 在模块完成前并行预取，完成后共用新鲜 Query 缓存', async (t) => {
+test('父子 loader 等待授权后并行预取，与组件共享用户维度缓存', async (t) => {
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
+  const { requireSession } = await vite.ssrLoadModule('/src/store/session.ts');
+  const { systemsOptions, parameterTypesOptions } =
+    await vite.ssrLoadModule('/src/queries/systems.ts');
+  await requireSession();
   queryClient.clear();
   t.after(() => queryClient.clear());
   const requests = [];
-  let releaseModule;
-  const modulePromise = new Promise((resolve) => {
-    releaseModule = resolve;
-  });
   const original = queryClient.prefetchQuery.bind(queryClient);
   t.mock.method(queryClient, 'prefetchQuery', (options) => {
     requests.push(options.queryKey);
     return original({ ...options, queryFn: async () => [] });
   });
-  const router = createMemoryRouter(
-    [
-      {
-        path: 'systems/:systemName',
-        loader: routes[0].children.find((route) => route.id === 'system').loader,
-        children: [
-          {
-            path: 'db',
-            loader: match('/systems/CAC/db').route.loader,
-            lazy: () => modulePromise,
-          },
-        ],
-      },
-    ],
-    { initialEntries: ['/systems/CAC/db'] },
+  const parent = routes[0].children
+    .find((route) => route.id === 'system')
+    .loader({ params: { systemName: 'CAC' } });
+  const child = match('/systems/CAC/db').route.loader({ params: { systemName: 'CAC' } });
+  assert.deepEqual(requests, []);
+  await Promise.all([parent, child]);
+  assert.deepEqual(
+    requests.map(JSON.stringify).sort(),
+    [systemsOptions().queryKey, parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
   );
-  t.after(() => router.dispose());
-  assert.deepEqual(requests, [
-    ['systems', 'mine'],
-    ['systems', 'CAC', 'database-types'],
-  ]);
-  assert.equal(router.state.initialized, false);
-  await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(queryClient.getQueryData(['systems', 'CAC', 'database-types']), []);
-  const initialized = new Promise((resolve) => {
-    const unsubscribe = router.subscribe((state) => {
-      if (state.initialized) {
-        unsubscribe();
-        resolve();
-      }
-    });
-  });
-  releaseModule({ Component: () => null });
-  await initialized;
   let refetched = false;
   const data = await queryClient.fetchQuery({
-    queryKey: ['systems', 'CAC', 'database-types'],
+    ...parameterTypesOptions('CAC'),
     queryFn: async () => {
       refetched = true;
       return ['unexpected'];
@@ -293,7 +271,8 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
   });
   const prefetch = t.mock.method(queryClient, 'prefetchQuery', async () => {});
   await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
-  assert.deepEqual(lock, ['grouped-list-write', 'applications:CAC']);
+  const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
+  assert.deepEqual(lock, groupedListKeys.write('applications:CAC'));
   assert.equal(prefetch.mock.callCount(), 0);
 });
 
@@ -389,10 +368,11 @@ test('列表 loader 仅因应用参数变化不重跑，跨系统和显式刷新
   const { revalidateSystemCollection } = await vite.ssrLoadModule('/src/router/loaders.ts');
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   queryClient.clear();
-  queryClient.setQueryData(
-    ['grouped-list', 'applications:CAC'],
-    [{ key: 'a' }, { key: '公共配置' }],
-  );
+  const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
+  queryClient.setQueryData(groupedListKeys.list('applications:CAC'), [
+    { key: 'a' },
+    { key: '公共配置' },
+  ]);
   t.after(() => queryClient.clear());
   let loads = 0;
   const router = createMemoryRouter(

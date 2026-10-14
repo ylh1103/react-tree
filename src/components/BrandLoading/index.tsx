@@ -1,3 +1,4 @@
+import { animationKeyframes } from './model/animations';
 import { useId, type SVGProps } from 'react';
 
 const redPanel =
@@ -12,11 +13,23 @@ interface BrandLoadingProps extends SVGProps<SVGSVGElement> {
 }
 
 const motions: Record<BrandLoadingVariant, { logo: string; red: string; blue: string }> = {
-  split: { logo: '', red: 'brand-loading-red', blue: 'brand-loading-blue' },
-  rotate: { logo: 'animate-brand-rotate', red: '', blue: '' },
-  flip: { logo: '', red: 'animate-brand-flip-red', blue: 'animate-brand-flip-blue' },
-  breathe: { logo: 'animate-brand-breathe', red: '', blue: '' },
-  bounce: { logo: '', red: 'animate-brand-bounce-red', blue: 'animate-brand-bounce-blue' },
+  split: {
+    logo: '',
+    red: '[animation:brand-red_1.25s_ease-in-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none',
+    blue: '[animation:brand-blue_1.25s_ease-in-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none',
+  },
+  rotate: { logo: '[animation:brand-rotate_1.8s_linear_infinite]', red: '', blue: '' },
+  flip: {
+    logo: '',
+    red: '[animation:brand-flip-red_1.6s_ease-in-out_infinite]',
+    blue: '[animation:brand-flip-blue_1.6s_ease-in-out_infinite]',
+  },
+  breathe: { logo: '[animation:brand-breathe_1.6s_ease-in-out_infinite]', red: '', blue: '' },
+  bounce: {
+    logo: '',
+    red: '[animation:brand-bounce-red_1.2s_ease-in-out_infinite]',
+    blue: '[animation:brand-bounce-blue_1.2s_ease-in-out_infinite]',
+  },
   orbit: { logo: '', red: '', blue: '' },
 };
 
@@ -40,8 +53,9 @@ export function BrandLoading({ variant = 'split', className = '', ...props }: Br
       focusable="false"
       className={`inline-block align-middle overflow-visible ${className}`}
     >
+      <style>{animationKeyframes}</style>
       {variant === 'orbit' && (
-        <g className={`animate-brand-rotate ${origin}`}>
+        <g className={`[animation:brand-rotate_1.8s_linear_infinite] ${origin}`}>
           <circle
             cx="98"
             cy="92"
