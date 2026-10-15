@@ -19,6 +19,7 @@ export function createUserSettingsSyncTransport(
   identity = 'anonymous',
 ): UserSettingsSyncTransport | null {
   if (typeof window === 'undefined') return null;
+  // 通道按用户隔离，广播不携带配置正文；接收者使用自己的登录态重新向服务端读取。
   const userSyncKey = `${syncKey}:${identity}`;
   try {
     if (typeof window.BroadcastChannel === 'function') {
@@ -68,6 +69,7 @@ export function startUserSettingsSync(
   transport = createUserSettingsSyncTransport(store.getState().session.user?.ystId),
 ) {
   let stopped = false;
+  // 用布尔值合并多次通知；请求期间有新通知时，结束后最多再补一次读取。
   let queued = false;
   let refreshing = false;
   let activeRequest: { abort: () => void } | null = null;
@@ -85,6 +87,7 @@ export function startUserSettingsSync(
     ) {
       return;
     }
+    // 本地保存期间暂缓刷新，避免服务端旧快照干扰乐观 UI；Store 更新时会再次尝试 flush。
     queued = false;
     refreshing = true;
     try {
@@ -104,6 +107,7 @@ export function startUserSettingsSync(
   const unsubscribeTransport = transport?.subscribe(receive);
   const unsubscribeStore = store.subscribe(() => {
     const revision = store.getState().preferences.saveRevision;
+    // 只在本地保存成功时广播；接收通知后的 refresh 不递增版本，避免页签相互通知形成循环。
     const saved = previousSaveRevision !== revision;
     previousSaveRevision = revision;
     if (saved) {

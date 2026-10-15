@@ -6,6 +6,7 @@ import type { ThemeMode } from '../../types/preferences.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
 import type { createAppStore } from '../index.ts';
 
+// 与完整配置同步通道分开：这里仅保存首屏提示值，不承担后端配置持久化。
 const themeKey = 'react-tree:theme-mode:v2';
 
 /** 仅缓存主题选择用于首屏配色，完整用户配置仍由服务端提供。 */
@@ -28,6 +29,7 @@ export function startThemePersistence(store: ReturnType<typeof createAppStore>) 
     const current = store.getState().preferences;
     const session = store.getState().session;
     const identity = session.user?.ystId;
+    // 按用户写入已确认选择，跳过加载/失效会话；system 原样缓存，下次启动时重新解析系统外观。
     if (
       session.status !== 'loading' &&
       session.status !== 'expired' &&

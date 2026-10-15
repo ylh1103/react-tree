@@ -1,6 +1,9 @@
 /**
  * 用户配置状态机：首次读取、后台同步、乐观保存、失败回退和重试。
  * 当前字段驱动即时 UI，saved 字段记录服务端确认值；requestId 阻止旧后台响应覆盖本地保存。
+ * 流程入口：登录时 initializePreferences；读取失败后 loadUserSettings 重试；控件修改走 saveUserSettings。
+ * 状态流转：idle → loading → ready/load-error；ready/save-error → saving → ready/save-error。
+ * refreshUserSettings 只在后台更新，不进入 loading；抽屉关闭也不会取消已提交的保存。
  */
 import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import {
@@ -21,7 +24,9 @@ interface PreferencesState {
   loadRequestId: string | null;
   refreshRequestId: string | null;
   saveRequestId: string | null;
+  // 每次被接受的保存成功都递增，供跨页签同步发布通知；不是服务端版本号。
   saveRevision: number;
+  // 合并连续保存中的修改项；最新请求失败时保留为重试输入，避免只重试最后一个字段。
   saveChanges: Partial<UserSettings> | null;
   layoutMode: LayoutMode;
   savedLayoutMode: LayoutMode;
@@ -54,10 +59,15 @@ interface PreferencesState {
 // 控制器按 Store 隔离且不进入 Redux，退出会话时同时取消读取与排队中的写入。
 const activeRequests = new WeakMap<() => ThunkConfig['state'], Set<AbortController>>();
 const requestRevisions = new WeakMap<() => ThunkConfig['state'], number>();
+/** 中止在途请求并提升会话代次；排队但尚未发送的保存也会在发送前被拦截。 */
 export function cancelPreferencesRequests(getState: () => ThunkConfig['state']) {
   requestRevisions.set(getState, (requestRevisions.get(getState) ?? 0) + 1);
   activeRequests.get(getState)?.forEach((controller) => controller.abort());
 }
+/**
+ * 所有设置读写的取消与身份边界：同时响应 thunk 取消和会话整体失效。
+ * 请求结束后再次检查取消状态及用户身份，防止旧用户响应进入配置状态机。
+ */
 async function settingsRequest(
   getState: () => ThunkConfig['state'],
   signal: AbortSignal,
@@ -89,6 +99,7 @@ interface ThunkConfig {
   extra: { userSettingsApi: UserSettingsApi };
 }
 
+/** 首次独立读取或错误重试；正常登录已携带配置，不需要再调用一次设置 GET。 */
 export const loadUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
   'preferences/load',
   async (_, { extra, signal, getState }) =>
@@ -97,7 +108,7 @@ export const loadUserSettings = createAsyncThunk<UserSettingsSnapshot, void, Thu
     condition: (_, { getState }) => ['idle', 'load-error'].includes(getState().preferences.status),
   },
 );
-/** 后台同步不切换首屏或保存状态。 */
+/** 后台同步不切换首屏或保存状态；已有读取或保存时拒绝启动，由同步协调层合并通知。 */
 export const refreshUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
   'preferences/refresh',
   async (_, { extra, signal, getState }) =>
@@ -114,6 +125,7 @@ export const refreshUserSettings = createAsyncThunk<UserSettingsSnapshot, void, 
 
 // 每个 Store 独立串行保存完整快照；连续修改立即进入 Redux，后续请求不会被丢弃。
 const saveQueues = new WeakMap<() => ThunkConfig['state'], Promise<void>>();
+/** 只提取可持久化字段，不把预览值、抽屉状态、错误和请求编号发送给后端。 */
 function currentSettings(state: PreferencesState): UserSettings {
   const {
     layoutMode,
@@ -145,6 +157,7 @@ export const saveUserSettings = createAsyncThunk<
   async (changes, { extra, signal, getState }) => {
     const identity = getState().session?.user?.ystId;
     const revision = requestRevisions.get(getState) ?? 0;
+    // pending reducer 已同步应用本次修改；在入队时固定快照，保证连续操作按发生顺序保存。
     const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
     const send = async () => {
       signal.throwIfAborted();
@@ -161,6 +174,8 @@ export const saveUserSettings = createAsyncThunk<
     };
     const previous = saveQueues.get(getState);
     const request = previous ? previous.then(send) : send();
+    // 队列尾部始终转为 fulfilled，让前一次失败后仍可发送后续修改。
+    // 原始 request 仍向 thunk 抛错，失败反馈与回退不会被这里吞掉。
     const settled = request.then(
       () => {},
       () => {},
@@ -210,6 +225,7 @@ const initialState: PreferencesState = {
   error: null,
   failedLayoutMode: null,
 };
+/** 更新服务端确认基线；较早保存成功时也要推进基线，供后续保存失败正确回退。 */
 function updateSavedSettings(state: PreferencesState, settings: UserSettings) {
   state.savedLayoutMode = settings.layoutMode;
   state.savedLayoutGap = settings.layoutGap;
@@ -220,6 +236,10 @@ function updateSavedSettings(state: PreferencesState, settings: UserSettings) {
   state.savedNavigationIconOnly = settings.navigationIconOnly;
   state.savedHeaderToolsIconOnly = settings.headerToolsIconOnly;
 }
+/**
+ * 将已确认配置同时应用到当前值和回退基线，并清除错误。
+ * 保存完成时保留用户新一轮拖动的预览；初始化/后台读取则清除旧预览。
+ */
 function applySavedSettings(
   state: PreferencesState,
   action: PayloadAction<UserSettings>,
@@ -250,6 +270,7 @@ const preferencesSlice = createSlice({
     resetPreferences() {
       return initialState;
     },
+    // 配置损坏不阻止登录，但保持 load-error 禁止保存；重新读取成功后才能编辑。
     invalidPreferences(state, action: PayloadAction<string>) {
       state.initialized = true;
       state.status = 'load-error';
@@ -258,6 +279,7 @@ const preferencesSlice = createSlice({
     openUserSettings(state) {
       state.settingsOpen = true;
     },
+    // 关闭只丢弃未提交预览；已派发的自动保存继续由串行队列处理。
     closeUserSettings(state) {
       state.settingsOpen = false;
       state.previewLayoutGap = null;
@@ -303,6 +325,7 @@ const preferencesSlice = createSlice({
         state.borderRadius = state.savedBorderRadius = initialState.borderRadius;
         state.controlBorderRadius = state.savedControlBorderRadius =
           initialState.controlBorderRadius;
+        // 读取失败时保留已有主题基线；其他显示项回到默认值，页面仍可展示错误与重试入口。
         state.themeMode = state.savedThemeMode;
         state.status = 'load-error';
         state.error = action.error.message || '用户设置读取失败';
@@ -320,6 +343,7 @@ const preferencesSlice = createSlice({
         // 同步失败保留当前配置，下一次通知或回到页签时重试。
       })
       .addCase(saveUserSettings.pending, (state, action) => {
+        // 乐观更新：先改变当前 UI，saved* 暂不变；保存中仍允许用户继续修改并排队。
         state.saveChanges = {
           ...(state.status === 'saving' ? state.saveChanges : {}),
           ...action.meta.arg,
@@ -354,12 +378,14 @@ const preferencesSlice = createSlice({
         if (!state.saveRequestId) return;
         state.saveRevision++;
         updateSavedSettings(state, action.payload);
+        // 较早请求只确认回退基线，不覆盖较新操作的 UI；最后一次请求成功才整体对齐响应。
         if (state.saveRequestId !== action.meta.requestId) return;
         applySavedSettings(state, action, true);
         state.saveRequestId = null;
         state.saveChanges = null;
       })
       .addCase(saveUserSettings.rejected, (state, action) => {
+        // 只处理当前最新请求的失败；回退到最近一次成功值，同时保留修改项供用户显式重试。
         if (state.saveRequestId !== action.meta.requestId) return;
         state.saveRequestId = null;
         state.layoutMode = state.savedLayoutMode;

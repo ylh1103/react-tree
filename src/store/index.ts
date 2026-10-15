@@ -22,6 +22,7 @@ const syncSessionSettings: Middleware = (api) => (next) => (action) => {
     session: ReturnType<typeof sessionReducer>;
     preferences: ReturnType<typeof preferencesReducer>;
   };
+  // 先让 reducer 处理响应，再依据处理前的请求编号判断响应是否属于有效配置请求。
   const result = next(action);
   if (!before.session.user) return result;
   const saved =
@@ -37,6 +38,7 @@ const syncSessionSettings: Middleware = (api) => (next) => (action) => {
     try {
       api.dispatch(
         updateSessionSettings(
+          // 正式 API 返回完整文档；注入的 API 若只返回配置字段，则合并原会话文档保留其他字段。
           payload.document ??
             JSON.stringify({
               ...parseSettingsDocument(before.session.user.userSetting),
@@ -57,6 +59,7 @@ export function createAppStore(
 ) {
   return configureStore({
     reducer: { preferences: preferencesReducer, session: sessionReducer },
+    // 启动主题只用于服务端配置到达前的配色；initialized 仍为 false，不能据此允许保存。
     preloadedState: {
       preferences: {
         ...preferencesReducer(undefined, { type: 'preferences/init' }),

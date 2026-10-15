@@ -253,23 +253,14 @@ export default function SystemsHomePage() {
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
 
   return (
-    <section className="max-w-1600px mx-auto p-5 desktop:p-8">
-      <div className="mb-6">
-        <div className="flex items-center gap-2.5">
-          <h1 className="m-0 text-24px font-600 leading-32px">系统管理</h1>
-          <Button type="primary" className="ml-auto" onClick={() => setCreating(true)}>
-            新增系统
-          </Button>
-          <span className="text-text-muted text-13px tabular-nums">
-            {query.data ? `${systems.length} 个系统` : '—'}
-          </span>
-        </div>
-        <p className="m-0 mt-1.5 text-text-muted text-13px leading-22px">
-          选择系统，进入应用参数或数据库参数工作区
-        </p>
-      </div>
+    <section className="max-w-1600px mx-auto p-5 desktop:p-8" aria-label="系统列表">
       <Tabs
         activeKey={tab}
+        tabBarExtraContent={
+          <Button type="primary" onClick={() => setCreating(true)}>
+            新增系统
+          </Button>
+        }
         onChange={(value) => {
           setTab(value);
           setRole(undefined);
@@ -363,9 +354,6 @@ export default function SystemsHomePage() {
             },
           ]}
         />
-        <span className="text-12px text-text-muted tabular-nums" role="status" aria-live="polite">
-          {query.data ? `共 ${filtered.length} 个系统` : '正在加载'}
-        </span>
       </div>
       {query.error && (
         <Alert
@@ -436,6 +424,17 @@ export default function SystemsHomePage() {
       {filtered.length > 0 && (
         <div className="flex justify-end mt-6 [&_.ant-pagination]:flex-wrap">
           <Pagination
+            locale={{
+              items_per_page: '条/页',
+              page_size: '每页条数',
+              prev_page: '上一页',
+              next_page: '下一页',
+              prev_5: '向前 5 页',
+              next_5: '向后 5 页',
+              prev_3: '向前 3 页',
+              next_3: '向后 3 页',
+              page: '页',
+            }}
             current={current}
             pageSize={pageSize}
             total={filtered.length}

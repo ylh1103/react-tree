@@ -1,10 +1,14 @@
 import { defineConfig, presetWind3, presetIcons } from 'unocss';
-import { navigationItems, databaseNavigationItems } from './src/router/config';
 import { themeVariables } from './src/styles/theme';
 import lucideIcons from '@iconify-json/lucide/icons.json';
 
 export default defineConfig({
-  safelist: [...navigationItems, ...databaseNavigationItems].map(({ icon }) => icon),
+  // 项目使用 React + TypeScript，扫描 TS/TSX 与 HTML 入口，包含路由配置中的完整图标类名。
+  content: {
+    pipeline: {
+      include: [/\.(tsx?|html)($|\?)/],
+    },
+  },
   theme: {
     // 1280px 起显示工具文字；超过 1600px 时放宽系统选择器。
     breakpoints: { desktop: '1280px', wide: '1601px' },

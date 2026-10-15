@@ -9,6 +9,7 @@ import type { LayoutMode } from '../types/preferences';
 
 export function useLayoutPreferences() {
   const layoutMode = useAppSelector((state) => state.preferences.layoutMode);
+  // 多处布局消费同一预览值；清理预览后自动恢复已提交间距，紧凑模式的实际零间距由布局处理。
   const layoutGap = useAppSelector(
     (state) => state.preferences.previewLayoutGap ?? state.preferences.layoutGap,
   );

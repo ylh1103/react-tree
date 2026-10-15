@@ -3,6 +3,7 @@
  * 服务端快照由 Query 管理，草稿由编辑 reducer 管理；选中项可由 URL 控制。
  * 纯树操作放 model，行与工具栏放 components，修改具体行为时优先进入对应模块。
  */
+import { useDebounceFn } from 'ahooks';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
@@ -203,7 +204,11 @@ export function GroupedList({
   // 所以这里用 ref 记一个“待定位”标记，在下面的 effect 里等 flat 更新后再去查找目标行的
   // 索引并滚动，避免用旧的 flat 数据算出错误的 index。
   const pendingLocateRef = useRef<'reveal' | 'locate' | null>(null);
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 定位高亮独立于 flat 更新，连续定位重置延迟；卸载时由 ahooks 取消。
+  const { run: scheduleClearHighlight, cancel: cancelClearHighlight } = useDebounceFn(
+    () => setHighlightedKey(null),
+    { wait: 1400 },
+  );
   const selectionRevealRef = useRef<{
     listId: GroupedListId;
     key: string | null | undefined;
@@ -227,14 +232,6 @@ export function GroupedList({
     pendingLocateRef.current = 'reveal';
   }, [listId, controlledSelectedKey, ready, treeIndex, expandPath]);
 
-  // 高亮计时独立于 flat，避免展开、搜索或拖拽更新提前清理计时器。
-  useEffect(
-    () => () => {
-      if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current);
-    },
-    [],
-  );
-
   const handleLocate = () => {
     if (!selectedKey || !treeIndex.nodeByKey.get(selectedKey)) return;
     // 被过滤的选中节点需要先恢复可见；命中节点则仅重新展开路径。
@@ -257,14 +254,9 @@ export function GroupedList({
     pendingLocateRef.current = null;
     virtualizer.scrollToIndex(idx, { align: 'center' });
     setHighlightedKey(highlight ? selectedKey : null);
-    if (highlightTimerRef.current !== null) clearTimeout(highlightTimerRef.current);
-    highlightTimerRef.current = null;
-    if (!highlight) return;
-    highlightTimerRef.current = setTimeout(() => {
-      setHighlightedKey(null);
-      highlightTimerRef.current = null;
-    }, 1400);
-  }, [flatIndex, selectedKey, virtualizer]);
+    cancelClearHighlight();
+    if (highlight) scheduleClearHighlight();
+  }, [flatIndex, selectedKey, virtualizer, cancelClearHighlight, scheduleClearHighlight]);
 
   // “分组之后”的线挂在最后一个可见后代上，位置由节点边缘决定。
   let dropLineIndex = -1;

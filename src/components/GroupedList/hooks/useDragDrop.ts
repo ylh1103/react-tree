@@ -2,7 +2,7 @@
  * 虚拟树拖拽控制：指针激活、实际 DOM 命中、落点验证及结束清理。
  * 落点提示由 state 渲染，ref 保存同步值；任何移动都拒绝自身、无效目标和形成循环的操作。
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   PointerSensor,
   useSensor,
@@ -11,6 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { useEventListener } from 'ahooks';
 import type { DropIndicator, DropPosition } from '../types';
 import { buildTreeIndex } from '../model/treeUtils';
 
@@ -56,10 +57,11 @@ export function useDragDrop(
   // 在这种绝对定位 + translateY 驱动的虚拟列表行上测量结果不稳定（曾出现拖拽中途
   // over 变为 undefined、rect 坐标与实际行位置对不上等问题），改为直接测量鼠标下方
   // 的真实 DOM 元素（原理与 antd Tree 自身用 dragover 事件的 clientY 计算方式一致）更可靠。
-  useEffect(() => {
-    if (!activeDragKey) return;
-
-    const handlePointerMove = (e: PointerEvent) => {
+  // 仅拖拽期间监听；ahooks 保持监听器稳定，同时读取最新树索引和落点校验。
+  useEventListener(
+    'pointermove',
+    (e: PointerEvent) => {
+      if (activeDragKey === null) return;
       const target = (
         document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null
       )?.closest('[data-node-key]');
@@ -92,11 +94,9 @@ export function useDragDrop(
       const next = { overKey, position };
       dropIndicatorRef.current = next;
       setDropIndicator(next);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, [activeDragKey, index, isValidDrop]);
+    },
+    { enable: activeDragKey !== null },
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDragKey(String(event.active.id));

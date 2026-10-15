@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode, type UIEvent } from 'react';
+/** 同步内容区与悬浮横向滚动条，观察多列尺寸变化并按帧合并滚动范围更新。 */
+import { useEffect, useRef, type ReactNode, type UIEvent } from 'react';
+import { useRafState } from 'ahooks';
 
 export function OverlayHorizontalScroll({
   children,
@@ -11,7 +13,8 @@ export function OverlayHorizontalScroll({
 }) {
   const viewportRef = useRef<HTMLElement>(null);
   const scrollbarRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ content: 0, viewport: 0 });
+  // 多列 ResizeObserver 通知可能连续到达；每帧仅提交最后一次测量，卸载自动取消。
+  const [size, setSize] = useRafState({ content: 0, viewport: 0 });
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -33,7 +36,7 @@ export function OverlayHorizontalScroll({
       for (const child of viewport.firstElementChild.children) observer.observe(child);
     }
     return () => observer.disconnect();
-  }, [children]);
+  }, [children, setSize]);
 
   function syncScroll(event: UIEvent<HTMLElement>) {
     const other =

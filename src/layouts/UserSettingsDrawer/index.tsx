@@ -4,37 +4,41 @@
  */
 import { Button, Drawer, Popconfirm, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
+import { useDebounceFn, useEventListener } from 'ahooks';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { closeUserSettings, saveUserSettings } from '../../store/slices/preferencesSlice';
 import { LayoutSettings } from '../../components/LayoutSettings';
 import { defaultUserSettings, type UserSettings } from '../../types/preferences';
 
 export function UserSettingsDrawer() {
-  const {
-    settingsOpen: open,
-    status,
-    error,
-    failedSettings,
-  } = useAppSelector((state) => state.preferences);
+  // 只订阅抽屉实际展示的字段，布局预览等无关变更不触发整层抽屉更新。
+  const open = useAppSelector((state) => state.preferences.settingsOpen);
+  const status = useAppSelector((state) => state.preferences.status);
+  const error = useAppSelector((state) => state.preferences.error);
+  const failedSettings = useAppSelector((state) => state.preferences.failedSettings);
   const dispatch = useAppDispatch();
+  // “已保存”只是一段短暂 UI 提示；实际配置及保存结果以 Redux 为准，不在组件中复制配置。
   const [syncedAt, setSyncedAt] = useState<number | null>(null);
   const close = () => {
     setSyncedAt(null);
     dispatch(closeUserSettings());
   };
-  useEffect(() => {
-    if (!open) return;
-    const handleOutsidePointerDown = (event: PointerEvent) => {
+  // 保留捕获阶段监听：即使外部控件阻止冒泡，也能关闭抽屉；仅打开时注册。
+  useEventListener(
+    'pointerdown',
+    (event: PointerEvent) => {
       if (event.button !== 0) return;
       const panel = document.querySelector('.user-settings-panel');
-      if (panel && event.target instanceof Node && !panel.contains(event.target)) {
-        setSyncedAt(null);
-        dispatch(closeUserSettings());
-      }
-    };
-    document.addEventListener('pointerdown', handleOutsidePointerDown, true);
-    return () => document.removeEventListener('pointerdown', handleOutsidePointerDown, true);
-  }, [open, dispatch]);
+      if (panel && event.target instanceof Node && !panel.contains(event.target)) close();
+    },
+    { target: () => document, capture: true, enable: open },
+  );
+  const { run: scheduleClearSyncedAt, cancel: cancelClearSyncedAt } = useDebounceFn(
+    () => setSyncedAt(null),
+    { wait: 3000 },
+  );
+  // RTK thunk 的 dispatch 会返回结果 action；显式判断 fulfilled 后才显示成功，失败交给 Slice 回退。
+  // 自动保存、恢复默认、失败重试都走同一入口；恢复默认仅覆盖平台字段，API 仍保留未知字段。
   const save = async (changes: Partial<UserSettings>) => {
     setSyncedAt(null);
     const result = await dispatch(saveUserSettings(changes));
@@ -42,9 +46,10 @@ export function UserSettingsDrawer() {
   };
   useEffect(() => {
     if (syncedAt === null) return;
-    const timer = window.setTimeout(() => setSyncedAt(null), 3000);
-    return () => window.clearTimeout(timer);
-  }, [syncedAt]);
+    // 每次保存完成重新计时；开始新保存、关闭或卸载时取消旧提示任务。
+    scheduleClearSyncedAt();
+    return cancelClearSyncedAt;
+  }, [syncedAt, scheduleClearSyncedAt, cancelClearSyncedAt]);
   return (
     <Drawer
       title="用户设置"
@@ -109,6 +114,7 @@ export function UserSettingsDrawer() {
                   danger
                   className="h-auto! px-0! py-0!"
                   onClick={() => {
+                    // UI 已回退，重试必须发送之前失败的修改项，不能重新读取当前回退值作为输入。
                     if (failedSettings) void save(failedSettings);
                   }}
                 >

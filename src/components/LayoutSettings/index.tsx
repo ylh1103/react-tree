@@ -228,6 +228,7 @@ function PreferenceSlider({
     setting === 'layoutGap' ? '模块间距' : setting === 'borderRadius' ? '面板圆角' : '控件圆角';
   const draft = preview ?? value;
   const displayedGap = compact ? 0 : draft;
+  // 输入框允许暂时为空，用本地草稿承接编辑；只有合法数字进入 Redux 预览，失焦时再提交。
   const [inputDraft, setInputDraft] = useState<number | null | undefined>(undefined);
   const marks = Object.fromEntries(
     (setting === 'controlBorderRadius'
@@ -259,6 +260,7 @@ function PreferenceSlider({
     },
     [dispatch, previewAction],
   );
+  // 只有完成交互且数值改变才请求保存；滑块 onChange 仅预览，避免拖动时逐帧请求。
   const commit = (next: number) => {
     if (disabled) return;
     if (next !== value) onSave({ [setting]: next });
@@ -382,6 +384,7 @@ function MenuDisplaySetting({
   );
 }
 
+/** 控件只提交修改字段；保存、回退与重试由抽屉及 Redux 状态机统一处理。 */
 export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSettings>) => void }) {
   const {
     status,
@@ -405,6 +408,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
   const controlRadiusLabelId = useId();
   const loading = status === 'idle' || status === 'loading';
   const saving = status === 'saving';
+  // 读取错误时禁用写入，防止默认显示值覆盖损坏配置；保存中继续允许编辑，由队列串行发送。
   const disabled = loading || status === 'load-error';
   return (
     <div

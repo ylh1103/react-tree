@@ -1,4 +1,4 @@
-/** 路由与导航唯一配置。配置模块不导入运行时 Store，UnoCSS 可安全读取图标。 */
+/** 路由与导航唯一配置；图标使用完整工具类名，供 UnoCSS 构建管线自动提取。 */
 import type { ParameterPlatform } from './paths.ts';
 type PageModule = typeof import('../pages/SystemsHome/index.tsx');
 export interface WorkspaceRoute {

@@ -17,10 +17,12 @@ export const initializeSession = createAsyncThunk(
   async (_, { dispatch, signal }) => {
     const user = await loadSession(signal);
     signal.throwIfAborted();
+    // 每次建立会话都清除上一个用户的显示配置，再使用登录响应初始化，避免额外设置请求。
     dispatch(resetPreferences());
     try {
       dispatch(initializePreferences(settingsFromDocument(user.userSetting)));
     } catch {
+      // 身份有效与配置有效分开处理：保留登录，但设置面板须重新读取成功后才能写入。
       dispatch(invalidPreferences('用户设置 JSON 无效，请重新读取后再保存'));
     }
     return user;

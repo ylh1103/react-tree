@@ -3,6 +3,7 @@
  * 区分搜索自动展开与用户主动折叠；拖拽定时器在目标变化和卸载时清理。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useDebounceFn } from 'ahooks';
 import type { TreeNode, DropIndicator } from '../types';
 import type { buildTreeIndex } from '../model/treeUtils';
 
@@ -114,25 +115,27 @@ export function useTreeExpansion({
       ? dropIndicator.overKey
       : null;
 
-  useEffect(() => {
-    if (hoverExpandKey === null) return;
-    const timer = setTimeout(() => {
+  const { run: scheduleExpand, cancel: cancelExpand } = useDebounceFn(
+    (key: string) => {
       setSearchCollapse((prev) => {
-        if (!prev.keys.has(hoverExpandKey)) return prev;
+        if (!prev.keys.has(key)) return prev;
         const keys = new Set(prev.keys);
-        keys.delete(hoverExpandKey);
+        keys.delete(key);
         return { ...prev, keys };
       });
       setExpandedKeys((prev) => {
-        if (prev.has(hoverExpandKey)) return prev;
-        const next = new Set(prev);
-        next.add(hoverExpandKey);
-        return next;
+        if (prev.has(key)) return prev;
+        return new Set([...prev, key]);
       });
-    }, DRAG_EXPAND_DELAY);
-    // 同一分组的 inside 区域内移动不重置计时；移到 before/after、离开或结束拖拽时取消。
-    return () => clearTimeout(timer);
-  }, [hoverExpandKey]);
+    },
+    { wait: DRAG_EXPAND_DELAY },
+  );
+  useEffect(() => {
+    if (hoverExpandKey === null) return;
+    scheduleExpand(hoverExpandKey);
+    // 目标变化必须先取消旧任务；同组 inside 内移动不重计时，离开或结束拖拽时取消。
+    return cancelExpand;
+  }, [hoverExpandKey, scheduleExpand, cancelExpand]);
 
   const toggleExpand = useCallback(
     (key: string) => {

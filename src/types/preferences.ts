@@ -1,9 +1,12 @@
+/** 平台显示配置契约与兼容校验；完整 userSetting 文档的解析位于 userSettings.ts。 */
 export type LayoutMode = 'default' | 'compact';
 export type ResolvedThemeMode = 'light' | 'dark';
+/** 用户选择可为 system；实际渲染使用 ResolvedThemeMode，不把系统解析结果持久化。 */
 export type ThemeMode = ResolvedThemeMode | 'system';
 export type NavigationTheme = 'contrast' | 'theme';
 export const layoutGapRange = { min: 2, max: 16 } as const;
 export const borderRadiusRange = { min: 0, max: 24 } as const;
+/** 本项目负责的配置字段白名单；不包含编辑器设置或运行时预览状态。 */
 export interface UserSettings {
   layoutMode: LayoutMode;
   /** 标准布局的模块间距（px）；紧凑布局固定使用 0。 */
@@ -18,6 +21,7 @@ export interface UserSettings {
   navigationIconOnly: boolean;
   headerToolsIconOnly: boolean;
 }
+/** 旧配置缺字段时补齐；不能作为非法 JSON 的自动修复或自动保存内容。 */
 export const defaultUserSettings: UserSettings = {
   layoutMode: 'default',
   layoutGap: 4,
@@ -37,7 +41,11 @@ export interface UserSettingsSnapshot extends UserSettings {
   document?: string;
 }
 
-/** 校验配置；缺少新增选项时使用默认值，旧版 17–24px 间距收敛到当前上限。 */
+/**
+ * 校验并只返回已知配置字段；缺少新增选项时补默认值，存在但非法的字段必须报错。
+ * 此函数要求 layoutMode 已存在；完整旧文档由 settingsFromDocument 先补默认值再调用。
+ * 兼容旧版 17–24px 间距，读取时收敛到当前上限，不直接触发后端写入。
+ */
 export function parseUserSettings(value: unknown): UserSettings {
   if (
     !value ||

@@ -15,6 +15,7 @@ const spinConfig = { indicator: <BrandLoading /> };
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const mode = useAppSelector((state) => state.preferences.themeMode);
   const resolvedTheme = useResolvedTheme(mode);
+  // 预览值优先于已提交值，让拖动即时反馈；取消预览后自然恢复当前配置，无需额外 Effect 同步。
   const borderRadius = useAppSelector(
     (state) => state.preferences.previewBorderRadius ?? state.preferences.borderRadius,
   );
@@ -26,6 +27,8 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     () => createAppTheme(resolvedTheme, controlBorderRadius),
     [resolvedTheme, controlBorderRadius],
   );
+  // Ant Design 通过 ConfigProvider 接收 token；UnoCSS 及 body 弹层读取根节点 CSS 变量。
+  // 在浏览器绘制前同步变量，避免同一帧出现组件与页面主题不一致。
   useLayoutEffect(() => {
     applyTheme(resolvedTheme, borderRadius, controlBorderRadius);
   }, [resolvedTheme, borderRadius, controlBorderRadius]);

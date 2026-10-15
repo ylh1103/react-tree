@@ -45,6 +45,7 @@ import.meta.hot?.dispose(() => {
   stopUserSettingsSync?.();
 });
 
+// React 挂载前先使用启动缓存配色；随后登录配置覆盖缓存，AppThemeProvider 接管持续更新。
 const initialTheme = store.getState().preferences.themeMode;
 applyTheme(initialTheme === 'system' ? getSystemTheme() : initialTheme);
 

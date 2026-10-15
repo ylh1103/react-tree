@@ -37,6 +37,7 @@ export function invalidateSession() {
   pending?.abort();
   pending = undefined;
   cancelHttpRequests();
+  // 除取消 HTTP 外，还让尚未发送的配置保存队列失效；重置后旧响应不能恢复上一会话配置。
   cancelPreferencesRequests(store.getState);
   store.dispatch(expireSession());
   store.dispatch(resetPreferences());

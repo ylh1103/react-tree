@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Typography } from 'antd';
+import { useDebounceFn, useEventListener, useSize } from 'ahooks';
 import { dragResize } from './dragResize';
 import type { DragResizeState } from './dragResize';
 import { useLayoutPreferences } from '../../hooks/useLayoutPreferences';
@@ -54,24 +55,30 @@ export function SplitPane({
   const dragRef = useRef<DragResizeState | null>(null);
   const frameRef = useRef<number | null>(null);
   const pendingLayoutRef = useRef<{ width: number; visible: boolean } | null>(null);
-  const [availableWidth, setAvailableWidth] = useState<number | null>(null);
+  // useSize 合并同一帧的尺寸通知，并在容器卸载时解除观察。
+  const containerSize = useSize(containerRef);
+  const availableWidth = containerSize?.width ?? null;
   const [dragging, setDragging] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 延迟高亮由防抖函数管理；离开、按下和卸载都会取消待执行任务。
+  const { run: scheduleHover, cancel: cancelHover } = useDebounceFn(
+    (separator: HTMLDivElement) => {
+      if (separator.isConnected && separator.getAttribute('aria-disabled') !== 'true') {
+        setHovered(true);
+      }
+    },
+    { wait: 300 },
+  );
 
   useEffect(
     () => () => {
-      if (hoverTimerRef.current !== null) clearTimeout(hoverTimerRef.current);
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     },
     [],
   );
 
   function clearHover() {
-    if (hoverTimerRef.current !== null) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
+    cancelHover();
     setHovered(false);
   }
   const [layout, setLayout] = useState(() => {
@@ -124,14 +131,6 @@ export function SplitPane({
   const expanded = layout.visible && upper > 0;
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const observer = new ResizeObserver(([entry]) => setAvailableWidth(entry.contentRect.width));
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     if (!storageKey || dragging || readOnly) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(layout));
@@ -140,12 +139,13 @@ export function SplitPane({
     }
   }, [layout, dragging, storageKey, readOnly]);
 
-  useEffect(() => {
-    if (readOnly) return;
-    const container = containerRef.current;
-    if (!container) return;
-    const ownerDocument = container.ownerDocument;
-    function onKeyDown(event: KeyboardEvent) {
+  // 处理器读取最新边界，尺寸变化时无需重新注册键盘监听。
+  useEventListener(
+    'keydown',
+    (event: KeyboardEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const ownerDocument = container.ownerDocument;
       if (
         event.defaultPrevented ||
         event.repeat ||
@@ -182,10 +182,9 @@ export function SplitPane({
       endDrag();
       toggleRef.current?.focus();
       setLayout((previous) => ({ ...previous, visible: !previous.visible }));
-    }
-    ownerDocument.addEventListener('keydown', onKeyDown);
-    return () => ownerDocument.removeEventListener('keydown', onKeyDown);
-  }, [upper, endDrag, readOnly]);
+    },
+    { target: () => containerRef.current?.ownerDocument, enable: !readOnly },
+  );
 
   function resize(next: number) {
     setLayout((previous) => ({ ...previous, width: Math.max(lower, Math.min(upper, next)) }));
@@ -247,13 +246,7 @@ export function SplitPane({
             setHovered(true);
             return;
           }
-          const separator = event.currentTarget;
-          hoverTimerRef.current = setTimeout(() => {
-            hoverTimerRef.current = null;
-            if (separator.isConnected && separator.getAttribute('aria-disabled') !== 'true') {
-              setHovered(true);
-            }
-          }, 300);
+          scheduleHover(event.currentTarget);
         }}
         onPointerLeave={clearHover}
         onPointerDown={(event) => {
