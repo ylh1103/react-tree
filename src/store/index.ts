@@ -53,13 +53,15 @@ const syncSessionSettings: Middleware = (api) => (next) => (action) => {
   return result;
 };
 
+/** 可注入启动主题和设置 API；启动主题只影响等待配置时的显示，不代表登录或配置已经初始化。 */
 export function createAppStore(
   api: UserSettingsApi = userSettingsApi,
   themeMode: ThemeMode = defaultUserSettings.themeMode,
 ) {
   return configureStore({
     reducer: { preferences: preferencesReducer, session: sessionReducer },
-    // 启动主题只用于服务端配置到达前的配色；initialized 仍为 false，不能据此允许保存。
+    // 当前值和回退基线先沿用启动选择，读取失败时仍能保留配色。
+    // initialized 保持 false；只有有效服务端配置进入状态机后，才允许编辑并更新启动缓存。
     preloadedState: {
       preferences: {
         ...preferencesReducer(undefined, { type: 'preferences/init' }),
@@ -73,6 +75,7 @@ export function createAppStore(
       ),
   });
 }
+// HTML 已提前设置最小配色；此处只恢复用户选择到状态，完整 DOM 主题由 AppThemeProvider 接管。
 export const store = createAppStore(userSettingsApi, readBootstrapTheme());
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

@@ -25,6 +25,11 @@ export default defineConfig([
     settings: { react: { version: 'detect' } },
   },
   {
+    // 构建插件内含序列化后在浏览器执行的启动函数。
+    files: ['build/theme-bootstrap-plugin.mjs'],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     // TypeScript handles props validation for TypeScript components.
     rules: { 'react/prop-types': 'off' },

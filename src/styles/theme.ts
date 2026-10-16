@@ -1,11 +1,13 @@
 /**
- * 集中定义 Ant Design 主题与 UnoCSS 使用的根节点 CSS 变量。
- * 主题切换以同一配置更新组件 token 和全局变量，修改配色时从这里维护。
+ * 平台主题定义：Ant Design 使用 token，UnoCSS 和 body 弹层使用由同一 token 派生的 CSS 变量。
+ * Vite 首屏插件也从这里提取画布与文字颜色，修改配色无需同步维护另一套首屏色值。
+ * 本模块计算主题和变量映射；运行时 DOM 写入统一由 AppThemeProvider 调用 applyTheme 完成。
  */
 import { theme, type ThemeConfig } from 'antd';
-import type { NavigationTheme, ResolvedThemeMode } from '../types/preferences';
+import type { NavigationTheme, ResolvedThemeMode } from '../types/preferences.ts';
 import { defaultUserSettings } from '../types/preferences.ts';
 
+/** 浅色主题以 Ant Design 默认算法为基础，只覆盖平台主色、边框和控件基础尺寸。 */
 export const appTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
   token: {
@@ -17,7 +19,7 @@ export const appTheme: ThemeConfig = {
   },
 };
 
-/** Dracula Theme Official：蓝紫灰表面、紫色强调和高对比语义色。 */
+/** 暗色基础调色板沿用 Dracula 色系，控件与导航按平台的可读性需求调整。 */
 const dracula = {
   background: '#282a36',
   foreground: '#f8f8f2',
@@ -29,17 +31,18 @@ const dracula = {
   pink: '#ff79c6',
   purple: '#bd93f9',
   red: '#ff5555',
-  // VS Code 官方主题的 UI 表面变体。
+  // 用不同亮度区分浮层、侧栏和页面画布，避免暗色界面只靠阴影表达层级。
   surfaceLight: '#343746',
   surfaceDark: '#21222c',
   surfaceDarker: '#191a21',
 };
 
+/** 保留暗色算法的控件层级，再显式校准文本、表面和交互状态色。 */
 export const darkAppTheme: ThemeConfig = {
   ...appTheme,
   algorithm: (seed, map) => ({
     ...theme.darkAlgorithm(seed, map),
-    // Ant Design 的暗色算法会降低种子色亮度，保留官方强调色与状态色。
+    // 暗色算法会调整种子色；强调色和语义色沿用下方指定值，避免再次降低亮度。
     colorPrimary: seed.colorPrimary,
     colorInfo: seed.colorInfo,
     colorSuccess: seed.colorSuccess,
@@ -124,17 +127,20 @@ export const darkAppTheme: ThemeConfig = {
 };
 export const appThemes = { light: appTheme, dark: darkAppTheme };
 
-/** 常用圆角保留 Ant Design 层级；大圆角按高度比例扩展，避免 SM/LG 上限使各尺寸外观不一致。 */
-export function createAppTheme(mode: ResolvedThemeMode, borderRadius: number): ThemeConfig {
+/**
+ * 生成控件主题；面板圆角只作用于 CSS，不参与此处的 Ant Design token 计算。
+ * 常用圆角沿用默认层级，大圆角按各尺寸控件高度扩展，避免 SM/LG 的固定上限破坏相对比例。
+ */
+export function createAppTheme(mode: ResolvedThemeMode, controlBorderRadius: number): ThemeConfig {
   const base = appThemes[mode];
   const config: ThemeConfig = {
     ...base,
     token: {
       ...base.token,
-      borderRadius,
+      borderRadius: controlBorderRadius,
     },
   };
-  if (borderRadius <= 8) return config;
+  if (controlBorderRadius <= 8) return config;
   const tokens = theme.getDesignToken(config);
   return {
     ...config,
@@ -142,22 +148,22 @@ export function createAppTheme(mode: ResolvedThemeMode, borderRadius: number): T
       ...config.token,
       borderRadiusSM: Math.max(
         tokens.borderRadiusSM,
-        Math.round((borderRadius * tokens.controlHeightSM) / tokens.controlHeight),
+        Math.round((controlBorderRadius * tokens.controlHeightSM) / tokens.controlHeight),
       ),
       borderRadiusLG: Math.max(
         tokens.borderRadiusLG,
-        Math.round((borderRadius * tokens.controlHeightLG) / tokens.controlHeight),
+        Math.round((controlBorderRadius * tokens.controlHeightLG) / tokens.controlHeight),
       ),
     },
   };
 }
 
+/** 将 token 映射为共享语义变量，固定主题色与用户可调的布局参数在这里提供初始值。 */
 function createThemeVariables(mode: ResolvedThemeMode) {
   const tokens = theme.getDesignToken(appThemes[mode]);
 
-  /** 全局主题变量的唯一入口：统一配色、间距和交互参数。 */
   const variables = {
-    '--layout-gap': '4px',
+    '--layout-gap': `${defaultUserSettings.layoutGap}px`,
     '--ui-radius': `${defaultUserSettings.borderRadius}px`,
     '--control-radius': `${defaultUserSettings.controlBorderRadius}px`,
     '--color-canvas': tokens.colorBgLayout,
@@ -323,10 +329,11 @@ function createThemeVariables(mode: ResolvedThemeMode) {
   };
 }
 
+// 固定主题变量在模块加载时计算一次；用户圆角预览由 applyTheme 覆盖，不重算整套调色板。
 export const themeVariables = createThemeVariables('light');
 export const themeVariablesByMode = { light: themeVariables, dark: createThemeVariables('dark') };
 
-/** 仅在导航及其预览作用域覆盖，跟随全局主题变量自动切换浅色和暗色。 */
+/** 导航局部覆盖：contrast 继承独立导航色，theme 在导航及预览作用域复用全局表面色与文字色。 */
 export const navigationThemeVariables: Record<NavigationTheme, Record<string, string>> = {
   contrast: {},
   theme: {
@@ -341,7 +348,11 @@ export const navigationThemeVariables: Record<NavigationTheme, Record<string, st
   },
 };
 
-/** 同步根节点变量，让页面和挂载到 body 的弹层使用同一主题。 */
+/**
+ * Provider 在 React 提交阶段调用的 DOM 同步入口：补齐首屏变量，并同步实际配色与两类圆角。
+ * 不解析 system、不读写 Redux 或存储；系统外观解析由 Hook 负责，设置保存由偏好状态机负责。
+ * HTML 设置的画布背景引用 --color-canvas，因此这里更新变量即可接管背景，无需再次写固定色值。
+ */
 export function applyTheme(
   mode: ResolvedThemeMode,
   borderRadius = defaultUserSettings.borderRadius,
@@ -356,6 +367,7 @@ export function applyTheme(
   root.style.setProperty('--ui-radius', `${borderRadius}px`);
   root.style.setProperty('--control-radius', `${controlBorderRadius}px`);
   root.style.setProperty('--tree-focus-radius', `${controlBorderRadius}px`);
+  // color-scheme 影响浏览器原生控件与滚动条，data-theme 供主题选择器读取，两者都使用实际配色。
   root.style.colorScheme = mode;
   root.dataset.theme = mode;
 }

@@ -1,16 +1,26 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
+import { runInNewContext } from 'node:vm';
+import { createServer } from 'vite';
 import { createAppStore } from '../src/store/index.ts';
 import {
   loadUserSettings,
   refreshUserSettings,
   saveThemeMode,
   saveUserSettings,
+  openUserSettings,
 } from '../src/store/slices/preferencesSlice.ts';
+import { initializeSession, expireSession } from '../src/store/slices/sessionSlice.ts';
+import { httpClient } from '../src/http/request.ts';
+import { currentMockUser } from '../src/mocks/session.ts';
+import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
+import { themeBootstrapPlugin } from '../build/theme-bootstrap-plugin.mjs';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import {
   readBootstrapTheme,
   startThemePersistence,
+  bootstrapThemeKey,
 } from '../src/store/preferences/themeBootstrap.ts';
 
 function mockStorage(t) {
@@ -33,10 +43,10 @@ test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t
   const values = mockStorage(t);
   assert.equal(readBootstrapTheme(), 'system');
   for (const mode of ['light', 'dark', 'system']) {
-    values.set('react-tree:theme-mode:v2:anonymous', mode);
+    values.set(bootstrapThemeKey, mode);
     assert.equal(readBootstrapTheme(), mode);
   }
-  values.set('react-tree:theme-mode:v2:anonymous', 'invalid');
+  values.set(bootstrapThemeKey, 'invalid');
   assert.equal(readBootstrapTheme(), 'system');
   Object.defineProperty(globalThis.window, 'localStorage', {
     get() {
@@ -132,4 +142,235 @@ test('连续保存后续失败时，首屏主题缓存仍保留较早已确认�
   await Promise.all([theme, radius]);
   assert.equal(store.getState().preferences.status, 'save-error');
   assert.equal(readBootstrapTheme(), 'dark');
+});
+
+test('真实登录流程写入浏览器启动缓存，刷新可读取，切换用户后用新配置校准', async (t) => {
+  const values = mockStorage(t);
+  const adapter = httpClient.defaults.adapter;
+  t.after(() => {
+    httpClient.defaults.adapter = adapter;
+  });
+  let user = {
+    ...currentMockUser(),
+    ystId: 'theme-user-a',
+    userSetting: JSON.stringify({ themeMode: 'dark' }),
+  };
+  httpClient.defaults.adapter = async (config) => ({
+    config,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    data: user,
+  });
+  let resolveRetry;
+  const store = createAppStore({
+    load: () => new Promise((resolve) => (resolveRetry = resolve)),
+    save: async (value) => value,
+  });
+  t.after(startThemePersistence(store));
+  await store.dispatch(initializeSession()).unwrap();
+  assert.equal(values.get(bootstrapThemeKey), 'dark');
+  const refreshed = createAppStore(undefined, readBootstrapTheme());
+  assert.equal(refreshed.getState().preferences.themeMode, 'dark');
+  assert.equal(refreshed.getState().preferences.initialized, false);
+  assert.equal(refreshed.getState().session.user, null);
+
+  store.dispatch(expireSession());
+  user = { ...user, ystId: 'theme-user-b', userSetting: JSON.stringify({ themeMode: 'light' }) };
+  await store.dispatch(initializeSession()).unwrap();
+  assert.equal(readBootstrapTheme(), 'light');
+  assert.equal(store.getState().session.user.ystId, 'theme-user-b');
+
+  user = { ...user, userSetting: '{invalid' };
+  await store.dispatch(initializeSession()).unwrap();
+  assert.equal(store.getState().preferences.status, 'load-error');
+  assert.equal(readBootstrapTheme(), 'light', '无效配置不能把有效缓存覆盖成默认 system');
+  const retry = store.dispatch(loadUserSettings());
+  assert.equal(store.getState().preferences.status, 'loading');
+  assert.equal(readBootstrapTheme(), 'light', '重试期间尚未确认的默认值同样不能覆盖缓存');
+  resolveRetry({ ...defaultUserSettings, themeMode: 'dark' });
+  await retry;
+  assert.equal(readBootstrapTheme(), 'dark');
+});
+
+test('无关操作不重复写缓存，停止监听和会话失效后都不写入', async (t) => {
+  const values = mockStorage(t);
+  let writes = 0;
+  globalThis.window.localStorage.setItem = (key, value) => {
+    writes++;
+    values.set(key, value);
+  };
+  const store = createAppStore({
+    load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
+    save: async (value) => value,
+  });
+  const stop = startThemePersistence(store);
+  t.after(stop);
+  await store.dispatch(loadUserSettings());
+  assert.equal(writes, 1);
+  store.dispatch(openUserSettings());
+  await store.dispatch(refreshUserSettings());
+  assert.equal(writes, 1);
+  store.dispatch(expireSession());
+  await store.dispatch(saveThemeMode('light'));
+  assert.equal(writes, 1);
+  stop();
+  assert.equal(readBootstrapTheme(), 'dark');
+});
+
+test('取消订阅后成功保存也不再写入启动缓存', async (t) => {
+  mockStorage(t);
+  const store = createAppStore({
+    load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
+    save: async (value) => value,
+  });
+  const stop = startThemePersistence(store);
+  t.after(stop);
+  await store.dispatch(loadUserSettings());
+  stop();
+  await store.dispatch(saveThemeMode('light'));
+  assert.equal(store.getState().preferences.savedThemeMode, 'light');
+  assert.equal(readBootstrapTheme(), 'dark');
+});
+
+test('缓存写入失败后，后续操作可重试且不影响主题状态', async (t) => {
+  const values = mockStorage(t);
+  globalThis.window.localStorage.setItem = () => {
+    throw new Error('blocked');
+  };
+  const store = createAppStore({
+    load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
+    save: async (value) => value,
+  });
+  t.after(startThemePersistence(store));
+  await store.dispatch(loadUserSettings());
+  assert.equal(store.getState().preferences.themeMode, 'dark');
+  assert.equal(values.has(bootstrapThemeKey), false);
+  globalThis.window.localStorage.setItem = (key, value) => values.set(key, value);
+  store.dispatch(openUserSettings());
+  assert.equal(readBootstrapTheme(), 'dark');
+});
+
+test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题一致', async (t) => {
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+    optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  t.after(() => vite.close());
+  const html = await vite.transformIndexHtml('/', await readFile('index.html', 'utf8'));
+  const match = /<script id="theme-bootstrap">([\s\S]*?)<\/script>/.exec(html);
+  assert.ok(match, '首屏脚本必须内联在 HTML 中');
+  assert.ok(html.indexOf('<meta charset=') < match.index);
+  assert.ok(match.index < html.indexOf('<script type="module"'));
+  assert.ok(match.index < html.indexOf('<link'));
+  assert.ok(Buffer.byteLength(match[1]) < 3000, '内联脚本只携带最小配色，不能打包完整主题库');
+
+  for (const { cached, system, expected, blocked, mediaAvailable = true } of [
+    { cached: 'dark', system: false, expected: 'dark' },
+    { cached: 'light', system: true, expected: 'light' },
+    { cached: 'system', system: true, expected: 'dark' },
+    { cached: 'system', system: false, expected: 'light' },
+    { cached: null, system: true, expected: 'dark' },
+    { cached: 'invalid', system: true, expected: 'dark' },
+    { blocked: true, system: true, expected: 'dark' },
+    { blocked: true, mediaAvailable: false, expected: 'light' },
+  ]) {
+    const values = new Map();
+    const root = {
+      dataset: {},
+      style: { setProperty: (key, value) => values.set(key, value) },
+    };
+    const browser = {
+      get localStorage() {
+        if (blocked) throw new Error('blocked');
+        return {
+          getItem: (key) => {
+            assert.equal(key, bootstrapThemeKey);
+            return cached;
+          },
+        };
+      },
+      ...(mediaAvailable ? { matchMedia: () => ({ matches: system }) } : {}),
+    };
+    runInNewContext(match[1], { window: browser, document: { documentElement: root } });
+    assert.equal(root.dataset.theme, expected);
+    assert.equal(root.style.colorScheme, expected);
+    assert.equal(root.style.backgroundColor, 'var(--color-canvas)');
+    assert.equal(values.get('--color-canvas'), themeVariablesByMode[expected]['--color-canvas']);
+    assert.equal(values.get('--color-text'), themeVariablesByMode[expected]['--color-text']);
+
+    const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    globalThis.document = { documentElement: root };
+    try {
+      const next = expected === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      assert.equal(values.get('--color-canvas'), themeVariablesByMode[next]['--color-canvas']);
+      assert.equal(root.style.backgroundColor, 'var(--color-canvas)');
+      assert.equal(root.dataset.theme, next, 'React 接管后通过变量切换，不被首屏颜色锁定');
+    } finally {
+      if (previous) Object.defineProperty(globalThis, 'document', previous);
+      else delete globalThis.document;
+    }
+  }
+});
+
+test('Vite 自动注入不依赖注释，兼容 head 变化及 charset 删除或移动', async (t) => {
+  const template = await readFile('index.html', 'utf8');
+  const vite = await createServer({
+    configFile: false,
+    plugins: [themeBootstrapPlugin()],
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+    optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  t.after(() => vite.close());
+  for (const variant of [
+    template,
+    template.replace('</head>', '<!-- theme-bootstrap -->\n</head>'),
+    template.replace('</head>', '<!-- renamed-theme-comment -->\n</head>'),
+    template.replace('<head>', '<HEAD>').replace('</head>', '</HEAD>'),
+    template.replace('<head>', '<head data-layout="app">'),
+    template.replace('<meta charset="UTF-8" />', ''),
+    template
+      .replace('<meta charset="UTF-8" />', '')
+      .replace('</head>', '<meta charset="UTF-8" />\n</head>'),
+  ]) {
+    const html = await vite.transformIndexHtml('/', variant);
+    assert.equal((html.match(/<meta charset=/g) ?? []).length, 1);
+    assert.equal((html.match(/<script id="theme-bootstrap">/g) ?? []).length, 1);
+    assert.ok(html.includes('<div id="root"></div>'));
+    assert.ok(html.indexOf('<meta charset=') < html.indexOf('<script id="theme-bootstrap">'));
+    assert.ok(html.indexOf('<meta charset=') < 1024);
+    assert.ok(html.indexOf('<script id="theme-bootstrap">') < html.indexOf('<link'));
+  }
+});
+
+test('配色运行异常被局部隔离，后续脚本仍可执行', async () => {
+  const result = themeBootstrapPlugin().transformIndexHtml.handler(
+    await readFile('index.html', 'utf8'),
+  );
+  const source = result.tags.find((tag) => tag.tag === 'script').children;
+  for (const failure of ['media', 'style']) {
+    const browser = {
+      localStorage: { getItem: () => 'system' },
+      matchMedia: () => {
+        if (failure === 'media') throw new Error('media unavailable');
+        return { matches: true };
+      },
+    };
+    const root = {
+      dataset: {},
+      style: {
+        setProperty: () => {
+          throw new Error('style unavailable');
+        },
+      },
+    };
+    runInNewContext(`${source}\nwindow.nextScriptRan = true;`, {
+      window: browser,
+      document: { documentElement: root },
+    });
+    assert.equal(browser.nextScriptRan, true);
+  }
 });

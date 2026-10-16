@@ -1,24 +1,30 @@
 /** 平台显示配置契约与兼容校验；完整 userSetting 文档的解析位于 userSettings.ts。 */
 export type LayoutMode = 'default' | 'compact';
+/** 实际显示颜色，只用于主题算法、CSS 变量和浏览器 color-scheme。 */
 export type ResolvedThemeMode = 'light' | 'dark';
-/** 用户选择可为 system；实际渲染使用 ResolvedThemeMode，不把系统解析结果持久化。 */
+/** 可持久化的用户选择；system 在显示时解析，配置和启动缓存都保留原值。 */
 export type ThemeMode = ResolvedThemeMode | 'system';
+/** 导航可保留独立配色，或在导航作用域复用全局表面色与文字色。 */
 export type NavigationTheme = 'contrast' | 'theme';
 export const layoutGapRange = { min: 2, max: 16 } as const;
 export const borderRadiusRange = { min: 0, max: 24 } as const;
 /** 本项目负责的配置字段白名单；不包含编辑器设置或运行时预览状态。 */
 export interface UserSettings {
+  /** 布局模式：default 为标准布局，compact 为紧凑布局。 */
   layoutMode: LayoutMode;
-  /** 标准布局的模块间距（px）；紧凑布局固定使用 0。 */
+  /** 标准布局的模块间距（px）；紧凑布局显示时固定使用 0，但保留此配置。 */
   layoutGap: number;
   /** 页面面板和列表节点的圆角（px）；保留字段名以兼容旧配置。 */
   borderRadius: number;
-  /** Ant Design 控件的基础圆角，各尺寸由主题算法生成。 */
+  /** Ant Design 控件的基础圆角（px），各尺寸控件的实际圆角由主题算法生成。 */
   controlBorderRadius: number;
+  /** 平台整体主题：light、dark 或 system；system 由显示层解析，与编辑器 theme 字段独立。 */
   themeMode: ThemeMode;
-  /** 撞色保留现有导航配色；跟随主题与内容模块共用表面色。 */
+  /** 导航配色策略：contrast 使用独立撞色，theme 跟随平台主题的表面色与文字色。 */
   navigationTheme: NavigationTheme;
+  /** 导航是否仅显示图标；true 隐藏文字，false 同时显示图标与文字。 */
   navigationIconOnly: boolean;
+  /** 顶栏工具是否仅显示图标；true 隐藏文字，false 同时显示图标与文字。 */
   headerToolsIconOnly: boolean;
 }
 /** 旧配置缺字段时补齐；不能作为非法 JSON 的自动修复或自动保存内容。 */
