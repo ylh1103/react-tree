@@ -40,6 +40,7 @@ import.meta.hot?.dispose(() => {
 // 系统接口错误仍由统一处理器清理相关缓存，应用启动不再读取登录会话。
 const stopAccessFailures = startSystemAccessFailureHandling();
 import.meta.hot?.dispose(stopAccessFailures);
+
 void store.dispatch(loadUserSettings());
 
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];

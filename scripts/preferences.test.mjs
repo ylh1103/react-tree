@@ -1,3 +1,4 @@
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:http';
@@ -37,7 +38,8 @@ test('配置请求超时结束首屏等待，回退默认配置并允许重试',
     return new Promise((resolve) => server.close(resolve));
   });
   const api = createUserSettingsApi(`http://127.0.0.1:${server.address().port}/settings`, 100);
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const state = store.getState().preferences;
   assert.equal(state.initialized, true);
@@ -48,11 +50,11 @@ test('配置请求超时结束首屏等待，回退默认配置并允许重试',
   assert.match(state.error, /请求超时/);
 });
 
-test('启动读取后端配置，并发读取只发送一次，读取前不允许写入', async () => {
+test('启动读取后端配置，并发读取只发送一次，读取前不允许写入', async (t) => {
   const request = deferred();
   let loads = 0;
   let saves = 0;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: () => {
       loads++;
       return request.promise;
@@ -62,6 +64,7 @@ test('启动读取后端配置，并发读取只发送一次，读取前不允�
       return { layoutMode: 'default' };
     },
   });
+  const store = createAppStore();
   const first = store.dispatch(loadUserSettings());
   await store.dispatch(loadUserSettings());
   await store.dispatch(saveLayoutMode('compact'));
@@ -73,11 +76,11 @@ test('启动读取后端配置，并发读取只发送一次，读取前不允�
   assert.equal(store.getState().preferences.status, 'ready');
 });
 
-test('连续修改立即生效，请求串行发送，较早响应不覆盖最新选择和预览', async () => {
+test('连续修改立即生效，请求串行发送，较早响应不覆盖最新选择和预览', async (t) => {
   const first = deferred();
   const second = deferred();
   const writes = [];
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
     save: async (settings) => {
       writes.push(settings);
@@ -85,6 +88,7 @@ test('连续修改立即生效，请求串行发送，较早响应不覆盖最�
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(saveLayoutMode('compact'));
   const next = store.dispatch(saveLayoutMode('default'));
@@ -105,10 +109,10 @@ test('连续修改立即生效，请求串行发送，较早响应不覆盖最�
   assert.equal(store.getState().preferences.status, 'ready');
 });
 
-test('保存期间重置不会被忽略，最后的完整配置为默认值', async () => {
+test('保存期间重置不会被忽略，最后的完整配置为默认值', async (t) => {
   const first = deferred();
   const writes = [];
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
     save: async (settings) => {
       writes.push(settings);
@@ -116,6 +120,7 @@ test('保存期间重置不会被忽略，最后的完整配置为默认值', as
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const theme = store.dispatch(saveThemeMode('dark'));
   const radius = store.dispatch(saveUserSettings({ borderRadius: 24 }));
@@ -132,11 +137,11 @@ test('保存期间重置不会被忽略，最后的完整配置为默认值', as
   assert.equal(store.getState().preferences.status, 'ready');
 });
 
-test('队列中旧请求失败不打断新修改，全部失败后合并目标可重试', async () => {
+test('队列中旧请求失败不打断新修改，全部失败后合并目标可重试', async (t) => {
   const first = deferred();
   let failing = true;
   let calls = 0;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
     save: async (settings) => {
       if (++calls === 1) await first.promise;
@@ -144,6 +149,7 @@ test('队列中旧请求失败不打断新修改，全部失败后合并目标�
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const theme = store.dispatch(saveThemeMode('dark'));
   const radius = store.dispatch(saveUserSettings({ borderRadius: 12 }));
@@ -164,15 +170,16 @@ test('队列中旧请求失败不打断新修改，全部失败后合并目标�
   assert.equal(store.getState().preferences.borderRadius, 12);
 });
 
-test('保存失败恢复已保存布局，保留失败目标以便重试', async () => {
+test('保存失败恢复已保存布局，保留失败目标以便重试', async (t) => {
   let failing = true;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ layoutMode: 'default' }),
     save: async (settings) => {
       if (failing) throw Error('模拟保存失败');
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   await store.dispatch(saveLayoutMode('compact'));
   assert.equal(store.getState().preferences.layoutMode, 'default');
@@ -185,15 +192,16 @@ test('保存失败恢复已保存布局，保留失败目标以便重试', async
   assert.equal(store.getState().preferences.error, null);
 });
 
-test('读取失败允许重试；抽屉开关不会被后端响应覆盖', async () => {
+test('读取失败允许重试；抽屉开关不会被后端响应覆盖', async (t) => {
   let failing = true;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => {
       if (failing) throw Error('模拟读取失败');
       return { layoutMode: 'compact' };
     },
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   store.dispatch(openUserSettings());
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.status, 'load-error');
@@ -204,13 +212,14 @@ test('读取失败允许重试；抽屉开关不会被后端响应覆盖', async
   assert.equal(store.getState().preferences.settingsOpen, false);
 });
 
-test('异常后端布局响应不会进入 Redux', async () => {
+test('异常后端布局响应不会进入 Redux', async (t) => {
   assert.throws(() => parseUserSettings({ layoutMode: 'invalid' }), /格式错误/);
   assert.throws(() => parseUserSettings({ error: '业务失败' }), /格式错误/);
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => parseUserSettings({ layoutMode: 'invalid' }),
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.status, 'load-error');
   assert.equal(store.getState().preferences.layoutMode, 'default');
@@ -265,10 +274,10 @@ test('主题兼容旧配置，拒绝异常主题值', () => {
   }
 });
 
-test('切换主题立即生效，保存完整配置，布局切换保留主题', async () => {
+test('切换主题立即生效，保存完整配置，布局切换保留主题', async (t) => {
   const request = deferred();
   const writes = [];
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, layoutMode: 'compact', themeMode: 'light' }),
     save: async (settings) => {
       writes.push(settings);
@@ -276,6 +285,7 @@ test('切换主题立即生效，保存完整配置，布局切换保留主题',
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(saveThemeMode('dark'));
   assert.equal(store.getState().preferences.themeMode, 'dark');
@@ -290,13 +300,14 @@ test('切换主题立即生效，保存完整配置，布局切换保留主题',
   assert.equal(store.getState().preferences.savedThemeMode, 'dark');
 
   const persisted = [];
-  const nextStore = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, layoutMode: 'compact', themeMode: 'dark' }),
     save: async (settings) => {
       persisted.push(settings);
       return settings;
     },
   });
+  const nextStore = createAppStore();
   await nextStore.dispatch(loadUserSettings());
   await nextStore.dispatch(saveLayoutMode('default'));
   assert.deepEqual(persisted, [
@@ -305,15 +316,16 @@ test('切换主题立即生效，保存完整配置，布局切换保留主题',
   assert.equal(nextStore.getState().preferences.themeMode, 'dark');
 });
 
-test('主题保存失败回退，重试保持布局，异常保存响应也回退', async () => {
+test('主题保存失败回退，重试保持布局，异常保存响应也回退', async (t) => {
   let failing = true;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, layoutMode: 'compact', themeMode: 'light' }),
     save: async (settings) => {
       if (failing) throw Error('模拟主题保存失败');
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   await store.dispatch(saveThemeMode('dark'));
   assert.equal(store.getState().preferences.themeMode, 'light');
@@ -325,10 +337,11 @@ test('主题保存失败回退，重试保持布局，异常保存响应也回�
   assert.equal(store.getState().preferences.savedThemeMode, 'dark');
   assert.equal(store.getState().preferences.error, null);
 
-  const invalidStore = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, layoutMode: 'default', themeMode: 'dark' }),
     save: async () => ({ layoutMode: 'default', themeMode: 'invalid' }),
   });
+  const invalidStore = createAppStore();
   await invalidStore.dispatch(loadUserSettings());
   await invalidStore.dispatch(saveThemeMode('light'));
   assert.equal(invalidStore.getState().preferences.themeMode, 'dark');
@@ -348,7 +361,7 @@ test('导航配色兼容旧配置，接受两种模式并拒绝无效值', () =>
   }
 });
 
-test('导航配色立即生效，保存失败回退、重试、重新读取和重置保持正确配置', async () => {
+test('导航配色立即生效，保存失败回退、重试、重新读取和重置保持正确配置', async (t) => {
   let persisted = { ...defaultUserSettings };
   const request = deferred();
   let failing = true;
@@ -361,7 +374,8 @@ test('导航配色立即生效，保存失败回退、重试、重新读取和�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(saveUserSettings({ navigationTheme: 'theme' }));
   assert.equal(store.getState().preferences.navigationTheme, 'theme');
@@ -375,7 +389,7 @@ test('导航配色立即生效，保存失败回退、重试、重新读取和�
   assert.equal(persisted.navigationTheme, 'theme');
   await store.dispatch(saveThemeMode('dark'));
   assert.equal(persisted.navigationTheme, 'theme');
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.navigationTheme, 'theme');
   await store.dispatch(saveUserSettings(defaultUserSettings));
@@ -432,7 +446,7 @@ test('旧圆角配置保留为面板圆角，控件基础圆角独立使用默�
   }
 });
 
-test('控件圆角独立预览和保存，失败回退及重置不覆盖面板配置', async () => {
+test('控件圆角独立预览和保存，失败回退及重置不覆盖面板配置', async (t) => {
   let persisted = { ...defaultUserSettings, borderRadius: 12 };
   let failing = false;
   let saves = 0;
@@ -445,7 +459,8 @@ test('控件圆角独立预览和保存，失败回退及重置不覆盖面板�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   store.dispatch(previewControlBorderRadius(8));
   assert.equal(store.getState().preferences.previewControlBorderRadius, 8);
@@ -464,7 +479,7 @@ test('控件圆角独立预览和保存，失败回退及重置不覆盖面板�
   failing = false;
   await store.dispatch(saveUserSettings(store.getState().preferences.failedSettings));
   await store.dispatch(saveUserSettings({ borderRadius: 16 }));
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.controlBorderRadius, 8);
   assert.equal(reloaded.getState().preferences.borderRadius, 16);
@@ -472,7 +487,7 @@ test('控件圆角独立预览和保存，失败回退及重置不覆盖面板�
   assert.deepEqual(persisted, defaultUserSettings);
 });
 
-test('圆角预览不保存，直角能持久化，失败回退与重试、重置保留其他偏好', async () => {
+test('圆角预览不保存，直角能持久化，失败回退与重试、重置保留其他偏好', async (t) => {
   let persisted = { ...defaultUserSettings, layoutGap: 8, themeMode: 'dark' };
   let failing = false;
   let saves = 0;
@@ -485,7 +500,8 @@ test('圆角预览不保存，直角能持久化，失败回退与重试、重�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   store.dispatch(previewBorderRadius(12));
   assert.equal(store.getState().preferences.previewBorderRadius, 12);
@@ -496,7 +512,7 @@ test('圆角预览不保存，直角能持久化，失败回退与重试、重�
   assert.equal(persisted.borderRadius, 0);
   assert.equal(persisted.layoutGap, 8);
   assert.equal(persisted.themeMode, 'dark');
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.borderRadius, 0);
   failing = true;
@@ -515,14 +531,15 @@ test('圆角预览不保存，直角能持久化，失败回退与重试、重�
   assert.deepEqual(persisted, defaultUserSettings);
 });
 
-test('旧版较大间距读取为 16px，仍保留主题和其他配置', async () => {
+test('旧版较大间距读取为 16px，仍保留主题和其他配置', async (t) => {
   for (const layoutGap of [17, 20, 24]) {
     const legacy = { ...defaultUserSettings, layoutGap, themeMode: 'dark' };
     assert.deepEqual(parseUserSettings(legacy), { ...legacy, layoutGap: 16 });
-    const store = createAppStore({
+    mockUserSettingsApi(t, {
       load: async () => legacy,
       save: async (settings) => settings,
     });
+    const store = createAppStore();
     await store.dispatch(loadUserSettings());
     assert.equal(store.getState().preferences.layoutGap, 16);
     assert.equal(store.getState().preferences.savedLayoutGap, 16);
@@ -531,10 +548,10 @@ test('旧版较大间距读取为 16px，仍保留主题和其他配置', async 
   }
 });
 
-test('滑块预览不保存，关闭时清理，提交仅保存最终间距且失败恢复已保存值', async () => {
+test('滑块预览不保存，关闭时清理，提交仅保存最终间距且失败恢复已保存值', async (t) => {
   const writes = [];
   let failing = false;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
     save: async (settings) => {
       writes.push(settings);
@@ -542,6 +559,7 @@ test('滑块预览不保存，关闭时清理，提交仅保存最终间距且�
       return settings;
     },
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   store.dispatch(previewLayoutGap(8));
   store.dispatch(previewLayoutGap(12));
@@ -561,7 +579,7 @@ test('滑块预览不保存，关闭时清理，提交仅保存最终间距且�
   assert.equal(store.getState().preferences.layoutGap, 8);
 });
 
-test('模块间距立即生效，失败回退和重试，切换布局、重新读取与重置保留正确值', async () => {
+test('模块间距立即生效，失败回退和重试，切换布局、重新读取与重置保留正确值', async (t) => {
   let persisted = { ...defaultUserSettings };
   let failing = false;
   const request = deferred();
@@ -575,7 +593,8 @@ test('模块间距立即生效，失败回退和重试，切换布局、重新�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(saveUserSettings({ layoutGap: 8 }));
   assert.equal(store.getState().preferences.layoutGap, 8);
@@ -593,7 +612,7 @@ test('模块间距立即生效，失败回退和重试，切换布局、重新�
   await store.dispatch(saveLayoutMode('compact'));
   await store.dispatch(saveThemeMode('dark'));
   assert.equal(persisted.layoutGap, 12);
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.layoutGap, 12);
   await store.dispatch(saveLayoutMode('default'));
@@ -602,7 +621,7 @@ test('模块间距立即生效，失败回退和重试，切换布局、重新�
   assert.equal(persisted.layoutGap, 4);
 });
 
-test('图标显示独立保存、失败回退和重试，显示文字与重置能持久化', async () => {
+test('图标显示独立保存、失败回退和重试，显示文字与重置能持久化', async (t) => {
   let persisted = {
     ...defaultUserSettings,
     layoutMode: 'compact',
@@ -622,7 +641,8 @@ test('图标显示独立保存、失败回退和重试，显示文字与重置�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(saveUserSettings({ navigationIconOnly: true }));
   assert.equal(store.getState().preferences.navigationIconOnly, true);
@@ -647,14 +667,14 @@ test('图标显示独立保存、失败回退和重试，显示文字与重置�
   await store.dispatch(saveUserSettings({ navigationIconOnly: false }));
   assert.equal(persisted.navigationIconOnly, false);
   assert.equal(persisted.headerToolsIconOnly, true);
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.headerToolsIconOnly, true);
   await store.dispatch(saveUserSettings(defaultUserSettings));
   assert.deepEqual(persisted, defaultUserSettings);
 });
 
-test('跟随系统保留用户选择，修改布局不覆盖主题，保存失败恢复系统模式', async () => {
+test('跟随系统保留用户选择，修改布局不覆盖主题，保存失败恢复系统模式', async (t) => {
   let persisted = { ...defaultUserSettings };
   let fail = false;
   const api = {
@@ -665,14 +685,15 @@ test('跟随系统保留用户选择，修改布局不覆盖主题，保存失�
       return settings;
     },
   };
-  const store = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   await store.dispatch(saveThemeMode('system'));
   assert.equal(store.getState().preferences.themeMode, 'system');
   assert.equal(store.getState().preferences.savedThemeMode, 'system');
   await store.dispatch(saveLayoutMode('compact'));
   assert.equal(persisted.themeMode, 'system');
-  const reloaded = createAppStore(api);
+  const reloaded = createAppStore();
   await reloaded.dispatch(loadUserSettings());
   assert.equal(reloaded.getState().preferences.themeMode, 'system');
   fail = true;

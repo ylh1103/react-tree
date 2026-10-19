@@ -5,7 +5,7 @@
  */
 import type { ThemeMode } from '../../types/preferences.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
-import type { createAppStore } from '../index.ts';
+import type { AppStore } from '../index.ts';
 
 // 这里只保存浏览器配色提示，完整显示偏好仍通过设置接口读取。
 export const bootstrapThemeKey = 'react-tree:bootstrap-theme:v1';
@@ -46,7 +46,7 @@ export function readBootstrapTheme(): ThemeMode {
  * current.themeMode 可能是尚未保存成功的乐观值；savedThemeMode 才能作为下次启动的配色提示。
  * 返回 Store 的取消订阅函数，供入口在 HMR 或应用销毁时清理。
  */
-export function startThemePersistence(store: ReturnType<typeof createAppStore>) {
+export function startThemePersistence(store: AppStore) {
   // 仅记录成功写入的值；无关 dispatch 不重复写，存储失败后仍能在后续有效状态更新时重试。
   let persistedTheme: ThemeMode | undefined;
   return store.subscribe(() => {

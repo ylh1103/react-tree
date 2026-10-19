@@ -111,6 +111,24 @@ Redux 管偏好和抽屉；Query 管系统列表、系统访问结果、应用�
 
 React 渲染纯净，不用 Effect 同步重复状态；外部订阅正确清理，selector 只订阅所需字段，不机械添加 memo。保留既有页面懒加载、分组虚拟滚动及列表写入锁，避免无依据重写树模型。
 
+### Slice 与 thunk 接入
+
+`src/store/index.ts` 负责注册 Slice 和创建 Store，沿用 Redux Toolkit 默认中间件，不配置 `extraArgument`。thunk 直接从 `src/api` 导入业务接口；请求地址、参数和 HTTP 调用留在 API 层，请求去重、取消及保存时序由 thunk 协调。
+
+新增带 thunk 的 Slice 时，在 Store 注册 reducer，并使用 `src/store/createAppAsyncThunk.ts` 导出的 `createAppAsyncThunk`。它统一提供自动推导的 `RootState` 和 `AppDispatch`，支持 thunk 内派发其他 thunk；业务特有的 `rejectValue` 等类型在单个 thunk 上声明。该入口只配置类型，不封装业务流程。
+
+创建 Store 仅接受启动显示选项，例如指定接口读取前的主题：
+
+```ts
+const store = createAppStore({
+  themeMode: 'dark',
+});
+```
+
+状态流程测试使用 Node 原生方法 mock 替换设置 API，并在测试结束后自动恢复；生产 Store 不提供测试服务注入参数。测试中的多个 Store 共用 API 实现，与多个页签访问同一个后端一致。偏好的保存队列与在途请求仍按 Store 隔离，取消一个 Store 不影响另一个。HTTP 与完整配置文档的契约测试继续调用实际接口实现。
+
+默认的不可变与可序列化检查保持开启。启动主题只设置初始显示，不触发请求或保存。新增服务端业务清单继续由 TanStack Query 管理，不因支持 thunk 就复制到 Redux。
+
 ### ahooks 使用边界
 
 局部交互使用 ahooks：`useEventListener` 管理拖拽、分栏快捷键及设置抽屉外部点击的监听生命周期，处理器读取最新状态，避免因闭包变化反复绑定；`useDebounceFn` 管理分栏悬停、列表定位高亮、拖拽悬停展开和保存提示的延迟任务，目标变化、关闭或卸载时取消；`useSize` 观察分栏容器，`useRafState` 合并横向滚动范围的同帧更新。保留拖拽末帧提交、焦点恢复与既有虚拟树模型。

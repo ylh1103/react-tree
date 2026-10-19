@@ -2,7 +2,7 @@
  * 跨页签显示设置同步：广播仅通知发生变化，接收方重新读取服务端配置。
  * 本地读取/保存期间合并通知；同步失败保留现有配置，返回的清理函数释放请求和所有订阅。
  */
-import type { createAppStore } from '../index.ts';
+import type { AppStore } from '../index.ts';
 import { refreshUserSettings } from '../slices/preferencesSlice.ts';
 
 export interface UserSettingsSyncTransport {
@@ -58,7 +58,7 @@ export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | n
 
 /** 保存成功后通知其他页签；通知在本地请求期间排队并合并。 */
 export function startUserSettingsSync(
-  store: ReturnType<typeof createAppStore>,
+  store: AppStore,
   transport = createUserSettingsSyncTransport(),
 ) {
   let stopped = false;

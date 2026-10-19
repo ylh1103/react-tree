@@ -1,3 +1,4 @@
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -60,7 +61,8 @@ test('刷新等待服务端时保留暗色缓存，读取成功后使用服务�
   const loading = new Promise((yes) => {
     resolve = yes;
   });
-  const store = createAppStore({ load: () => loading, save: async (value) => value }, 'dark');
+  mockUserSettingsApi(t, { load: () => loading, save: async (value) => value });
+  const store = createAppStore({ themeMode: 'dark' });
   t.after(startThemePersistence(store));
   const request = store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.initialized, false);
@@ -79,10 +81,8 @@ test('只缓存成功保存及同步的主题，乐观切换和失败保存不�
     new Promise((_, no) => {
       reject = no;
     });
-  const store = createAppStore(
-    { load: async () => persisted, save: (value) => save(value) },
-    'dark',
-  );
+  mockUserSettingsApi(t, { load: async () => persisted, save: (value) => save(value) });
+  const store = createAppStore({ themeMode: 'dark' });
   t.after(startThemePersistence(store));
   await store.dispatch(loadUserSettings());
   assert.equal(readBootstrapTheme(), 'dark');
@@ -102,15 +102,13 @@ test('只缓存成功保存及同步的主题，乐观切换和失败保存不�
 
 test('服务端读取失败保留启动暗色，避免再次闪为浅色', async (t) => {
   mockStorage(t);
-  const store = createAppStore(
-    {
-      load: async () => {
-        throw new Error('读取失败');
-      },
-      save: async (value) => value,
+  mockUserSettingsApi(t, {
+    load: async () => {
+      throw new Error('读取失败');
     },
-    'dark',
-  );
+    save: async (value) => value,
+  });
+  const store = createAppStore({ themeMode: 'dark' });
   t.after(startThemePersistence(store));
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.themeMode, 'dark');
@@ -124,7 +122,7 @@ test('连续保存后续失败时，首屏主题缓存仍保留较早已确认�
     release = resolve;
   });
   let calls = 0;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
     save: async (settings) => {
       if (++calls === 1) await first;
@@ -132,6 +130,7 @@ test('连续保存后续失败时，首屏主题缓存仍保留较早已确认�
       return settings;
     },
   });
+  const store = createAppStore();
   t.after(startThemePersistence(store));
   await store.dispatch(loadUserSettings());
   const theme = store.dispatch(saveThemeMode('dark'));
@@ -146,17 +145,18 @@ test('显示配置独立读取最新值，刷新和读取失败时仍维护启�
   const values = mockStorage(t);
   let persisted = { ...defaultUserSettings, themeMode: 'dark' };
   let fail = false;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => {
       if (fail) throw new Error('配置不可读');
       return persisted;
     },
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   t.after(startThemePersistence(store));
   await store.dispatch(loadUserSettings()).unwrap();
   assert.equal(values.get(bootstrapThemeKey), 'dark');
-  const refreshed = createAppStore(undefined, readBootstrapTheme());
+  const refreshed = createAppStore({ themeMode: readBootstrapTheme() });
   assert.equal(refreshed.getState().preferences.themeMode, 'dark');
   assert.equal(refreshed.getState().preferences.initialized, false);
   persisted = { ...defaultUserSettings, themeMode: 'light' };
@@ -176,10 +176,11 @@ test('无关操作不重复写缓存，停止监听和配置重置后都不写�
     writes++;
     values.set(key, value);
   };
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
     save: async (value) => value,
   });
+  const store = createAppStore();
   const stop = startThemePersistence(store);
   t.after(stop);
   await store.dispatch(loadUserSettings());
@@ -196,10 +197,11 @@ test('无关操作不重复写缓存，停止监听和配置重置后都不写�
 
 test('取消订阅后成功保存也不再写入启动缓存', async (t) => {
   mockStorage(t);
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
     save: async (value) => value,
   });
+  const store = createAppStore();
   const stop = startThemePersistence(store);
   t.after(stop);
   await store.dispatch(loadUserSettings());
@@ -214,10 +216,11 @@ test('缓存写入失败后，后续操作可重试且不影响主题状态', as
   globalThis.window.localStorage.setItem = () => {
     throw new Error('blocked');
   };
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, themeMode: 'dark' }),
     save: async (value) => value,
   });
+  const store = createAppStore();
   t.after(startThemePersistence(store));
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.themeMode, 'dark');

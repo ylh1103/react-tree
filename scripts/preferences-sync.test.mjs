@@ -1,3 +1,4 @@
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { setImmediate } from 'node:timers/promises';
@@ -78,7 +79,8 @@ test('保存成功同步所有已打开页签，保留抽屉状态，不回写�
     },
   };
   const bus = createBus();
-  const stores = [createAppStore(api), createAppStore(api), createAppStore(api)];
+  mockUserSettingsApi(t, api);
+  const stores = [createAppStore(), createAppStore(), createAppStore()];
   for (const store of stores) {
     t.after(startUserSettingsSync(store, bus.connect()));
     await store.dispatch(loadUserSettings());
@@ -112,21 +114,19 @@ test('保存失败不广播；同步读取失败保留配置，后续通知可�
   let failSave = true;
   let failRead = false;
   const bus = createBus();
-  const writer = createAppStore({
-    load: async () => persisted,
+  mockUserSettingsApi(t, {
+    load: async () => {
+      if (failRead) throw new Error('read failed');
+      return persisted;
+    },
     save: async (settings) => {
       if (failSave) throw new Error('save failed');
       persisted = settings;
       return settings;
     },
   });
-  const reader = createAppStore({
-    load: async () => {
-      if (failRead) throw new Error('read failed');
-      return persisted;
-    },
-    save: async (settings) => settings,
-  });
+  const writer = createAppStore();
+  const reader = createAppStore();
   t.after(startUserSettingsSync(writer, bus.connect()));
   t.after(startUserSettingsSync(reader, bus.connect()));
   await writer.dispatch(loadUserSettings());
@@ -152,13 +152,14 @@ test('启动读取及保存期间的通知排队，合并通知后读取服务�
   const saving = deferred();
   let persisted = { ...defaultUserSettings };
   let reads = 0;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: () => {
       reads++;
       return reads === 1 ? initial.promise : Promise.resolve(persisted);
     },
     save: () => saving.promise,
   });
+  const store = createAppStore();
   const bus = createBus();
   const sender = bus.connect();
   t.after(startUserSettingsSync(store, bus.connect()));
@@ -187,13 +188,14 @@ test('启动读取及保存期间的通知排队，合并通知后读取服务�
   assertSettings(store, persisted);
 });
 
-test('本地保存使之前的后台响应失效，迟到旧配置不能覆盖新设置', async () => {
+test('本地保存使之前的后台响应失效，迟到旧配置不能覆盖新设置', async (t) => {
   const staleRead = deferred();
   let reads = 0;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: () => (++reads === 1 ? Promise.resolve(defaultUserSettings) : staleRead.promise),
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const refresh = store.dispatch(refreshUserSettings());
   await store.dispatch(saveUserSettings({ themeMode: 'system' }));
@@ -217,8 +219,9 @@ test('连续保存中较早请求成功、最后请求失败，其他页签仍�
     },
   };
   const bus = createBus();
-  const writer = createAppStore(api);
-  const reader = createAppStore(api);
+  mockUserSettingsApi(t, api);
+  const writer = createAppStore();
+  const reader = createAppStore();
   for (const store of [writer, reader]) {
     t.after(startUserSettingsSync(store, bus.connect()));
     await store.dispatch(loadUserSettings());
@@ -234,14 +237,15 @@ test('连续保存中较早请求成功、最后请求失败，其他页签仍�
   assert.equal(bus.publications, 1);
 });
 
-test('读取中的新通知合并为下一次读取，停止同步后不再监听或广播', async () => {
+test('读取中的新通知合并为下一次读取，停止同步后不再监听或广播', async (t) => {
   const request = deferred();
   let reads = 0;
   let persisted = { ...defaultUserSettings };
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: () => (++reads === 2 ? request.promise : Promise.resolve(persisted)),
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const bus = createBus();
   const sender = bus.connect();
@@ -372,7 +376,7 @@ test('页签恢复补读配置，重复恢复事件合并，清理时取消在�
   const request = deferred();
   let reads = 0;
   let syncSignal;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: (signal) => {
       if (++reads === 1) return Promise.resolve(defaultUserSettings);
       syncSignal = signal;
@@ -380,6 +384,7 @@ test('页签恢复补读配置，重复恢复事件合并，清理时取消在�
     },
     save: async (settings) => settings,
   });
+  const store = createAppStore();
   await store.dispatch(loadUserSettings());
   const stop = startUserSettingsSync(store, null);
   t.after(stop);

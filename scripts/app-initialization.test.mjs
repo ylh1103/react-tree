@@ -1,3 +1,4 @@
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createElement } from 'react';
@@ -30,10 +31,11 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   const loading = deferred();
   const saving = deferred();
   let nextLoad = loading.promise;
-  const store = createAppStore({
+  mockUserSettingsApi(t, {
     load: () => nextLoad,
     save: () => saving.promise,
   });
+  const store = createAppStore();
   let pageRenders = 0;
   function Page() {
     pageRenders++;
@@ -118,10 +120,8 @@ test('路由首屏和配置等待骨架均在缓存暗色主题内渲染', async
   const { default: App } = await vite.ssrLoadModule('/src/App.tsx');
   const { theme } = await import('antd');
   const loading = deferred();
-  const store = createAppStore(
-    { load: () => loading.promise, save: async (value) => value },
-    'dark',
-  );
+  mockUserSettingsApi(t, { load: () => loading.promise, save: async (value) => value });
+  const store = createAppStore({ themeMode: 'dark' });
   const request = store.dispatch(loadUserSettings());
   function ThemeProbe() {
     const { token } = theme.useToken();

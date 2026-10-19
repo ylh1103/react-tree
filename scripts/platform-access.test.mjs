@@ -1,3 +1,4 @@
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 /** 系统接口回归：不构造登录身份，保留接口错误、请求去重、配置完整性及取消边界。 */
 import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
@@ -157,14 +158,14 @@ test('显示偏好保留完整文档；配置损坏时禁止覆盖并允许独�
   assert.equal(local.getState().preferences.status, 'ready');
 });
 
-test('整体取消后迟到保存不能恢复配置，排队写入也不会继续发送', async () => {
+test('整体取消后迟到保存不能恢复配置，排队写入也不会继续发送', async (t) => {
   let release;
   let signal;
   let writes = 0;
   const pending = new Promise((resolve) => {
     release = resolve;
   });
-  const local = createAppStore({
+  mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
     save: async (settings, requestSignal) => {
       writes++;
@@ -173,6 +174,7 @@ test('整体取消后迟到保存不能恢复配置，排队写入也不会继�
       return settings;
     },
   });
+  const local = createAppStore();
   await local.dispatch(loadUserSettings()).unwrap();
   const first = local.dispatch(saveUserSettings({ themeMode: 'dark' }));
   const next = local.dispatch(saveUserSettings({ layoutMode: 'compact' }));

@@ -6,7 +6,9 @@
  * 状态流转：idle → loading → ready/load-error；ready/save-error → saving → ready/save-error。
  * refreshUserSettings 只在后台更新，不进入 loading；抽屉关闭也不会取消已提交的保存。
  */
-import { createAsyncThunk, createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createAppAsyncThunk } from '../createAppAsyncThunk.ts';
+import { userSettingsApi } from '../../api/preferences.ts';
 import {
   defaultUserSettings,
   parseUserSettings,
@@ -14,7 +16,6 @@ import {
   type NavigationTheme,
   type LayoutMode,
   type UserSettings,
-  type UserSettingsApi,
 } from '../../types/preferences.ts';
 
 /**
@@ -69,14 +70,14 @@ interface PreferencesState extends UserSettings {
 }
 
 /** 按 Store 跟踪在途设置请求的取消控制器；放在 Redux 外以保持状态可序列化。 */
-const activeRequests = new WeakMap<() => ThunkConfig['state'], Set<AbortController>>();
+const activeRequests = new WeakMap<() => PreferencesStoreState, Set<AbortController>>();
 /** 每个 Store 的取消代次；排队保存以此判断入队后是否已经整体取消。 */
-const requestRevisions = new WeakMap<() => ThunkConfig['state'], number>();
+const requestRevisions = new WeakMap<() => PreferencesStoreState, number>();
 /**
  * 中止在途请求并提升取消代次；排队但尚未发送的保存也会在发送前被拦截。
  * @param getState 目标 Store 的状态读取函数，同时作为请求集合与取消代次的隔离键。
  */
-export function cancelPreferencesRequests(getState: () => ThunkConfig['state']) {
+export function cancelPreferencesRequests(getState: () => PreferencesStoreState) {
   requestRevisions.set(getState, (requestRevisions.get(getState) ?? 0) + 1);
   activeRequests.get(getState)?.forEach((controller) => controller.abort());
 }
@@ -89,7 +90,7 @@ export function cancelPreferencesRequests(getState: () => ThunkConfig['state']) 
  * @returns 校验后的平台配置；完整配置文档不进入状态机。
  */
 async function settingsRequest(
-  getState: () => ThunkConfig['state'],
+  getState: () => PreferencesStoreState,
   signal: AbortSignal,
   request: (signal: AbortSignal) => Promise<UserSettings>,
 ) {
@@ -110,35 +111,27 @@ async function settingsRequest(
     requests.delete(controller);
   }
 }
-/** 设置异步操作所需的最小 Store 契约，避免依赖完整 Store 类型造成循环引用。 */
-interface ThunkConfig {
-  /** thunk 可读取的偏好状态，用于请求去重与保存快照。 */
-  state: {
-    /** 当前用户的偏好及其请求状态。 */
-    preferences: PreferencesState;
-  };
-  /** 由 Store 注入的外部依赖，便于替换接口实现与测试。 */
-  extra: {
-    /** 用户设置读写接口；负责实际请求，Slice 负责调用时序与状态流转。 */
-    userSettingsApi: UserSettingsApi;
-  };
+/** 偏好请求协调器只读取本 Slice；其他 Slice 的新增不改变取消与串行保存的契约。 */
+interface PreferencesStoreState {
+  /** 当前 Store 的偏好状态；getState 函数同时作为请求集合与队列的隔离键。 */
+  preferences: PreferencesState;
 }
 
 /** 首次配置读取或错误重试，不依赖用户资料初始化。 */
-export const loadUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
+export const loadUserSettings = createAppAsyncThunk<UserSettings, void>(
   'preferences/load',
-  async (_, { extra, signal, getState }) =>
-    settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
+  async (_, { signal, getState }) =>
+    settingsRequest(getState, signal, (requestSignal) => userSettingsApi.load(requestSignal)),
   {
     /** 仅未读取或读取失败时允许启动，避免重复读取以及覆盖正在编辑的配置。 */
     condition: (_, { getState }) => ['idle', 'load-error'].includes(getState().preferences.status),
   },
 );
 /** 后台同步不切换首屏或保存状态；已有读取或保存时拒绝启动，由同步协调层合并通知。 */
-export const refreshUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
+export const refreshUserSettings = createAppAsyncThunk<UserSettings, void>(
   'preferences/refresh',
-  async (_, { extra, signal, getState }) =>
-    settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
+  async (_, { signal, getState }) =>
+    settingsRequest(getState, signal, (requestSignal) => userSettingsApi.load(requestSignal)),
   {
     /** 首次等待结束且没有读取、保存或后台同步时才允许刷新，避免并发覆盖。 */
     condition: (_, { getState }) => {
@@ -151,7 +144,7 @@ export const refreshUserSettings = createAsyncThunk<UserSettings, void, ThunkCon
 );
 
 /** 每个 Store 的串行保存队列尾部；连续修改立即进入 Redux，完整快照按入队顺序发送。 */
-const saveQueues = new WeakMap<() => ThunkConfig['state'], Promise<void>>();
+const saveQueues = new WeakMap<() => PreferencesStoreState, Promise<void>>();
 
 /** 只提取可持久化字段，不把预览值、抽屉状态、错误和请求编号发送给后端。 */
 function currentSettings(state: PreferencesState): UserSettings {
@@ -181,9 +174,9 @@ function currentSettings(state: PreferencesState): UserSettings {
  * 提交部分配置修改：pending 先乐观更新 UI，再按 Store 串行保存入队时的完整快照。
  * 成功后推进确认基线，最新请求失败时回退并保留合并修改供重试；整体取消时拦截排队中的旧写入。
  */
-export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSettings>, ThunkConfig>(
+export const saveUserSettings = createAppAsyncThunk<UserSettings, Partial<UserSettings>>(
   'preferences/save',
-  async (changes, { extra, signal, getState }) => {
+  async (changes, { signal, getState }) => {
     const revision = requestRevisions.get(getState) ?? 0;
     // pending reducer 已同步应用本次修改；在入队时固定快照，保证连续操作按发生顺序保存。
     const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
@@ -192,7 +185,7 @@ export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSetti
       signal.throwIfAborted();
       if ((requestRevisions.get(getState) ?? 0) !== revision) throw new Error('配置保存已取消');
       const saved = await settingsRequest(getState, signal, (requestSignal) =>
-        extra.userSettingsApi.save(settings, requestSignal),
+        userSettingsApi.save(settings, requestSignal),
       );
       return saved;
     };
