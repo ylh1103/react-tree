@@ -10,10 +10,8 @@ import {
   saveThemeMode,
   saveUserSettings,
   openUserSettings,
+  resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
-import { initializeSession, expireSession } from '../src/store/slices/sessionSlice.ts';
-import { httpClient } from '../src/http/request.ts';
-import { currentMockUser } from '../src/mocks/session.ts';
 import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
 import { themeBootstrapPlugin } from '../build/theme-bootstrap-plugin.mjs';
 import { defaultUserSettings } from '../src/types/preferences.ts';
@@ -144,56 +142,34 @@ test('连续保存后续失败时，首屏主题缓存仍保留较早已确认�
   assert.equal(readBootstrapTheme(), 'dark');
 });
 
-test('真实登录流程写入浏览器启动缓存，刷新可读取，切换用户后用新配置校准', async (t) => {
+test('显示配置独立读取最新值，刷新和读取失败时仍维护启动缓存', async (t) => {
   const values = mockStorage(t);
-  const adapter = httpClient.defaults.adapter;
-  t.after(() => {
-    httpClient.defaults.adapter = adapter;
-  });
-  let user = {
-    ...currentMockUser(),
-    ystId: 'theme-user-a',
-    userSetting: JSON.stringify({ themeMode: 'dark' }),
-  };
-  httpClient.defaults.adapter = async (config) => ({
-    config,
-    status: 200,
-    statusText: 'OK',
-    headers: {},
-    data: user,
-  });
-  let resolveRetry;
+  let persisted = { ...defaultUserSettings, themeMode: 'dark' };
+  let fail = false;
   const store = createAppStore({
-    load: () => new Promise((resolve) => (resolveRetry = resolve)),
-    save: async (value) => value,
+    load: async () => {
+      if (fail) throw new Error('配置不可读');
+      return persisted;
+    },
+    save: async (settings) => settings,
   });
   t.after(startThemePersistence(store));
-  await store.dispatch(initializeSession()).unwrap();
+  await store.dispatch(loadUserSettings()).unwrap();
   assert.equal(values.get(bootstrapThemeKey), 'dark');
   const refreshed = createAppStore(undefined, readBootstrapTheme());
   assert.equal(refreshed.getState().preferences.themeMode, 'dark');
   assert.equal(refreshed.getState().preferences.initialized, false);
-  assert.equal(refreshed.getState().session.user, null);
-
-  store.dispatch(expireSession());
-  user = { ...user, ystId: 'theme-user-b', userSetting: JSON.stringify({ themeMode: 'light' }) };
-  await store.dispatch(initializeSession()).unwrap();
+  persisted = { ...defaultUserSettings, themeMode: 'light' };
+  await store.dispatch(refreshUserSettings()).unwrap();
   assert.equal(readBootstrapTheme(), 'light');
-  assert.equal(store.getState().session.user.ystId, 'theme-user-b');
-
-  user = { ...user, userSetting: '{invalid' };
-  await store.dispatch(initializeSession()).unwrap();
+  fail = true;
+  store.dispatch(resetPreferences());
+  await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.status, 'load-error');
-  assert.equal(readBootstrapTheme(), 'light', '无效配置不能把有效缓存覆盖成默认 system');
-  const retry = store.dispatch(loadUserSettings());
-  assert.equal(store.getState().preferences.status, 'loading');
-  assert.equal(readBootstrapTheme(), 'light', '重试期间尚未确认的默认值同样不能覆盖缓存');
-  resolveRetry({ ...defaultUserSettings, themeMode: 'dark' });
-  await retry;
-  assert.equal(readBootstrapTheme(), 'dark');
+  assert.equal(readBootstrapTheme(), 'light', '读取失败不覆盖最近确认的缓存');
 });
 
-test('无关操作不重复写缓存，停止监听和会话失效后都不写入', async (t) => {
+test('无关操作不重复写缓存，停止监听和配置重置后都不写入', async (t) => {
   const values = mockStorage(t);
   let writes = 0;
   globalThis.window.localStorage.setItem = (key, value) => {
@@ -211,7 +187,7 @@ test('无关操作不重复写缓存，停止监听和会话失效后都不写�
   store.dispatch(openUserSettings());
   await store.dispatch(refreshUserSettings());
   assert.equal(writes, 1);
-  store.dispatch(expireSession());
+  store.dispatch(resetPreferences());
   await store.dispatch(saveThemeMode('light'));
   assert.equal(writes, 1);
   stop();

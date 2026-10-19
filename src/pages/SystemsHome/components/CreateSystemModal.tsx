@@ -3,7 +3,6 @@ import { Alert, Button, Form, Input, Modal, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSystem } from '../../../api/systems';
 import type { CreateSystemInput } from '../../../types/systems';
-import { useAppSelector } from '../../../store/hooks';
 interface FormValues extends CreateSystemInput {
   roomId?: string;
   roomName?: string;
@@ -19,12 +18,11 @@ export default function CreateSystemModal({
   onCreated: () => void;
 }) {
   const [form] = Form.useForm<FormValues>();
-  const user = useAppSelector((state) => state.session.user);
   const client = useQueryClient();
   const mutation = useMutation({
     mutationFn: createSystem,
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ['systems', user!.ystId] });
+      await client.invalidateQueries({ queryKey: ['systems'] });
       onCreated();
     },
   });
@@ -80,9 +78,6 @@ export default function CreateSystemModal({
           rules={[{ required: true, whitespace: true, message: '请输入架构编码' }]}
         >
           <Input />
-        </Form.Item>
-        <Form.Item label="系统负责人">
-          <Input disabled value={`${user?.userName} / ${user?.ystId}`} />
         </Form.Item>
         <Form.Item name="systemDesc" label="系统描述">
           <Input.TextArea rows={3} />

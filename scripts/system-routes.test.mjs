@@ -6,7 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { navigationItems, databaseNavigationItems } from '../src/layouts/navigation.ts';
 import { applicationPath, databasePath, platformHome, systemPath } from '../src/router/paths.ts';
-import { filterSystems, isAccessDenied, roleLabel } from '../src/utils/systems.ts';
+import { filterSystems, isAccessDenied } from '../src/utils/systems.ts';
 import { mockSystems } from '../src/mocks/systems.ts';
 
 let vite;
@@ -74,17 +74,13 @@ test('未知地址进入对应的 404 页面', () => {
   assert.equal(match('/systems/CAC/db/type/extra').route.id, 'system-not-found');
 });
 
-test('搜索覆盖英文名、中文名和编号，同时支持角色筛选', () => {
+test('系统搜索覆盖英文名、中文名和编号', () => {
   assert.equal(filterSystems(mockSystems, ' cac ')[0].systemName, 'CAC');
   assert.equal(filterSystems(mockSystems, 'LL57.CAC')[0].systemName, 'CAC');
-  assert.ok(filterSystems(mockSystems, '信用卡核心', 'D').every((system) => system.role === 'D'));
+  const chinese = filterSystems(mockSystems, '信用卡核心');
+  assert.ok(chinese.length > 0);
+  assert.ok(chinese.every((system) => system.systemChineseName.includes('信用卡核心')));
   assert.equal(filterSystems(mockSystems, '不存在').length, 0);
-  assert.equal(filterSystems(mockSystems, '', 'V').length, 2);
-  assert.equal(roleLabel('R'), '系统负责人');
-  assert.equal(roleLabel('D'), '开发者');
-  assert.equal(roleLabel('V'), '观察者');
-  assert.equal(roleLabel('unknown'), '未知角色');
-  assert.equal(roleLabel('toString'), '未知角色');
 });
 
 test('识别请求封装后的 403，网络和其他错误保留重试路径', () => {
@@ -226,12 +222,10 @@ test('首次加载及导航使用目标骨架，加载完成显示页面，取�
   assert.doesNotMatch(render(), /third-page/);
 });
 
-test('父子 loader 等待授权后并行预取，与组件共享用户维度缓存', async (t) => {
+test('父子 loader 等待授权后并行预取，与组件共享系统维度缓存', async (t) => {
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
-  const { requireSession } = await vite.ssrLoadModule('/src/store/session.ts');
   const { systemsOptions, parameterTypesOptions } =
     await vite.ssrLoadModule('/src/queries/systems.ts');
-  await requireSession();
   queryClient.clear();
   t.after(() => queryClient.clear());
   const requests = [];
@@ -318,7 +312,7 @@ test('页面 chunk 失败显示静态恢复入口，并保留父级布局', asyn
   assert.match(html, /persistent-header/);
   assert.match(html, /页面资源加载失败/);
   assert.match(html, /刷新页面/);
-  assert.match(html, /返回我的系统/);
+  assert.match(html, /返回系统列表/);
   assert.doesNotMatch(html, /Unexpected Application Error/);
 });
 

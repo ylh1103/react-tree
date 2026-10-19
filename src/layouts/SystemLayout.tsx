@@ -5,8 +5,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
-import { systemsOptions, allSystemsOptions, systemAccessOptions } from '../queries/systems';
-import { useAppSelector } from '../store/hooks';
+import { systemsOptions, systemAccessOptions } from '../queries/systems';
 import { HttpError } from '../http/request';
 import { SystemContext } from '../contexts/SystemContext';
 import { isAccessDenied } from '../utils/systems';
@@ -15,21 +14,10 @@ import RouteStatusPage from '../pages/RouteStatus';
 export default function SystemLayout() {
   const { systemName } = useParams();
   const isDatabase = Boolean(useMatch('/systems/:systemName/db/*'));
-  const userId = useAppSelector((state) => state.session.user?.ystId);
-  const userType = useAppSelector((state) => state.session.user?.userType);
   const query = useQuery(systemAccessOptions(systemName!));
-  const mine = useQuery(systemsOptions());
-  const all = useQuery({ ...allSystemsOptions(), enabled: userType === '0' });
+  const list = useQuery(systemsOptions());
   const system = query.data && !('denied' in query.data) ? query.data : undefined;
-  const memberRoles = new Map((mine.data ?? []).map((item) => [item.systemName, item.role]));
-  const systems =
-    userType === '0'
-      ? (all.data ?? []).map((item) => ({
-          ...item,
-          ystId: userId!,
-          role: memberRoles.get(item.systemName) ?? null,
-        }))
-      : (mine.data ?? []);
+  const systems = list.data ?? [];
   const denied = query.data && 'denied' in query.data;
   if (query.isPending || (!system && query.isFetching))
     return (

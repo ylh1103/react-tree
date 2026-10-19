@@ -5,7 +5,6 @@
 import { queryOptions, type QueryClient } from '@tanstack/react-query';
 import type { GroupedListService, ListNode } from '../components/GroupedList/types.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
-import { store } from '../store/index.ts';
 
 export type GroupedListId = 'applications' | 'parameters' | `applications:${string}`;
 
@@ -19,10 +18,8 @@ export function hasApplication(nodes: ListNode[], name: string): boolean {
 }
 
 export const groupedListKeys = {
-  list: (id: GroupedListId) =>
-    ['grouped-list', store.getState().session.user?.ystId ?? 'anonymous', id] as const,
-  write: (id: GroupedListId) =>
-    ['grouped-list-write', store.getState().session.user?.ystId ?? 'anonymous', id] as const,
+  list: (id: GroupedListId) => ['grouped-list', id] as const,
+  write: (id: GroupedListId) => ['grouped-list-write', id] as const,
 };
 
 export function groupedListOptions(id: GroupedListId, service: GroupedListService) {

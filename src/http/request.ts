@@ -5,7 +5,7 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { mockAdapter } from '../mocks/adapter.ts';
 
-/** HTTP 状态保留给路由与会话，不把 403 混同成普通网络失败。 */
+/** HTTP 状态保留给请求调用方及路由，不把 403 混同成普通网络失败。 */
 export class HttpError extends Error {
   readonly status: number;
   constructor(status: number, message: string, cause?: unknown) {
@@ -15,7 +15,7 @@ export class HttpError extends Error {
 }
 const failureListeners = new Set<(error: HttpError, config: AxiosRequestConfig) => void>();
 const activeRequests = new Set<{ config: AxiosRequestConfig; controller: AbortController }>();
-/** Query 无法取消 mutation；会话失效必须同时终止 HTTP 层的读取和写入。 */
+/** 批量取消在途 HTTP 读写；可按系统范围清理，覆盖 Query 无法直接取消的 mutation。 */
 export function cancelHttpRequests(systemName?: string, except?: AxiosRequestConfig) {
   activeRequests.forEach((request) => {
     if (request.config === except) return;

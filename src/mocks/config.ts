@@ -1,7 +1,10 @@
-/** Mock 场景集中维护，不使用环境变量或正式界面的身份切换按钮。 */
-export type MockScenario = 'platform' | 'member' | 'new-user' | 'contractor' | 'expired';
-export const mockConfig: { scenario: MockScenario; delayMs: number; applicationCount: number } = {
-  scenario: 'platform',
+/** Mock 仅配置延迟、清单规模和接口错误，不构造登录身份或员工资料。 */
+export const mockConfig: {
+  systemAccessError: 403 | 503 | null;
+  delayMs: number;
+  applicationCount: number;
+} = {
+  systemAccessError: null,
   delayMs: 200,
   applicationCount: 785,
 };

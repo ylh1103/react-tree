@@ -19,7 +19,8 @@ import './styles/index.css';
 import { router } from './router';
 import { routes } from './router/routes';
 import { RouteLoadingContext } from './router/loading';
-import { requireSession, startAccessFailureHandling, startSessionLifetime } from './store/session';
+import { startSystemAccessFailureHandling } from './queries/accessFailures';
+import { loadUserSettings, cancelPreferencesRequests } from './store/slices/preferencesSlice';
 import { AppThemeProvider } from './providers/AppThemeProvider';
 import { startThemePersistence } from './store/preferences/themeBootstrap';
 import { startUserSettingsSync } from './store/preferences/sync';
@@ -29,29 +30,17 @@ import { startUserSettingsSync } from './store/preferences/sync';
 const stopThemePersistence = startThemePersistence(store);
 import.meta.hot?.dispose(stopThemePersistence);
 
-// 登录身份变化时重建按用户隔离的同步通道，停止旧用户在途刷新。
-let stopUserSettingsSync: (() => void) | undefined;
-let syncedUser: string | undefined;
-const stopSyncSubscription = store.subscribe(() => {
-  const identity = store.getState().session.user?.ystId;
-  if (identity === syncedUser) return;
-  syncedUser = identity;
-  stopUserSettingsSync?.();
-  stopUserSettingsSync = identity ? startUserSettingsSync(store) : undefined;
-});
+// 显示偏好独立加载；同步订阅只在入口安装一次，不绑定用户资料。
+const stopUserSettingsSync = startUserSettingsSync(store);
 import.meta.hot?.dispose(() => {
-  stopSyncSubscription();
-  stopUserSettingsSync?.();
+  stopUserSettingsSync();
+  cancelPreferencesRequests(store.getState);
 });
 
-// 与 loader 共用会话初始化，业务请求必须等待身份和授权。
-const stopAccessFailures = startAccessFailureHandling();
+// 系统接口错误仍由统一处理器清理相关缓存，应用启动不再读取登录会话。
+const stopAccessFailures = startSystemAccessFailureHandling();
 import.meta.hot?.dispose(stopAccessFailures);
-const stopSessionLifetime = startSessionLifetime();
-import.meta.hot?.dispose(stopSessionLifetime);
-void requireSession().catch(() => {
-  /* 登录错误由根布局展示。 */
-});
+void store.dispatch(loadUserSettings());
 
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 

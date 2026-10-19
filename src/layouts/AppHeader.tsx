@@ -1,12 +1,11 @@
-/** 全局页头：已授权系统切换、平台切换、用户资料及会话退出入口。 */
-import { Avatar, Button, Dropdown, Popover, Tooltip } from 'antd';
+/** 全局页头：系统切换、平台切换、常用工具与显示设置入口。 */
+import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import logo from '../assets/logo.jpg';
 import { SystemContext } from '../contexts/SystemContext';
 import { platformHome } from '../router/paths';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { invalidateSession } from '../store/session';
 import { openUserSettings } from '../store/slices/preferencesSlice';
 
 const headerTools = [
@@ -35,7 +34,6 @@ const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1280px)').mat
 
 export function AppHeader() {
   const workspace = useContext(SystemContext);
-  const user = useAppSelector((state) => state.session.user);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
@@ -243,70 +241,15 @@ export function AppHeader() {
         </div>
 
         <div className="flex shrink-0 items-center pl-3 border-l border-l-solid border-divider">
-          <Dropdown
-            trigger={['click']}
-            placement="bottomRight"
-            popupRender={(menu) => (
-              <div className="min-w-200px rounded-ui bg-surface shadow-lg overflow-hidden">
-                <div className="px-4 py-3 border-b border-b-solid border-divider">
-                  <div className="text-14px font-600 text-text">{user?.userName}</div>
-                  <div className="mt-1 text-12px text-text-secondary">
-                    {user?.userType === '0' ? '平台人员' : '普通用户'} ·{' '}
-                    {['1', '2'].includes(user?.cmbUserType ?? '') ? '正式员工' : '外包员工'}
-                    <br />
-                    {user?.department}
-                    <br />
-                    {
-                      ({ '0': '办公网', '1': '互联网', '2': '业务网' } as const)[
-                        user?.netEnv ?? '0'
-                      ]
-                    }
-                  </div>
-                </div>
-                {menu}
-              </div>
-            )}
-            menu={{
-              selectable: false,
-              className:
-                'shadow-none! rounded-0! p-1.5! [&_.ant-dropdown-menu-item]:min-h-36px [&_.ant-dropdown-menu-item]:px-2.5! [&_.ant-dropdown-menu-item]:gap-2!',
-              items: [
-                {
-                  key: 'settings',
-                  label: '用户配置',
-                  icon: <span className="i-lucide-settings-2 w-16px h-16px" aria-hidden="true" />,
-                },
-                { type: 'divider' },
-                {
-                  key: 'logout',
-                  label: '退出登录',
-                  icon: <span className="i-lucide-log-out w-16px h-16px" aria-hidden="true" />,
-                },
-              ],
-              onClick: ({ key }) => {
-                if (key === 'settings') dispatch(openUserSettings());
-                if (key === 'logout') {
-                  invalidateSession();
-                }
-              },
-            }}
-          >
+          <Tooltip title="显示设置">
             <Button
               type="text"
-              htmlType="button"
-              aria-label={`打开用户菜单：${user?.userName ?? '用户'}`}
-              className="h-36px! w-36px! px-0! rounded-control! hover:bg-watermark! active:bg-hover! layout-focus motion-reduce:transition-none!"
-              icon={
-                <Avatar
-                  size={30}
-                  aria-hidden="true"
-                  className="bg-hover! text-accent-text! text-14px! font-500"
-                >
-                  {user?.userName.slice(0, 1)}
-                </Avatar>
-              }
+              aria-label="显示设置"
+              onClick={() => dispatch(openUserSettings())}
+              className="h-36px! w-36px! px-0! rounded-control! layout-focus"
+              icon={<span className="i-lucide-settings-2 w-16px h-16px" aria-hidden="true" />}
             />
-          </Dropdown>
+          </Tooltip>
         </div>
       </div>
     </header>

@@ -5,8 +5,6 @@ import { mockConfig } from './config.ts';
 export const mockAdapter: AxiosAdapter = async (config) => {
   // 显式绝对 URL 用于真实 HTTP 契约测试；模拟 API 只承接本项目相对地址。
   if (/^https?:\/\//.test(config.url!)) return axios.getAdapter(['xhr', 'http'])(config);
-  const { currentMockUser, saveMockSettings } = await import('./session.ts');
-  const user = currentMockUser();
   await new Promise<void>((resolve, reject) => {
     if (config.signal?.aborted) {
       reject(new CanceledError());
@@ -51,7 +49,6 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       response({ message }, status),
     );
   };
-  if (Number(user.expireTime) * 1000 <= Date.now()) fail(401, '登录状态已失效');
   let body: Record<string, string> | undefined;
   try {
     body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
@@ -59,44 +56,43 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     return fail(400, '请求 JSON 无效');
   }
   if (config.signal?.aborted) throw new CanceledError();
-  if (url.pathname === '/api/session' && method === 'GET') return response(user);
   if (url.pathname === '/api/user-settings') {
+    const { readMockSettings, saveMockSettings } = await import('./preferences.ts');
     const failure = config.headers.get('X-Mock-Error');
     if ((method === 'GET' && failure === 'load') || (method === 'PUT' && failure === 'save'))
       fail(503, '模拟设置服务暂时不可用');
-    if (method === 'GET') return response({ userSetting: user.userSetting });
+    if (method === 'GET') return response({ userSetting: readMockSettings() });
     if (method === 'PUT') {
       const { settingsFromDocument } = await import('../types/userSettings.ts');
       if (config.signal?.aborted) throw new CanceledError();
       try {
         settingsFromDocument(body?.userSetting ?? '');
-        return response(saveMockSettings(body?.userSetting ?? '', user.ystId));
+        return response(saveMockSettings(body?.userSetting ?? ''));
       } catch {
         return fail(400, '用户设置格式错误');
       }
     }
     return fail(405, '不支持的请求方法');
   }
-  const { allSystems, mySystems, createSystem, accessSystem } = await import('./systemService.ts');
+  const { allSystems, createSystem, accessSystem } = await import('./systemService.ts');
   if (config.signal?.aborted) throw new CanceledError();
-  if (url.pathname === '/api/systems/mine' && method === 'GET') return response(mySystems(user));
   if (url.pathname === '/api/systems') {
-    if (method === 'GET') return response(allSystems(user));
+    if (method === 'GET') return response(allSystems());
     if (method === 'POST')
       return response(
-        createSystem(user, body as unknown as import('../types/systems').CreateSystemInput, fail),
+        createSystem(body as unknown as import('../types/systems').CreateSystemInput, fail),
         201,
       );
   }
   const access = /^\/api\/systems\/(.+)\/access$/.exec(url.pathname);
   if (access && method === 'GET')
-    return response(accessSystem(user, decodeURIComponent(access[1]), fail));
+    return response(accessSystem(decodeURIComponent(access[1]), fail));
   const systemName = config.params?.systemName ?? url.searchParams.get('systemName');
   if (
     systemName &&
     ['/api/applications', '/api/applications/groups', '/api/parameters'].includes(url.pathname)
   ) {
-    const system = accessSystem(user, systemName, fail);
+    const system = accessSystem(systemName, fail);
     if (url.pathname === '/api/parameters' && method === 'GET') {
       const { createMockParameters } = await import('./parameters.ts');
       return response(

@@ -1,13 +1,12 @@
-/** 模拟系统服务：成员关系独立保存，所有受保护接口使用同一授权判断。 */
-import type { AllSystemInfo, CreateSystemInput, SystemInfo, SystemRole } from '../types/systems.ts';
-import type { SessionUser } from '../types/session.ts';
+/** 模拟系统服务：保留系统数据读写和接口错误，不模拟登录身份或成员关系。 */
+import type { CreateSystemInput, SystemInfo } from '../types/systems.ts';
 import { mockSystems } from './systems.ts';
 import { createMockParameters } from './parameters.ts';
 import { mockConfig } from './config.ts';
 import { readMock, writeMock } from './storage.ts';
 
 type Fail = (status: number, message: string) => never;
-type Members = Record<string, Record<string, SystemRole>>;
+/** 只返回业务字段，避免旧版模拟持久化中的访问者资料重新进入接口响应。 */
 const records = () =>
   readMock<SystemInfo[]>(
     'systems',
@@ -18,46 +17,33 @@ const records = () =>
         ? Math.min(item.paramTypeCount, createMockParameters().length)
         : 0,
     })),
-  );
-const members = () =>
-  readMock<Members>('members', {
-    '310798': { CAC: 'D', CCCMonitor: 'R', LT11_01: 'V' },
-    IT009682: { CAC: 'V' },
-  });
-/** 字典键可能来自 URL，只接受自己的有效角色，避免继承属性被当作成员。 */
-function memberRole(roles: Record<string, SystemRole>, name: string): SystemRole | null {
-  if (!Object.hasOwn(roles, name)) return null;
-  return ['V', 'D', 'R'].includes(roles[name]) ? roles[name] : null;
+  ).map((item) => ({
+    systemName: item.systemName,
+    systemChineseName: item.systemChineseName,
+    systemArchNo: item.systemArchNo,
+    systemDesc: item.systemDesc,
+    appCount: item.appCount,
+    paramTypeCount: item.paramTypeCount,
+    systemCharges: item.systemCharges,
+    ownRoom: item.ownRoom,
+    ownGroup: item.ownGroup,
+    sysRiskLevel: item.sysRiskLevel,
+    approverYstId: item.approverYstId,
+    approverCharge: item.approverCharge,
+  }));
+/** 返回业务系统列表，不附加当前访问者资料。 */
+export function allSystems(): SystemInfo[] {
+  return records();
 }
-
-export function allSystems(user: SessionUser): AllSystemInfo[] {
-  const roles = members()[user.ystId] ?? {};
-  return records().map((item) => {
-    const system = { ...item } as Partial<SystemInfo>;
-    delete system.ystId;
-    delete system.role;
-    return {
-      ...system,
-      userRelation: Boolean(memberRole(roles, item.systemName)),
-      appGroupInfo: null,
-      paramDbTypeGroupInfo: null,
-    } as AllSystemInfo;
-  });
-}
-export function mySystems(user: SessionUser): SystemInfo[] {
-  const roles = members()[user.ystId] ?? {};
-  return records()
-    .filter((item) => memberRole(roles, item.systemName))
-    .map((item) => ({ ...item, ystId: user.ystId, role: memberRole(roles, item.systemName) }));
-}
-export function accessSystem(user: SessionUser, name: string, fail: Fail): SystemInfo {
+/** 按系统查找业务资料；403/503 直接模拟接口结果，后续鉴权由新的登录设计接入。 */
+export function accessSystem(name: string, fail: Fail): SystemInfo {
   const system = records().find((item) => item.systemName === name);
   if (!system) return fail(404, '系统不存在');
-  const role = memberRole(members()[user.ystId] ?? {}, name);
-  if (user.userType !== '0' && !role) return fail(403, '未加入此系统，请联系负责人');
-  return { ...system, ystId: user.ystId, role };
+  if (mockConfig.systemAccessError)
+    return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
+  return system;
 }
-export function createSystem(user: SessionUser, input: CreateSystemInput, fail: Fail): SystemInfo {
+export function createSystem(input: CreateSystemInput, fail: Fail): SystemInfo {
   const list = records();
   const name = typeof input?.systemName === 'string' ? input.systemName.trim() : '';
   const arch = typeof input?.systemArchNo === 'string' ? input.systemArchNo.trim() : '';
@@ -84,15 +70,10 @@ export function createSystem(user: SessionUser, input: CreateSystemInput, fail: 
       .map((item) => item.split('/')[1])
       .filter(Boolean)
       .join(','),
-    systemCharges: `${user.userName}/${user.ystId}`,
-    ystId: user.ystId,
-    role: 'R',
+    systemCharges: '',
     appCount: 0,
     paramTypeCount: 0,
   };
-  const relations = members();
-  relations[user.ystId] = { ...relations[user.ystId], [name]: 'R' };
   writeMock('systems', [...list, system]);
-  writeMock('members', relations);
   return system;
 }

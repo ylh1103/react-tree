@@ -223,21 +223,28 @@ test('统一 Mock 设置请求保留未知字段，错误不覆盖已有文档',
     defaultCheckAllEnvTag: true,
     future: { enabled: true },
   });
-  writeMock('settings:310798', document);
+  writeMock('display-settings', document);
   const api = createUserSettingsApi('/api/user-settings');
   assert.equal((await api.load()).themeMode, 'system');
   const saved = await api.save({ ...defaultUserSettings, themeMode: 'dark' });
   assert.equal(saved.themeMode, 'dark');
-  const raw = JSON.parse(readMock('settings:310798', ''));
+  const raw = JSON.parse(readMock('display-settings', ''));
   assert.equal(raw.theme, 'vs-dark');
   assert.deepEqual(raw.future, { enabled: true });
   assert.equal(raw.defaultCheckAllEnvTag, true);
   await assert.rejects(
-    requestData({ url: '/api/user-settings', headers: { 'X-Mock-Error': 'load' } }),
+    requestData({
+      url: '/api/user-settings',
+      headers: { 'X-Mock-Error': 'load' },
+    }),
     (error) => error.status === 503,
   );
   await assert.rejects(
-    requestData({ url: '/api/user-settings', method: 'PUT', data: { userSetting: '{' } }),
+    requestData({
+      url: '/api/user-settings',
+      method: 'PUT',
+      data: { userSetting: '{' },
+    }),
     (error) => error.status === 400,
   );
   await assert.rejects(
@@ -512,7 +519,10 @@ test('旧版较大间距读取为 16px，仍保留主题和其他配置', async 
   for (const layoutGap of [17, 20, 24]) {
     const legacy = { ...defaultUserSettings, layoutGap, themeMode: 'dark' };
     assert.deepEqual(parseUserSettings(legacy), { ...legacy, layoutGap: 16 });
-    const store = createAppStore({ load: async () => legacy, save: async (settings) => settings });
+    const store = createAppStore({
+      load: async () => legacy,
+      save: async (settings) => settings,
+    });
     await store.dispatch(loadUserSettings());
     assert.equal(store.getState().preferences.layoutGap, 16);
     assert.equal(store.getState().preferences.savedLayoutGap, 16);

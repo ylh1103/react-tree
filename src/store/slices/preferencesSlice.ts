@@ -2,7 +2,7 @@
  * 用户配置状态机：首次读取、后台同步、乐观保存、失败回退和重试。
  * 当前字段驱动即时 UI，配置成功初始化后的 saved 字段记录服务端确认值；requestId 阻止旧后台响应覆盖本地保存。
  * 初始化前 Store 可临时注入启动主题基线，但 initialized 保持 false，不能据此保存用户配置。
- * 流程入口：登录时 initializePreferences；读取失败后 loadUserSettings 重试；控件修改走 saveUserSettings。
+ * 流程入口：启动时调用 loadUserSettings，读取失败沿用同一入口重试；修改走 saveUserSettings。
  * 状态流转：idle → loading → ready/load-error；ready/save-error → saving → ready/save-error。
  * refreshUserSettings 只在后台更新，不进入 loading；抽屉关闭也不会取消已提交的保存。
  */
@@ -15,7 +15,6 @@ import {
   type LayoutMode,
   type UserSettings,
   type UserSettingsApi,
-  type UserSettingsSnapshot,
 } from '../../types/preferences.ts';
 
 /**
@@ -71,28 +70,28 @@ interface PreferencesState extends UserSettings {
 
 /** 按 Store 跟踪在途设置请求的取消控制器；放在 Redux 外以保持状态可序列化。 */
 const activeRequests = new WeakMap<() => ThunkConfig['state'], Set<AbortController>>();
-/** 每个 Store 的会话取消代次；排队保存以此判断入队后会话是否已经失效。 */
+/** 每个 Store 的取消代次；排队保存以此判断入队后是否已经整体取消。 */
 const requestRevisions = new WeakMap<() => ThunkConfig['state'], number>();
 /**
- * 中止在途请求并提升会话代次；排队但尚未发送的保存也会在发送前被拦截。
- * @param getState 目标 Store 的状态读取函数，同时作为请求集合与会话代次的隔离键。
+ * 中止在途请求并提升取消代次；排队但尚未发送的保存也会在发送前被拦截。
+ * @param getState 目标 Store 的状态读取函数，同时作为请求集合与取消代次的隔离键。
  */
 export function cancelPreferencesRequests(getState: () => ThunkConfig['state']) {
   requestRevisions.set(getState, (requestRevisions.get(getState) ?? 0) + 1);
   activeRequests.get(getState)?.forEach((controller) => controller.abort());
 }
 /**
- * 所有设置读写的取消与身份边界：同时响应 thunk 取消和会话整体失效。
- * 请求结束后再次检查取消状态及用户身份，防止旧用户响应进入配置状态机。
- * @param getState 读取当前用户身份，并定位所属 Store 的在途请求集合。
+ * 所有设置读写的取消边界：同时响应 thunk 取消和配置流程的整体取消。
+ * 请求结束后再次检查信号，防止被取消的响应进入配置状态机。
+ * @param getState 定位所属 Store 的在途请求集合。
  * @param signal thunk 提供的取消信号，转发给内部请求控制器。
- * @param request 实际读写操作，必须将收到的信号继续传给 HTTP 请求。
- * @returns 校验后的配置快照；响应携带完整文档时保留它，供会话同步使用。
+ * @param request 实际读写操作，必须继续传递 HTTP 取消信号。
+ * @returns 校验后的平台配置；完整配置文档不进入状态机。
  */
 async function settingsRequest(
   getState: () => ThunkConfig['state'],
   signal: AbortSignal,
-  request: (signal: AbortSignal) => Promise<UserSettingsSnapshot>,
+  request: (signal: AbortSignal) => Promise<UserSettings>,
 ) {
   const controller = new AbortController();
   const requests = activeRequests.get(getState) ?? new Set<AbortController>();
@@ -101,16 +100,11 @@ async function settingsRequest(
   /** 将 thunk 的取消事件转发到实际请求；请求结束后移除此监听。 */
   const cancel = () => controller.abort();
   signal.addEventListener('abort', cancel, { once: true });
-  const identity = getState().session?.user?.ystId;
   try {
     signal.throwIfAborted();
     const result = await request(controller.signal);
     controller.signal.throwIfAborted();
-    if (getState().session?.user?.ystId !== identity) throw new Error('忽略旧用户设置响应');
-    return {
-      ...parseUserSettings(result),
-      ...(result.document ? { document: result.document } : {}),
-    };
+    return parseUserSettings(result);
   } finally {
     signal.removeEventListener('abort', cancel);
     requests.delete(controller);
@@ -118,18 +112,10 @@ async function settingsRequest(
 }
 /** 设置异步操作所需的最小 Store 契约，避免依赖完整 Store 类型造成循环引用。 */
 interface ThunkConfig {
-  /** thunk 可读取的偏好与身份状态，用于请求去重、保存快照和旧用户响应隔离。 */
+  /** thunk 可读取的偏好状态，用于请求去重与保存快照。 */
   state: {
     /** 当前用户的偏好及其请求状态。 */
     preferences: PreferencesState;
-    /** 可选会话信息；独立创建的偏好 Store 可以不提供会话。 */
-    session?: {
-      /** 当前登录用户；null 表示未登录。 */
-      user: {
-        /** 用户唯一标识，用于判断请求期间是否切换身份。 */
-        ystId: string;
-      } | null;
-    };
   };
   /** 由 Store 注入的外部依赖，便于替换接口实现与测试。 */
   extra: {
@@ -138,8 +124,8 @@ interface ThunkConfig {
   };
 }
 
-/** 首次独立读取或错误重试；正常登录已携带配置，不需要再调用一次设置 GET。 */
-export const loadUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
+/** 首次配置读取或错误重试，不依赖用户资料初始化。 */
+export const loadUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
   'preferences/load',
   async (_, { extra, signal, getState }) =>
     settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
@@ -149,7 +135,7 @@ export const loadUserSettings = createAsyncThunk<UserSettingsSnapshot, void, Thu
   },
 );
 /** 后台同步不切换首屏或保存状态；已有读取或保存时拒绝启动，由同步协调层合并通知。 */
-export const refreshUserSettings = createAsyncThunk<UserSettingsSnapshot, void, ThunkConfig>(
+export const refreshUserSettings = createAsyncThunk<UserSettings, void, ThunkConfig>(
   'preferences/refresh',
   async (_, { extra, signal, getState }) =>
     settingsRequest(getState, signal, (requestSignal) => extra.userSettingsApi.load(requestSignal)),
@@ -193,31 +179,21 @@ function currentSettings(state: PreferencesState): UserSettings {
 
 /**
  * 提交部分配置修改：pending 先乐观更新 UI，再按 Store 串行保存入队时的完整快照。
- * 成功后推进确认基线，最新请求失败时回退并保留合并修改供重试；会话失效时拦截旧写入。
+ * 成功后推进确认基线，最新请求失败时回退并保留合并修改供重试；整体取消时拦截排队中的旧写入。
  */
-export const saveUserSettings = createAsyncThunk<
-  UserSettingsSnapshot,
-  Partial<UserSettings>,
-  ThunkConfig
->(
+export const saveUserSettings = createAsyncThunk<UserSettings, Partial<UserSettings>, ThunkConfig>(
   'preferences/save',
   async (changes, { extra, signal, getState }) => {
-    const identity = getState().session?.user?.ystId;
     const revision = requestRevisions.get(getState) ?? 0;
     // pending reducer 已同步应用本次修改；在入队时固定快照，保证连续操作按发生顺序保存。
     const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
-    /** 轮到本快照时检查取消、身份和会话代次，再发送可取消的保存请求。 */
+    /** 轮到本快照时检查取消信号与取消代次，再发送可取消的保存请求。 */
     const send = async () => {
       signal.throwIfAborted();
-      if (
-        getState().session?.user?.ystId !== identity ||
-        (requestRevisions.get(getState) ?? 0) !== revision
-      )
-        throw new Error('会话已变化，取消旧用户设置保存');
+      if ((requestRevisions.get(getState) ?? 0) !== revision) throw new Error('配置保存已取消');
       const saved = await settingsRequest(getState, signal, (requestSignal) =>
         extra.userSettingsApi.save(settings, requestSignal),
       );
-      if (getState().session?.user?.ystId !== identity) throw new Error('忽略旧用户设置响应');
       return saved;
     };
     const previous = saveQueues.get(getState);
@@ -320,21 +296,11 @@ const preferencesSlice = createSlice({
   name: 'preferences',
   /** 首次创建与重置时采用的状态基线。 */
   initialState,
-  /** 本地交互与登录初始化动作；这些 reducer 自身不发送请求。 */
+  /** 本地交互与配置重置动作；这些 reducer 自身不发送请求。 */
   reducers: {
-    /** 登录响应初始化设置，避免首屏再次请求设置接口。 */
-    initializePreferences(state, action: PayloadAction<UserSettings>) {
-      applySavedSettings(state, action);
-    },
-    /** 清空当前用户偏好与请求标识，恢复默认状态；请求取消由会话流程另行调用。 */
+    /** 清空显示偏好与请求标识，恢复默认状态；整体重置前应另行取消在途请求。 */
     resetPreferences() {
       return initialState;
-    },
-    /** 记录配置损坏原因并结束首屏等待；保持 load-error 禁止保存，重新读取成功后才能编辑。 */
-    invalidPreferences(state, action: PayloadAction<string>) {
-      state.initialized = true;
-      state.status = 'load-error';
-      state.error = action.payload;
     },
     /** 打开设置抽屉，不触发额外读取或保存。 */
     openUserSettings(state) {
@@ -479,11 +445,9 @@ const preferencesSlice = createSlice({
   },
 });
 
-/** 对外提供登录初始化、状态重置、抽屉开关与滑块预览动作，供会话流程和设置 UI 派发。 */
+/** 对外提供状态重置、抽屉开关与滑块预览动作；配置初始化统一经过可取消的读取请求。 */
 export const {
-  initializePreferences,
   resetPreferences,
-  invalidPreferences,
   openUserSettings,
   closeUserSettings,
   previewLayoutGap,

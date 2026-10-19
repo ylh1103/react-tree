@@ -1,5 +1,5 @@
 /**
- * 跨页签用户设置同步：广播仅通知发生变化，接收方重新读取服务端配置。
+ * 跨页签显示设置同步：广播仅通知发生变化，接收方重新读取服务端配置。
  * 本地读取/保存期间合并通知；同步失败保留现有配置，返回的清理函数释放请求和所有订阅。
  */
 import type { createAppStore } from '../index.ts';
@@ -11,19 +11,16 @@ export interface UserSettingsSyncTransport {
   close: () => void;
 }
 
-const syncKey = 'react-tree:user-settings:v1';
+const syncKey = 'react-tree:display-settings:v1';
 const changedMessage = 'user-settings-changed';
 
-/** 只传递变更通知，接收方始终以自己的服务端配置为准。 */
-export function createUserSettingsSyncTransport(
-  identity = 'anonymous',
-): UserSettingsSyncTransport | null {
+/** 只传递变更通知，接收方重新读取设置接口，不在广播中传递配置正文。 */
+export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | null {
   if (typeof window === 'undefined') return null;
-  // 通道按用户隔离，广播不携带配置正文；接收者使用自己的登录态重新向服务端读取。
-  const userSyncKey = `${syncKey}:${identity}`;
+
   try {
     if (typeof window.BroadcastChannel === 'function') {
-      const channel = new window.BroadcastChannel(userSyncKey);
+      const channel = new window.BroadcastChannel(syncKey);
       return {
         publish: () => channel.postMessage(changedMessage),
         subscribe: (listener) => {
@@ -42,14 +39,10 @@ export function createUserSettingsSyncTransport(
   try {
     const storage = window.localStorage;
     return {
-      publish: () => storage.setItem(userSyncKey, `${Date.now()}:${Math.random()}`),
+      publish: () => storage.setItem(syncKey, `${Date.now()}:${Math.random()}`),
       subscribe: (listener) => {
         const receive = (event: StorageEvent) => {
-          if (
-            event.key === userSyncKey &&
-            event.storageArea === storage &&
-            event.newValue !== null
-          ) {
+          if (event.key === syncKey && event.storageArea === storage && event.newValue !== null) {
             listener();
           }
         };
@@ -66,7 +59,7 @@ export function createUserSettingsSyncTransport(
 /** 保存成功后通知其他页签；通知在本地请求期间排队并合并。 */
 export function startUserSettingsSync(
   store: ReturnType<typeof createAppStore>,
-  transport = createUserSettingsSyncTransport(store.getState().session.user?.ystId),
+  transport = createUserSettingsSyncTransport(),
 ) {
   let stopped = false;
   // 用布尔值合并多次通知；请求期间有新通知时，结束后最多再补一次读取。

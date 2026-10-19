@@ -12,7 +12,7 @@ import { BrandLoading } from '../components/BrandLoading';
 
 const spinConfig = { indicator: <BrandLoading /> };
 
-/** 包住路由加载骨架与正式页面，使等待登录、导航和设置切换使用同一套主题。 */
+/** 包住路由加载骨架与正式页面，使加载等待、导航和设置切换使用同一套主题。 */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const mode = useAppSelector((state) => state.preferences.themeMode);
   // system 仅在显示时解析为 light/dark，不能把解析结果写回 Redux，否则会丢失跟随系统的选择。

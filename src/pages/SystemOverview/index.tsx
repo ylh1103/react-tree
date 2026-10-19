@@ -1,7 +1,7 @@
-import { Button, Descriptions, Tag } from 'antd';
+import { Button, Descriptions } from 'antd';
 import { useNavigate } from 'react-router';
 import { useSystemWorkspace } from '../../contexts/SystemContext';
-import { descriptionText, roleLabel } from '../../utils/systems';
+import { descriptionText } from '../../utils/systems';
 import { applicationPath, databasePath } from '../../router/paths';
 
 export default function SystemOverviewPage() {
@@ -11,7 +11,6 @@ export default function SystemOverviewPage() {
     <section className="workspace-panel min-h-full p-8">
       <div className="flex flex-wrap items-center gap-3 mb-2">
         <h2 className="m-0 text-22px font-600">{system.systemName}</h2>
-        <Tag>{roleLabel(system.role)}</Tag>
       </div>
       <p className="m-0 text-text-secondary text-15px">{system.systemChineseName}</p>
       <p className="workspace-muted mt-4 mb-6 max-w-960px">{descriptionText(system.systemDesc)}</p>

@@ -1,13 +1,13 @@
 /**
  * 启动主题缓存：连接 HTML 提前配色、Redux 初始化与服务端确认后的缓存更新。
- * 浏览器只保存最近一次确认的 light/dark/system，登录后仍以当前用户的服务端配置为准。
+ * 浏览器只保存最近一次确认的 light/dark/system，设置读取成功后以响应配置为准。
  * 乐观输入和读取错误不覆盖缓存；保存失败时保留最近成功值，存储不可用不阻止应用运行。
  */
 import type { ThemeMode } from '../../types/preferences.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
 import type { createAppStore } from '../index.ts';
 
-// 启动前尚不知道当前用户，因此只保存浏览器配色提示；不能用它恢复身份或完整用户设置。
+// 这里只保存浏览器配色提示，完整显示偏好仍通过设置接口读取。
 export const bootstrapThemeKey = 'react-tree:bootstrap-theme:v1';
 
 /**
@@ -50,13 +50,10 @@ export function startThemePersistence(store: ReturnType<typeof createAppStore>) 
   // 仅记录成功写入的值；无关 dispatch 不重复写，存储失败后仍能在后续有效状态更新时重试。
   let persistedTheme: ThemeMode | undefined;
   return store.subscribe(() => {
-    const { preferences: current, session } = store.getState();
+    const { preferences: current } = store.getState();
     // initialized 只表示首屏等待结束，也可能来自读取错误；错误状态和重试期间均不能确认默认值。
     // 连续保存时，较早请求成功会在 saving 期间推进基线；不能仅允许 ready，否则可能漏掉成功值。
     if (
-      session.status !== 'loading' &&
-      session.status !== 'expired' &&
-      session.status !== 'error' &&
       current.initialized &&
       current.status !== 'load-error' &&
       current.status !== 'loading' &&

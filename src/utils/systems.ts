@@ -1,32 +1,16 @@
 /**
- * 系统列表过滤、角色展示、描述文本提取及权限错误判断。
- * 描述只提取离线 HTML 文本；错误沿 cause 链识别 403，未知角色不推导权限。
+ * 系统列表搜索、描述文本提取及接口拒绝访问的错误判断。
+ * 描述只提取离线 HTML 文本；错误沿 cause 链识别 403，不依赖用户资料。
  */
-import type { SystemInfo, SystemRole } from '../types/systems.ts';
+import type { SystemInfo } from '../types/systems.ts';
 
-export const roleOptions: { label: string; value: SystemRole }[] = [
-  { label: '系统负责人', value: 'R' },
-  { label: '开发者', value: 'D' },
-  { label: '观察者', value: 'V' },
-];
-
-export function roleLabel(role: string | null) {
-  if (role === null) return '平台人员';
-  return roleOptions.find((option) => option.value === role)?.label ?? '未知角色';
-}
-
-export function filterSystems<T extends SystemInfo>(
-  systems: T[],
-  search: string,
-  role?: SystemRole,
-) {
+/** 搜索仅依赖系统业务资料，不再包含当前访问者的个人角色筛选。 */
+export function filterSystems<T extends SystemInfo>(systems: T[], search: string) {
   const keyword = search.trim().toLocaleLowerCase();
-  return systems.filter(
-    (system) =>
-      (!role || system.role === role) &&
-      [system.systemName, system.systemChineseName, system.systemArchNo].some((value) =>
-        (value ?? '').toLocaleLowerCase().includes(keyword),
-      ),
+  return systems.filter((system) =>
+    [system.systemName, system.systemChineseName, system.systemArchNo].some((value) =>
+      (value ?? '').toLocaleLowerCase().includes(keyword),
+    ),
   );
 }
 

@@ -6,7 +6,6 @@ import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router'
 import { queryClient } from '../queries/client.ts';
 import { preloadRouteQuery } from '../queries/routeQuery.ts';
 import { systemsOptions, parameterTypesOptions, requireSystemAccess } from '../queries/systems.ts';
-import { requireSession } from '../store/session.ts';
 import type { ListNode } from '../components/GroupedList/types.ts';
 import {
   applicationListId,
@@ -54,7 +53,6 @@ export const revalidateSystemCollection: ShouldRevalidateFunction = ({
 
 /** 静态 loader 与 route.lazy 并行执行；请求结果沿用页面的 Query 缓存。 */
 export async function preloadSystems(args?: LoaderFunctionArgs) {
-  await requireSession();
   const systemName = args?.params.systemName;
   if (systemName) await requireSystemAccess(systemName);
   args?.request?.signal.throwIfAborted();

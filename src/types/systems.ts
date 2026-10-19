@@ -1,12 +1,9 @@
-export type SystemRole = 'R' | 'D' | 'V';
-
+/** 系统业务资料，不包含当前访问者的用户信息或个人角色。 */
 export interface SystemInfo {
-  ystId: string;
   systemName: string;
   systemChineseName: string;
   systemArchNo: string;
   systemDesc: string;
-  role: SystemRole | null;
   appCount: number;
   paramTypeCount: number;
   systemCharges: string;
@@ -17,14 +14,7 @@ export interface SystemInfo {
   approverCharge: string;
 }
 
-/** 所有系统只表达成员关系，平台访问权限不伪造成成员角色。 */
-export interface AllSystemInfo extends Omit<SystemInfo, 'ystId' | 'role'> {
-  userRelation: boolean;
-  appGroupInfo: string | null;
-  paramDbTypeGroupInfo: string | null;
-}
-
-/** 创建者、成员角色及数量由服务端决定。 */
+/** 创建系统只提交业务字段，不从前端用户资料填充负责人。 */
 export interface CreateSystemInput {
   systemName: string;
   systemChineseName: string;

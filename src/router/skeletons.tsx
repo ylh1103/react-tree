@@ -55,7 +55,7 @@ export function SystemsHomeSkeleton() {
         系统列表加载中…
       </span>
       <div className="mb-6">
-        <h1 className="m-0 text-24px font-600 leading-32px">我的系统</h1>
+        <h1 className="m-0 text-24px font-600 leading-32px">系统列表</h1>
         <p className="m-0 mt-1.5 text-text-muted text-13px leading-22px">
           选择系统，进入应用参数或数据库参数工作区
         </p>
