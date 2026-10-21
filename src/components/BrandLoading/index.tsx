@@ -1,3 +1,4 @@
+/** 可选的品牌平面加载图标：使用分合回弹，尺寸由调用处字号控制。 */
 import { animationKeyframes } from './model/animations';
 import { useId, type SVGProps } from 'react';
 
@@ -6,36 +7,24 @@ const redPanel =
 const bluePanel =
   'M88 16 101 28Q109 35 123 31L153 23Q178 17 178 43V107Q178 122 163 126L113 140Q88 146 88 121Z';
 
-export type BrandLoadingVariant = 'split' | 'rotate' | 'flip' | 'breathe' | 'bounce' | 'orbit';
+/** 当前支持的平面方案，也可经用户配置作为全局 Ant Design Spin 指示器。 */
+export type BrandLoadingVariant = 'split';
 
+/** 继承 SVG 属性，尺寸与状态语义由外层 Spin 或加载容器提供。 */
 interface BrandLoadingProps extends SVGProps<SVGSVGElement> {
   variant?: BrandLoadingVariant;
 }
 
-const motions: Record<BrandLoadingVariant, { logo: string; red: string; blue: string }> = {
+const motions: Record<BrandLoadingVariant, { red: string; blue: string }> = {
   split: {
-    logo: '',
     red: '[animation:brand-red_1.25s_ease-in-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none',
     blue: '[animation:brand-blue_1.25s_ease-in-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none',
   },
-  rotate: { logo: '[animation:brand-rotate_1.8s_linear_infinite]', red: '', blue: '' },
-  flip: {
-    logo: '',
-    red: '[animation:brand-flip-red_1.6s_ease-in-out_infinite]',
-    blue: '[animation:brand-flip-blue_1.6s_ease-in-out_infinite]',
-  },
-  breathe: { logo: '[animation:brand-breathe_1.6s_ease-in-out_infinite]', red: '', blue: '' },
-  bounce: {
-    logo: '',
-    red: '[animation:brand-bounce-red_1.2s_ease-in-out_infinite]',
-    blue: '[animation:brand-bounce-blue_1.2s_ease-in-out_infinite]',
-  },
-  orbit: { logo: '', red: '', blue: '' },
 };
 
 const origin = '[transform-origin:98px_92px] motion-reduce:animate-none';
 
-/** Transparent brand indicator; its 1em size follows Ant Design Spin's size. */
+/** 多实例使用独立裁剪 ID，使红蓝双片移动时的交集始终正确，避免不同尺寸互相影响。 */
 export function BrandLoading({ variant = 'split', className = '', ...props }: BrandLoadingProps) {
   const clipId = `brand-loading-${useId()}`;
   const motion = motions[variant];
@@ -54,30 +43,7 @@ export function BrandLoading({ variant = 'split', className = '', ...props }: Br
       className={`inline-block align-middle overflow-visible ${className}`}
     >
       <style>{animationKeyframes}</style>
-      {variant === 'orbit' && (
-        <g className={`[animation:brand-rotate_1.8s_linear_infinite] ${origin}`}>
-          <circle
-            cx="98"
-            cy="92"
-            r="108"
-            stroke="#1d9bf0"
-            strokeWidth="9"
-            strokeDasharray="100 579"
-            strokeLinecap="round"
-          />
-          <circle
-            cx="98"
-            cy="92"
-            r="108"
-            stroke="#ff2045"
-            strokeWidth="9"
-            strokeDasharray="100 579"
-            strokeDashoffset="-339"
-            strokeLinecap="round"
-          />
-        </g>
-      )}
-      <g className={`${motion.logo} ${origin}`}>
+      <g className={origin}>
         <defs>
           <clipPath id={clipId}>
             <path d={redPanel} className={redClass} />

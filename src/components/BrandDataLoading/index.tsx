@@ -1,27 +1,15 @@
+/** 可缩放的品牌数据加载指示器：复用透明 SVG，并为各方案提供独立动效及减少动态效果的静态回退。 */
 import { animationKeyframes } from './model/animations';
-import { useId, type SVGProps } from 'react';
+import { red, blue } from './model/mark';
+import type { SVGProps } from 'react';
 import type { BrandDataLoadingVariant } from './model/styles';
 export type { BrandDataLoadingVariant } from './model/styles';
 
+/** 尺寸继承字号，可作为 Ant Design Spin 的 indicator；加载语义由外层状态容器提供。 */
 interface BrandDataLoadingProps extends SVGProps<SVGSVGElement> {
   variant?: BrandDataLoadingVariant;
 }
 
-const red =
-  'M88 48 36 63Q18 68 18 86V143Q18 166 41 161L91 148Q101 146 109 153L120 165V70Q120 42 99 45Z';
-const blue =
-  'M88 16 101 28Q109 35 123 31L153 23Q178 17 178 43V107Q178 122 163 126L113 140Q88 146 88 121Z';
-const overlap = 'M88 48L99 45Q120 42 120 70V138L113 140Q88 146 88 121Z';
-
-function BrandMark() {
-  return (
-    <>
-      <path d={red} fill="#ff3159" />
-      <path d={blue} fill="#249afc" />
-      <path d={overlap} fill="#2923b5" />
-    </>
-  );
-}
 const colors = ['#ff3159', '#f33d77', '#7d57da', '#3985ee', '#249afc'];
 const delays = [
   '[animation-delay:0ms]!',
@@ -42,16 +30,6 @@ const dotDelays = [
   '[animation-delay:-480ms]!',
 ];
 
-const segmentDelays = [
-  '[animation-delay:0ms]!',
-  '[animation-delay:-150ms]!',
-  '[animation-delay:-300ms]!',
-  '[animation-delay:-450ms]!',
-  '[animation-delay:-600ms]!',
-  '[animation-delay:-750ms]!',
-  '[animation-delay:-900ms]!',
-  '[animation-delay:-1050ms]!',
-];
 const cometDots = Array.from({ length: 12 }, (_, index) => {
   const angle = (index * Math.PI) / 6;
   return {
@@ -63,13 +41,12 @@ const cometDots = Array.from({ length: 12 }, (_, index) => {
   };
 });
 
-/** Transparent data indicators; size inherits from Spin and variants have stable keys. */
+/** 方案使用稳定键，新增展示效果不改变既有调用方的默认方案。 */
 export function BrandDataLoading({
-  variant = 'rings',
+  variant = 'trace',
   className = '',
   ...props
 }: BrandDataLoadingProps) {
-  const id = useId();
   return (
     <svg
       {...props}
@@ -82,94 +59,6 @@ export function BrandDataLoading({
       className={`inline-block align-middle overflow-visible ${className}`}
     >
       <style>{animationKeyframes}</style>
-      {variant === 'beacon' && (
-        <>
-          <circle cx="100" cy="100" r="91" stroke="#249afc" strokeWidth="4" opacity=".12" />
-          <g className="[animation:brand-beacon_1.8s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
-            <circle
-              cx="100"
-              cy="100"
-              r="91"
-              pathLength="100"
-              stroke="#249afc"
-              strokeWidth="7"
-              strokeDasharray="15 85"
-              strokeLinecap="round"
-            />
-            <circle cx="191" cy="100" r="8" fill="#ff3159" />
-          </g>
-          <g transform="translate(26 33) scale(.75)">
-            <BrandMark />
-          </g>
-        </>
-      )}
-      {variant === 'shine' && (
-        <g transform="translate(16 26) scale(.85)">
-          <defs>
-            <clipPath id={`${id}-clip`}>
-              <path d={red} />
-              <path d={blue} />
-            </clipPath>
-            <linearGradient id={`${id}-light`}>
-              <stop offset="0" stopColor="white" stopOpacity="0" />
-              <stop offset=".5" stopColor="white" stopOpacity=".65" />
-              <stop offset="1" stopColor="white" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <BrandMark />
-          <g clipPath={`url(#${id}-clip)`}>
-            <path
-              d="M-80 -30H-28L65 220H13Z"
-              fill={`url(#${id}-light)`}
-              className="[animation:brand-shine_1.8s_cubic-bezier(.4,0,.3,1)_infinite] motion-reduce:animate-none"
-            />
-          </g>
-        </g>
-      )}
-      {variant === 'echo' && (
-        <g transform="translate(32 37) scale(.7)">
-          {[false, true].map((delayed) => (
-            <g
-              key={String(delayed)}
-              fill="none"
-              strokeWidth="6"
-              className={`[animation:brand-echo_2s_ease-out_infinite] [transform-origin:98px_92px] motion-reduce:animate-none motion-reduce:opacity-0 ${delayed ? '[animation-delay:-1000ms]!' : ''}`}
-            >
-              <path d={red} stroke="#ff3159" />
-              <path d={blue} stroke="#249afc" />
-            </g>
-          ))}
-          <BrandMark />
-        </g>
-      )}
-      {variant === 'inflow' && (
-        <>
-          <path
-            d="M8 102H52M148 102H192"
-            stroke="#7d57da"
-            strokeWidth="3"
-            strokeDasharray="4 7"
-            opacity=".2"
-          />
-          <circle
-            cx="8"
-            cy="102"
-            r="7"
-            fill="#ff3159"
-            className="[animation:brand-inflow-red_1.4s_ease-in_infinite] motion-reduce:animate-none"
-          />
-          <circle
-            cx="192"
-            cy="102"
-            r="7"
-            fill="#249afc"
-            className="[animation:brand-inflow-blue_1.4s_ease-in_infinite] [animation-delay:-700ms]! motion-reduce:animate-none"
-          />
-          <g transform="translate(40 44) scale(.6)">
-            <BrandMark />
-          </g>
-        </>
-      )}
       {variant === 'comet' && (
         <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
           {cometDots.map((dot, index) => (
@@ -183,71 +72,6 @@ export function BrandDataLoading({
             />
           ))}
         </g>
-      )}
-      {variant === 'relay' && (
-        <>
-          <path
-            d="M58 100C58 56 142 144 142 100S58 144 58 100S142 56 142 100"
-            stroke="#7d57da"
-            strokeWidth="5"
-            opacity="0.1"
-          />
-          <circle
-            cx="58"
-            cy="100"
-            r="14"
-            fill="#ff3159"
-            className="[animation:loading-relay-red_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
-          />
-          <circle
-            cx="142"
-            cy="100"
-            r="14"
-            fill="#249afc"
-            className="[animation:loading-relay-blue_1.6s_ease-in-out_infinite] motion-reduce:animate-none"
-          />
-        </>
-      )}
-      {variant === 'segments' && (
-        <g strokeWidth="13" strokeLinecap="round">
-          {segmentDelays.map((delay, index) => (
-            <circle
-              key={index}
-              cx="100"
-              cy="100"
-              r="67"
-              pathLength="100"
-              strokeDasharray="7 93"
-              strokeDashoffset={-index * 12.5}
-              stroke={colors[Math.min(4, Math.floor((index * 5) / 8))]}
-              className={`[animation:loading-segment_1.2s_linear_infinite] motion-reduce:animate-none ${delay}`}
-            />
-          ))}
-        </g>
-      )}
-      {variant === 'shuttle' && (
-        <>
-          <rect x="30" y="76" width="140" height="12" rx="6" fill="#ff3159" opacity=".1" />
-          <rect x="30" y="112" width="140" height="12" rx="6" fill="#249afc" opacity=".1" />
-          <rect
-            x="30"
-            y="76"
-            width="36"
-            height="12"
-            rx="6"
-            fill="#ff3159"
-            className="[animation:loading-shuttle_1.8s_cubic-bezier(.45,0,.55,1)_infinite] motion-reduce:animate-none"
-          />
-          <rect
-            x="30"
-            y="112"
-            width="36"
-            height="12"
-            rx="6"
-            fill="#249afc"
-            className="[animation:loading-shuttle_1.8s_cubic-bezier(.45,0,.55,1)_infinite] [animation-delay:-900ms]! motion-reduce:animate-none"
-          />
-        </>
       )}
       {variant === 'trace' && (
         <g strokeWidth="10" strokeLinecap="round" strokeLinejoin="round">
@@ -268,42 +92,6 @@ export function BrandDataLoading({
             className="[animation:loading-trace_1.8s_linear_infinite] [animation-delay:-900ms]! motion-reduce:animate-none"
           />
         </g>
-      )}
-      {variant === 'rings' && (
-        <>
-          <circle cx="100" cy="100" r="85" stroke="#249afc" strokeWidth="8" opacity="0.12" />
-          <circle cx="100" cy="100" r="67" stroke="#ff3159" strokeWidth="8" opacity="0.12" />
-          <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
-            <circle
-              cx="100"
-              cy="100"
-              r="85"
-              stroke="#249afc"
-              strokeWidth="9"
-              pathLength="100"
-              strokeDasharray="28 72"
-              strokeLinecap="round"
-            />
-          </g>
-          <g className="[animation:loading-ring_1.6s_linear_infinite] [animation-direction:reverse]! [transform-origin:100px_100px] motion-reduce:animate-none">
-            <circle
-              cx="100"
-              cy="100"
-              r="67"
-              stroke="#ff3159"
-              strokeWidth="9"
-              pathLength="100"
-              strokeDasharray="24 76"
-              strokeDashoffset="-50"
-              strokeLinecap="round"
-            />
-          </g>
-          <g transform="translate(62 62) scale(.4)">
-            <path d={red} fill="#ff3159" />
-            <path d={blue} fill="#249afc" />
-            <path d="M88 48L99 45Q120 42 120 70V138L113 140Q88 146 88 121Z" fill="#2923b5" />
-          </g>
-        </>
       )}
       {variant === 'wave' &&
         colors.map((color, index) => (

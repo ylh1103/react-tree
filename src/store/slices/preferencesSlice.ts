@@ -9,6 +9,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { createAppAsyncThunk } from '../createAppAsyncThunk.ts';
 import { userSettingsApi } from '../../api/preferences.ts';
+import type { LoadingStyleId } from '../../types/loading.ts';
 import {
   defaultUserSettings,
   parseUserSettings,
@@ -23,6 +24,8 @@ import {
  * 本地仅补充读写和交互状态；saved* 保存确认基线，preview* 只用于临时预览。
  */
 interface PreferencesState extends UserSettings {
+  /** 已确认的加载图标方案，保存失败时恢复该值。 */
+  savedLoadingStyle: LoadingStyleId;
   /** 是否结束首次配置等待；读取失败也置为 true，让页面展示回退配置与重试入口。 */
   initialized: boolean;
   /** 当前首次读取或重试的请求编号；用于忽略已失效的读取响应，null 表示无有效请求。 */
@@ -149,6 +152,7 @@ const saveQueues = new WeakMap<() => PreferencesStoreState, Promise<void>>();
 /** 只提取可持久化字段，不把预览值、抽屉状态、错误和请求编号发送给后端。 */
 function currentSettings(state: PreferencesState): UserSettings {
   const {
+    loadingStyle,
     layoutMode,
     layoutGap,
     borderRadius,
@@ -159,6 +163,7 @@ function currentSettings(state: PreferencesState): UserSettings {
     headerToolsIconOnly,
   } = state;
   return {
+    loadingStyle,
     layoutMode,
     layoutGap,
     borderRadius,
@@ -213,6 +218,8 @@ export const saveUserSettings = createAppAsyncThunk<UserSettings, Partial<UserSe
 
 /** 创建或重置 Slice 时使用的默认状态；各字段含义见 PreferencesState，默认值不代表已读取。 */
 const initialState: PreferencesState = {
+  loadingStyle: defaultUserSettings.loadingStyle,
+  savedLoadingStyle: defaultUserSettings.loadingStyle,
   initialized: false,
   loadRequestId: null,
   refreshRequestId: null,
@@ -247,6 +254,7 @@ const initialState: PreferencesState = {
 
 /** 更新服务端确认基线；较早保存成功时也要推进基线，供后续保存失败正确回退。 */
 function updateSavedSettings(state: PreferencesState, settings: UserSettings) {
+  state.savedLoadingStyle = settings.loadingStyle;
   state.savedLayoutMode = settings.layoutMode;
   state.savedLayoutGap = settings.layoutGap;
   state.savedBorderRadius = settings.borderRadius;
@@ -342,6 +350,7 @@ const preferencesSlice = createSlice({
       .addCase(loadUserSettings.rejected, (state, action) => {
         if (state.loadRequestId !== action.meta.requestId) return;
         state.loadRequestId = null;
+        state.loadingStyle = state.savedLoadingStyle = initialState.loadingStyle;
         state.navigationTheme = state.savedNavigationTheme = initialState.navigationTheme;
         state.navigationIconOnly = state.savedNavigationIconOnly = initialState.navigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly =
@@ -394,6 +403,7 @@ const preferencesSlice = createSlice({
         if (typeof action.meta.arg.borderRadius === 'number')
           state.borderRadius = action.meta.arg.borderRadius;
         if (action.meta.arg.themeMode) state.themeMode = action.meta.arg.themeMode;
+        if (action.meta.arg.loadingStyle) state.loadingStyle = action.meta.arg.loadingStyle;
         if (action.meta.arg.navigationTheme)
           state.navigationTheme = action.meta.arg.navigationTheme;
         if (typeof action.meta.arg.navigationIconOnly === 'boolean')
@@ -429,6 +439,7 @@ const preferencesSlice = createSlice({
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly;
         state.themeMode = state.savedThemeMode;
         state.navigationTheme = state.savedNavigationTheme;
+        state.loadingStyle = state.savedLoadingStyle;
         state.status = 'save-error';
         state.error = action.error.message || '用户设置保存失败';
         state.failedSettings = state.saveChanges ?? action.meta.arg;

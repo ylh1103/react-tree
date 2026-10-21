@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test, { before, after } from 'node:test';
 import { matchRoutes, createMemoryRouter, RouterProvider, Outlet } from 'react-router';
 import { createElement } from 'react';
+import { Provider } from 'react-redux';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { navigationItems, databaseNavigationItems } from '../src/layouts/navigation.ts';
@@ -24,6 +25,43 @@ after(async () => {
 });
 
 const match = (path) => matchRoutes(routes, path)?.at(-1);
+
+test('配置与图库提供相同的五款图标，全局 Spin 随偏好渲染实际方案', async () => {
+  const { AppThemeProvider } = await vite.ssrLoadModule('/src/providers/AppThemeProvider.tsx');
+  const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
+  const { loadUserSettings, saveUserSettings } = await vite.ssrLoadModule(
+    '/src/store/slices/preferencesSlice.ts',
+  );
+  const { defaultUserSettings } = await vite.ssrLoadModule('/src/types/preferences.ts');
+  const { loadingStyles } = await vite.ssrLoadModule(
+    '/src/components/LoadingIndicator/model/styles.ts',
+  );
+  const { loadingStyleIds } = await vite.ssrLoadModule('/src/types/loading.ts');
+  const { Spin } = await import('antd');
+  assert.deepEqual(loadingStyles.map((item) => item.id).sort(), [...loadingStyleIds].sort());
+  const store = createAppStore();
+  store.dispatch(loadUserSettings.pending('load'));
+  store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'load'));
+  const renderSpin = () =>
+    renderToStaticMarkup(
+      createElement(
+        Provider,
+        { store },
+        createElement(AppThemeProvider, null, createElement(Spin)),
+      ),
+    );
+  assert.match(renderSpin(), /stroke-dasharray="30 70"/);
+  for (const [loadingStyle, shape, count] of [
+    ['data-wave', 'rect', 5],
+    ['data-matrix', 'circle', 9],
+    ['data-comet', 'circle', 12],
+    ['flat-split', 'clipPath', 1],
+  ]) {
+    // pending 代表用户已选择但尚未保存；指示器应即时切换，不等待服务器确认。
+    store.dispatch(saveUserSettings.pending(loadingStyle, { loadingStyle }));
+    assert.equal([...renderSpin().matchAll(new RegExp(`<${shape}\\b`, 'g'))].length, count);
+  }
+});
 
 test('系统首页、默认入口及所有应用菜单匹配实际路由', () => {
   assert.equal(match('/').route.id, 'home');

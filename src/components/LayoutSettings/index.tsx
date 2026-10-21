@@ -20,6 +20,12 @@ import type {
 } from '../../types/preferences';
 import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '../../types/preferences';
 import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+import { LoadingStyleSetting } from './components/LoadingStyleSetting';
+import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
+import { navigationItems } from '../../router/config';
+
+/** 预览取实际导航前两个入口，图标和名称随路由配置更新，不另维护一份示例菜单。 */
+const navigationPreviewItems = navigationItems.filter((item) => !item.bottom).slice(0, 2);
 
 const themeOptions = [
   {
@@ -42,33 +48,15 @@ const themeOptions = [
   },
 ] as const;
 
-function SettingsDefaultBadge() {
-  return (
-    <span className="rounded-control bg-sidebar px-1 text-11px font-400 leading-4 text-text-secondary">
-      默认
-    </span>
-  );
-}
-
-function SettingsSelectionMark({ selected }: { selected: boolean }) {
-  return selected ? (
-    <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-on-accent shadow-sm">
-      <span className="i-lucide-check text-13px" />
-    </span>
-  ) : null;
-}
-
 /** 用实际主题变量绘制缩略图，主题切换后仍能对比浅色与暗色。 */
 function SettingsPreview({
   layoutMode,
   themeMode,
-  selected,
   className = '',
   navigationTheme: previewNavigationTheme,
 }: {
   layoutMode: LayoutMode;
   themeMode: ResolvedThemeMode;
-  selected: boolean;
   className?: string;
   navigationTheme?: NavigationTheme;
 }) {
@@ -87,13 +75,13 @@ function SettingsPreview({
           '--ui-radius': `${radius}px`,
         } as CSSProperties
       }
-      className={`relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border bg-canvas ${className}`}
+      className={`relative block h-80px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border bg-canvas ${className}`}
     >
       <span className="flex h-17px items-center gap-1 border-b border-b-solid border-divider bg-header px-2">
         <span className="h-5px w-5px rounded-full bg-accent" />
         <span className="h-3px w-8 rounded-full bg-text-muted opacity-40" />
       </span>
-      <span className={`flex h-75px ${compact ? 'gap-0 p-0' : 'gap-1 p-1'}`}>
+      <span className={`flex h-63px ${compact ? 'gap-0 p-0' : 'gap-1 p-1'}`}>
         <span
           className={`flex w-5 shrink-0 flex-col items-center gap-1.5 bg-nav py-2 ${compact ? '' : 'rounded-[calc(var(--ui-radius)/2)]'}`}
         >
@@ -117,29 +105,21 @@ function SettingsPreview({
           <span className="block h-1 w-1/2 rounded-1px bg-accent opacity-50" />
         </span>
       </span>
-      <SettingsSelectionMark selected={selected} />
     </span>
   );
 }
 
-/** 同一布局以斜向分割展示两种外观，直观表达系统自动切换。 */
-function SystemThemePreview({
-  layoutMode,
-  selected,
-}: {
-  layoutMode: LayoutMode;
-  selected: boolean;
-}) {
+/** 明暗拼接复用原尺寸布局，与浅色、暗色缩略图使用相同宽高，不再单独缩放内容。 */
+function SystemThemePreview({ layoutMode }: { layoutMode: LayoutMode }) {
   return (
     <span
       aria-hidden="true"
-      className="relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border isolate"
+      className="relative block h-80px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border isolate"
     >
       <span className="absolute inset-0">
         <SettingsPreview
           layoutMode={layoutMode}
           themeMode="light"
-          selected={false}
           className="border-0! rounded-none!"
         />
       </span>
@@ -147,24 +127,22 @@ function SystemThemePreview({
         <SettingsPreview
           layoutMode={layoutMode}
           themeMode="dark"
-          selected={false}
           className="border-0! rounded-none!"
         />
       </span>
-      <SettingsSelectionMark selected={selected} />
     </span>
   );
 }
 
-/** 聚焦导航的普通与选中状态，旁边保留内容表面用于对比底色。 */
+/** 按缩略图比例收紧实际导航排列，保留清晰字号；文字显隐直接消费菜单配置。 */
 function NavigationColorPreview({
   mode,
   themeMode,
-  selected,
+  iconOnly,
 }: {
   mode: NavigationTheme;
   themeMode: ResolvedThemeMode;
-  selected: boolean;
+  iconOnly: boolean;
 }) {
   return (
     <span
@@ -172,23 +150,35 @@ function NavigationColorPreview({
       style={
         { ...themeVariablesByMode[themeMode], ...navigationThemeVariables[mode] } as CSSProperties
       }
-      className="relative block h-92px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border flex! bg-surface"
+      className="relative block h-104px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border flex! bg-surface"
     >
-      <span className="flex min-w-0 flex-1 flex-col justify-center gap-1 bg-nav p-1.5">
-        <span className="flex h-7 items-center gap-2 rounded-control bg-nav-active px-2 text-nav-active-text">
-          <span className="i-lucide-layout-grid shrink-0 text-15px" />
-          <span className="text-12px font-500">总览</span>
-        </span>
-        <span className="flex h-7 items-center gap-2 rounded-control px-2 text-nav-text">
-          <span className="i-lucide-box shrink-0 text-15px" />
-          <span className="text-12px">应用</span>
+      <span
+        className={`flex shrink-0 flex-col gap-0.5 bg-nav px-0.75 py-1 ${iconOnly ? 'w-40px' : 'w-52px'}`}
+      >
+        {navigationPreviewItems.map(({ id, label, icon }, index) => (
+          <span
+            key={id}
+            className={`flex w-full shrink-0 flex-col items-center justify-center gap-0.5 ${iconOnly ? 'min-h-36px' : 'min-h-46px'} ${index === 0 ? 'font-600 text-nav-emphasis' : 'text-nav-text'}`}
+          >
+            <span
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control ${index === 0 ? 'bg-nav-active text-nav-active-text' : ''}`}
+            >
+              <span
+                className={`${icon} shrink-0 ${iconOnly ? 'h-22px w-22px' : 'h-20px w-20px'}`}
+              />
+            </span>
+            {!iconOnly && <span className="whitespace-nowrap text-11px leading-14px">{label}</span>}
+          </span>
+        ))}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-2 border-l border-l-solid border-divider bg-surface p-2">
+        <span className="h-1 w-2/3 rounded-full bg-text-muted opacity-40" />
+        <span className="flex flex-1 flex-col gap-2 rounded-control border border-solid border-divider bg-sidebar p-1.5">
+          <span className="h-1 w-3/4 rounded-full bg-text-muted opacity-30" />
+          <span className="h-1 w-full rounded-full bg-text-muted opacity-15" />
+          <span className="h-1 w-2/3 rounded-full bg-text-muted opacity-15" />
         </span>
       </span>
-      <span className="flex w-7 shrink-0 flex-col gap-2 border-l border-l-solid border-divider bg-surface px-1.5 py-3">
-        <span className="h-1 rounded-full bg-text-muted opacity-30" />
-        <span className="h-1 rounded-full bg-text-muted opacity-15" />
-      </span>
-      <SettingsSelectionMark selected={selected} />
     </span>
   );
 }
@@ -231,26 +221,11 @@ function PreferenceSlider({
   // 输入框允许暂时为空，用本地草稿承接编辑；只有合法数字进入 Redux 预览，失焦时再提交。
   const [inputDraft, setInputDraft] = useState<number | null | undefined>(undefined);
   const marks = Object.fromEntries(
-    (setting === 'controlBorderRadius'
-      ? [0, defaultUserSettings.controlBorderRadius, 16, borderRadiusRange.max]
-      : setting === 'borderRadius'
-        ? [0, defaultUserSettings.borderRadius, 16, borderRadiusRange.max]
-        : compact
-          ? [0, 4, 8, 12, 16]
-          : [2, 4, 8, 12, 16]
-    ).map((gap) => [
+    [compact ? 0 : range.min, defaultUserSettings[setting], range.max].map((gap) => [
       gap,
-      <span key={gap} className="flex flex-col items-center gap-0.5 leading-4">
-        <span
-          className={
-            !disabled && gap === displayedGap ? 'font-600 text-accent-text' : 'text-text-muted'
-          }
-        >
-          {gap}
-        </span>
-        {!compact && gap === defaultUserSettings[setting] && (
-          <span className="text-11px text-text-secondary">默认</span>
-        )}
+      <span key={gap} className="whitespace-nowrap text-12px leading-4 text-text-muted">
+        {gap}
+        {!compact && gap === defaultUserSettings[setting] && ' 默认'}
       </span>,
     ]),
   );
@@ -267,12 +242,13 @@ function PreferenceSlider({
     else dispatch(previewAction(null));
   };
   return (
-    <div className="rounded-ui bg-sidebar px-4 py-3">
+    <div className="py-3">
       <div className="flex items-center justify-between gap-3">
         <span id={id} className="text-14px font-500 text-text">
           {title}
         </span>
         <InputNumber
+          size="small"
           aria-label={`${title}数值`}
           aria-describedby={`${id}-description`}
           value={inputDraft === undefined ? displayedGap : inputDraft}
@@ -298,17 +274,20 @@ function PreferenceSlider({
           onPressEnter={(event) => {
             if (event.target instanceof HTMLInputElement) event.target.blur();
           }}
-          className={`w-96px! ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'} [&_input]:font-600 [&_input]:tabular-nums`}
+          className={`w-84px! ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'} [&_input]:font-600 [&_input]:tabular-nums`}
         />
       </div>
-      <p id={`${id}-description`} className="m-0 mt-1 text-12px leading-18px text-text-muted">
+      <p
+        id={`${id}-description`}
+        className={compact ? 'm-0 mt-1 text-12px leading-5 text-text-muted' : 'sr-only'}
+      >
         {compact
           ? `标准布局已保存 ${value} px，切换后恢复`
           : setting === 'borderRadius'
-            ? '用于内容面板和列表节点，输入后按回车保存'
+            ? '内容面板和列表节点的圆角，松开滑块或结束输入后保存'
             : setting === 'controlBorderRadius'
-              ? '用于按钮、输入框等控件，输入后按回车保存'
-              : '拖动后松开，或输入后按回车保存'}
+              ? '按钮、输入框等控件的圆角，松开滑块或结束输入后保存'
+              : '模块间距，松开滑块或结束输入后保存'}
       </p>
       <div className="px-1">
         <Slider
@@ -336,14 +315,8 @@ function PreferenceSlider({
                     '[&::after]:shadow-[0_0_0_2px_var(--color-accent)]! hover:[&::after]:shadow-[0_0_0_3px_var(--color-accent)]! focus-visible:[&::after]:shadow-[0_0_0_4px_var(--color-accent)]!',
                 }
           }
-          className={`mx-0! mt-4! ${compact ? 'mb-7!' : 'mb-10!'} [&_.ant-slider-mark-text]:text-11px [&_.ant-slider-mark-text]:tabular-nums [&_.ant-slider-dot]:w-2px! [&_.ant-slider-dot]:h-6px! [&_.ant-slider-dot]:top-3px! [&_.ant-slider-dot]:rounded-1px! [&_.ant-slider-dot]:border-0! [&_.ant-slider-dot]:bg-border! ${disabled ? '' : '[&_.ant-slider-dot-active]:bg-accent!'}`}
+          className={`mx-0! mt-3! mb-5! [&_.ant-slider-mark-text]:text-12px [&_.ant-slider-mark-text]:tabular-nums [&_.ant-slider-dot]:w-2px! [&_.ant-slider-dot]:h-6px! [&_.ant-slider-dot]:top-3px! [&_.ant-slider-dot]:rounded-1px! [&_.ant-slider-dot]:border-0! [&_.ant-slider-dot]:bg-border! ${disabled ? '' : '[&_.ant-slider-dot-active]:bg-accent!'}`}
         />
-      </div>
-      <div className="flex items-center justify-between gap-3 text-11px leading-4 text-text-muted">
-        <span>{compact ? '无间距' : setting !== 'layoutGap' ? '直角' : '更紧凑'}</span>
-        <span>
-          {compact ? '紧凑布局固定为 0 px' : setting !== 'layoutGap' ? '更圆润' : '更宽松'}
-        </span>
       </div>
     </div>
   );
@@ -384,20 +357,21 @@ function MenuDisplaySetting({
   );
 }
 
-/** 控件只提交修改字段；保存、回退与重试由抽屉及 Redux 状态机统一处理。 */
+/** 控件只提交修改字段；每个标签面板独立滚动，切页不会继承其他分组的位置或被标签栏遮挡。
+ * 保存、回退与重试由抽屉及 Redux 状态机统一处理。
+ */
 export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSettings>) => void }) {
-  const {
-    status,
-    error,
-    layoutMode,
-    layoutGap,
-    borderRadius,
-    controlBorderRadius,
-    themeMode,
-    navigationTheme,
-    navigationIconOnly,
-    headerToolsIconOnly,
-  } = useAppSelector((state) => state.preferences);
+  // 按字段订阅，滑块预览、请求编号和抽屉状态更新不会反复重渲染整个配置面板。
+  const status = useAppSelector((state) => state.preferences.status);
+  const error = useAppSelector((state) => state.preferences.error);
+  const layoutMode = useAppSelector((state) => state.preferences.layoutMode);
+  const layoutGap = useAppSelector((state) => state.preferences.layoutGap);
+  const borderRadius = useAppSelector((state) => state.preferences.borderRadius);
+  const controlBorderRadius = useAppSelector((state) => state.preferences.controlBorderRadius);
+  const themeMode = useAppSelector((state) => state.preferences.themeMode);
+  const navigationTheme = useAppSelector((state) => state.preferences.navigationTheme);
+  const navigationIconOnly = useAppSelector((state) => state.preferences.navigationIconOnly);
+  const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
   const resolvedTheme = useResolvedTheme(themeMode);
   const dispatch = useAppDispatch();
   const labelId = useId();
@@ -412,16 +386,17 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
   const disabled = loading || status === 'load-error';
   return (
     <div
-      className="flex flex-col gap-3 [--color-text-muted:var(--color-text-secondary)] [--color-accent-text:var(--color-settings-accent-text)]"
+      className="flex h-full min-h-0 flex-col gap-3 [--color-text-muted:var(--color-text-secondary)] [--color-accent-text:var(--color-settings-accent-text)]"
       aria-busy={loading || saving}
     >
       <Tabs
         defaultActiveKey="appearance"
         tabBarGutter={0}
-        className="[&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-ui [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
+        className="min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-ui [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
         classNames={{
-          header:
-            'sticky! top-0! z-10! bg-[var(--color-settings-surface)]! pt-3! pb-2! mb-2! before:border-0!',
+          header: 'shrink-0! mx-1! pt-3! pb-2! mb-1! before:border-0!',
+          body: 'h-full! min-h-0!',
+          content: 'h-full! overflow-y-auto! overscroll-contain px-1 [scrollbar-width:thin]',
           indicator: 'hidden!',
           item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-text-secondary [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
         }}
@@ -435,8 +410,8 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
               </span>
             ),
             children: (
-              <section className="flex flex-col gap-4 pb-2" aria-labelledby={themeLabelId}>
-                <h3 id={themeLabelId} className="m-0 text-13px font-600 leading-5 text-text">
+              <section className="flex flex-col gap-3 pb-4" aria-labelledby={themeLabelId}>
+                <h3 id={themeLabelId} className="m-0 text-14px font-600 leading-5 text-text">
                   主题模式
                 </h3>
                 <Radio.Group
@@ -452,40 +427,41 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   className="grid! w-full! grid-cols-2 gap-3"
                 >
                   {themeOptions.map(({ value: mode, label, icon, description }) => (
-                    <Radio.Button
+                    <SettingsOptionCard
                       key={mode}
                       value={mode}
                       aria-label={label}
-                      className={`flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none! ${mode === 'system' ? 'col-span-2' : ''}`}
+                      className={mode === 'system' ? 'col-span-2 text-left!' : ''}
                     >
-                      <span className="flex w-full min-w-0 flex-col gap-3">
-                        {mode === 'system' ? (
-                          <SystemThemePreview
-                            layoutMode={layoutMode}
-                            selected={themeMode === mode}
-                          />
-                        ) : (
-                          <SettingsPreview
-                            layoutMode={layoutMode}
-                            themeMode={mode}
-                            selected={themeMode === mode}
-                          />
-                        )}
-                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
-                          <span aria-hidden="true" className={`${icon} text-16px`} />
-                          {label}
-                          {mode === defaultUserSettings.themeMode && <SettingsDefaultBadge />}
+                      {mode === 'system' ? (
+                        // 列间距含上排网格的 12px 与卡片两侧内边距 20px，使三张缩略图精确同宽。
+                        <span className="grid w-full grid-cols-2 items-center gap-32px">
+                          <SystemThemePreview layoutMode={layoutMode} />
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="flex items-center gap-2 text-14px font-500 leading-5">
+                              {label}
+                              {mode === defaultUserSettings.themeMode && <SettingsDefaultBadge />}
+                            </span>
+                            <span className="text-12px leading-4 text-text-muted">
+                              {description}
+                            </span>
+                          </span>
                         </span>
-                        <span className="text-12px leading-18px text-text-muted">
-                          {description}
+                      ) : (
+                        <span className="flex w-full min-w-0 flex-col gap-2">
+                          <SettingsPreview layoutMode={layoutMode} themeMode={mode} />
+                          <span className="flex items-center justify-center gap-1.5 text-14px font-500 leading-5">
+                            <span aria-hidden="true" className={`${icon} text-16px`} />
+                            {label}
+                          </span>
                         </span>
-                      </span>
-                    </Radio.Button>
+                      )}
+                    </SettingsOptionCard>
                   ))}
                 </Radio.Group>
                 <h3
                   id={navigationThemeLabelId}
-                  className="m-0 text-13px font-600 leading-5 text-text mt-3!"
+                  className="m-0 text-14px font-600 leading-5 text-text mt-3!"
                 >
                   导航栏配色
                 </h3>
@@ -503,16 +479,12 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   className="grid! w-full! grid-cols-2 gap-3"
                 >
                   {(['contrast', 'theme'] as const).map((value) => (
-                    <Radio.Button
-                      key={value}
-                      value={value}
-                      className="flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!"
-                    >
-                      <span className="flex w-full min-w-0 flex-col gap-3">
+                    <SettingsOptionCard key={value} value={value}>
+                      <span className="flex w-full min-w-0 flex-col gap-2">
                         <NavigationColorPreview
                           mode={value}
                           themeMode={resolvedTheme}
-                          selected={navigationTheme === value}
+                          iconOnly={navigationIconOnly}
                         />
                         <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                           {value === 'contrast' ? '独立配色' : '跟随主题'}
@@ -524,24 +496,10 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                           {value === 'contrast' ? '保留独立底色，突出导航' : '与其他模块背景同步'}
                         </span>
                       </span>
-                    </Radio.Button>
+                    </SettingsOptionCard>
                   ))}
                 </Radio.Group>
-                <h3 className="m-0 text-13px font-600 leading-5 text-text mt-3!">圆角样式</h3>
-                <PreferenceSlider
-                  setting="borderRadius"
-                  id={radiusLabelId}
-                  value={borderRadius}
-                  disabled={disabled}
-                  onSave={onSave}
-                />
-                <PreferenceSlider
-                  setting="controlBorderRadius"
-                  id={controlRadiusLabelId}
-                  value={controlBorderRadius}
-                  disabled={disabled}
-                  onSave={onSave}
-                />
+                <LoadingStyleSetting disabled={disabled} onSave={onSave} />
               </section>
             ),
           },
@@ -554,8 +512,8 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
               </span>
             ),
             children: (
-              <section className="flex flex-col gap-2 pb-2" aria-labelledby={labelId}>
-                <h3 id={labelId} className="m-0 text-13px font-600 leading-5 text-text">
+              <section className="flex flex-col gap-3 pb-4" aria-labelledby={labelId}>
+                <h3 id={labelId} className="m-0 text-14px font-600 leading-5 text-text">
                   布局模式
                 </h3>
                 <Radio.Group
@@ -571,18 +529,13 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   className="grid! w-full! grid-cols-2 gap-3"
                 >
                   {(['default', 'compact'] as const).map((mode) => (
-                    <Radio.Button
+                    <SettingsOptionCard
                       key={mode}
                       value={mode}
                       aria-label={mode === 'default' ? '标准布局' : '紧凑布局'}
-                      className="flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! hover:border-accent! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!"
                     >
-                      <span className="flex w-full min-w-0 flex-col gap-3">
-                        <SettingsPreview
-                          layoutMode={mode}
-                          themeMode={resolvedTheme}
-                          selected={layoutMode === mode}
-                        />
+                      <span className="flex w-full min-w-0 flex-col gap-2">
+                        <SettingsPreview layoutMode={mode} themeMode={resolvedTheme} />
                         <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                           {mode === 'default' ? '标准布局' : '紧凑布局'}
                           {mode === defaultUserSettings.layoutMode && <SettingsDefaultBadge />}
@@ -591,18 +544,40 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                           {mode === 'default' ? '模块留有间距，层次分明' : '模块无间距，边框线分隔'}
                         </span>
                       </span>
-                    </Radio.Button>
+                    </SettingsOptionCard>
                   ))}
                 </Radio.Group>
-                <PreferenceSlider
-                  setting="layoutGap"
-                  id={gapInputId}
-                  value={layoutGap}
-                  compact={layoutMode === 'compact'}
-                  disabled={disabled || layoutMode === 'compact'}
-                  onSave={onSave}
-                />
-                <h3 className="m-0 text-13px font-600 leading-5 text-text mt-1!">菜单显示</h3>
+                <div className="mt-2">
+                  <h3 className="m-0 text-14px font-600 leading-5 text-text">间距与圆角</h3>
+                  <p className="m-0 mt-1 text-12px leading-5 text-text-muted">
+                    松开滑块或结束输入后自动保存。
+                  </p>
+                </div>
+                <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
+                  <PreferenceSlider
+                    setting="layoutGap"
+                    id={gapInputId}
+                    value={layoutGap}
+                    compact={layoutMode === 'compact'}
+                    disabled={disabled || layoutMode === 'compact'}
+                    onSave={onSave}
+                  />
+                  <PreferenceSlider
+                    setting="borderRadius"
+                    id={radiusLabelId}
+                    value={borderRadius}
+                    disabled={disabled}
+                    onSave={onSave}
+                  />
+                  <PreferenceSlider
+                    setting="controlBorderRadius"
+                    id={controlRadiusLabelId}
+                    value={controlBorderRadius}
+                    disabled={disabled}
+                    onSave={onSave}
+                  />{' '}
+                </div>
+                <h3 className="m-0 text-14px font-600 leading-5 text-text mt-1!">菜单显示</h3>
                 <p className="m-0 text-12px leading-5 text-text-muted">
                   默认仅显示图标，悬停可查看名称。
                 </p>

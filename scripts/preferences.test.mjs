@@ -19,6 +19,7 @@ import { parseUserSettings, defaultUserSettings } from '../src/types/preferences
 import { requestData } from '../src/http/request.ts';
 import { mockConfig } from '../src/mocks/config.ts';
 import { readMock, writeMock } from '../src/mocks/storage.ts';
+import { loadingStyleIds } from '../src/types/loading.ts';
 
 function deferred() {
   let resolve;
@@ -235,8 +236,14 @@ test('统一 Mock 设置请求保留未知字段，错误不覆盖已有文档',
   writeMock('display-settings', document);
   const api = createUserSettingsApi('/api/user-settings');
   assert.equal((await api.load()).themeMode, 'system');
-  const saved = await api.save({ ...defaultUserSettings, themeMode: 'dark' });
+  const saved = await api.save({
+    ...defaultUserSettings,
+    themeMode: 'dark',
+    loadingStyle: 'data-comet',
+  });
   assert.equal(saved.themeMode, 'dark');
+  assert.equal(saved.loadingStyle, 'data-comet');
+  assert.equal((await api.load()).loadingStyle, 'data-comet');
   const raw = JSON.parse(readMock('display-settings', ''));
   assert.equal(raw.theme, 'vs-dark');
   assert.deepEqual(raw.future, { enabled: true });
@@ -700,4 +707,64 @@ test('跟随系统保留用户选择，修改布局不覆盖主题，保存失�
   await store.dispatch(saveThemeMode('dark'));
   assert.equal(store.getState().preferences.themeMode, 'system');
   assert.equal(store.getState().preferences.status, 'save-error');
+});
+
+// 加载图标沿用完整设置状态机，验证兼容、串行保存和失败恢复，避免仅覆盖选择控件。
+test('旧配置默认品牌描边，五款图标可读取，非法标识拒绝覆盖配置', () => {
+  assert.equal(parseUserSettings({ layoutMode: 'default' }).loadingStyle, 'data-trace');
+  for (const loadingStyle of loadingStyleIds) {
+    assert.equal(
+      parseUserSettings({ layoutMode: 'default', loadingStyle }).loadingStyle,
+      loadingStyle,
+    );
+  }
+  for (const loadingStyle of ['trace', 'data-unknown', '', null, undefined, 1]) {
+    assert.throws(() => parseUserSettings({ layoutMode: 'default', loadingStyle }), /格式错误/);
+  }
+});
+
+test('加载图标连续选择串行保存，失败恢复最近成功方案，支持重试、刷新和重置', async (t) => {
+  let persisted = { ...defaultUserSettings };
+  const first = deferred();
+  const second = deferred();
+  const writes = [];
+  let failing = true;
+  mockUserSettingsApi(t, {
+    load: async () => persisted,
+    save: async (settings) => {
+      writes.push(settings);
+      if (writes.length === 1) await first.promise;
+      if (writes.length === 2) {
+        await second.promise;
+        if (failing) throw Error('图标保存失败');
+      }
+      persisted = settings;
+      return settings;
+    },
+  });
+  const store = createAppStore();
+  await store.dispatch(loadUserSettings());
+  const saving = store.dispatch(saveUserSettings({ loadingStyle: 'data-wave' }));
+  const next = store.dispatch(saveUserSettings({ loadingStyle: 'flat-split' }));
+  assert.equal(store.getState().preferences.loadingStyle, 'flat-split');
+  assert.equal(writes.length, 1);
+  first.resolve();
+  await saving;
+  assert.equal(store.getState().preferences.loadingStyle, 'flat-split');
+  assert.equal(store.getState().preferences.savedLoadingStyle, 'data-wave');
+  assert.equal(writes.length, 2);
+  second.resolve();
+  await next;
+  assert.equal(store.getState().preferences.loadingStyle, 'data-wave');
+  assert.deepEqual(store.getState().preferences.failedSettings, { loadingStyle: 'flat-split' });
+  failing = false;
+  await store.dispatch(saveUserSettings(store.getState().preferences.failedSettings));
+  await store.dispatch(saveUserSettings({ themeMode: 'dark' }));
+  assert.equal(persisted.loadingStyle, 'flat-split');
+  const reloaded = createAppStore();
+  await reloaded.dispatch(loadUserSettings());
+  assert.equal(reloaded.getState().preferences.loadingStyle, 'flat-split');
+  await reloaded.dispatch(saveUserSettings(defaultUserSettings));
+  assert.equal(persisted.loadingStyle, 'data-trace');
+  assert.equal(reloaded.getState().preferences.loadingStyle, 'data-trace');
 });

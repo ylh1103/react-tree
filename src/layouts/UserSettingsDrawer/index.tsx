@@ -1,6 +1,6 @@
 /**
  * 全局用户设置抽屉；可见状态保存在当前页签的 Redux 中。
- * 表单内容复用 LayoutSettings，关闭与保存配置是独立行为。
+ * 表单内容复用 LayoutSettings，关闭与保存配置是独立行为；无遮罩面板允许回到背景操作。
  */
 import { Button, Drawer, Popconfirm, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
@@ -57,19 +57,21 @@ export function UserSettingsDrawer() {
       size={400}
       open={open}
       mask={false}
+      aria-modal={false}
+      focusable={{ trap: false }}
       closable={{ 'aria-label': '关闭用户设置' }}
       onClose={close}
       classNames={{
         wrapper: 'user-settings-panel max-w-full!',
         section: 'user-settings-surface',
-        body: 'px-6! pt-0! pb-5! overscroll-contain',
+        body: 'flex! min-h-0! flex-col! overflow-hidden! px-5! pt-0! pb-0!',
         footer: 'px-6! py-3!',
       }}
       footer={
-        <div className="flex min-h-8 items-center justify-between gap-3">
+        <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <Popconfirm
             title="恢复全部默认设置？"
-            description="主题、配色、布局、圆角和菜单显示都会恢复默认。"
+            description="主题、配色、加载图标、布局、圆角和菜单显示都会恢复默认。"
             okText="恢复默认"
             cancelText="取消"
             placement="topLeft"
