@@ -86,7 +86,7 @@ export function SystemsHomeSkeleton() {
 
 /** 使用实际分栏读取同一份宽度、收起状态和布局偏好。 */
 export function CollectionSkeleton({
-  storageKey = 'react-tree:split-pane:搜索:v1',
+  storageKey = 'parameter-management:split-pane:搜索:v1',
   defaultWidth = 290,
   title = '搜索',
   integratedHeader = false,
@@ -171,7 +171,7 @@ export function ApplicationsSkeleton() {
   );
   return (
     <CollectionSkeleton
-      storageKey="react-tree:split-pane:application:v1"
+      storageKey="parameter-management:split-pane:application:v1"
       defaultWidth={290}
       title={appName || '应用参数'}
       integratedHeader={!appName}
@@ -189,7 +189,7 @@ export function DatabaseSkeleton() {
   );
   return (
     <CollectionSkeleton
-      storageKey="react-tree:split-pane:database:v1"
+      storageKey="parameter-management:split-pane:database:v1"
       defaultWidth={300}
       title={paramTypeName || '数据库参数'}
     />

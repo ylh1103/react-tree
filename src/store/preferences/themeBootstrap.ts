@@ -8,7 +8,7 @@ import { defaultUserSettings } from '../../types/preferences.ts';
 import type { AppStore } from '../index.ts';
 
 // 这里只保存浏览器配色提示，完整显示偏好仍通过设置接口读取。
-export const bootstrapThemeKey = 'react-tree:bootstrap-theme:v1';
+export const bootstrapThemeKey = 'parameter-management:bootstrap-theme:v1';
 
 /**
  * HTML 和 Store 共用的缓存校验，只接受三种主题选择，非法或不可读的值使用调用方回退值。

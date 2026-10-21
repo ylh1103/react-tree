@@ -11,6 +11,8 @@ import { createAppTheme, applyTheme } from '../styles/theme';
 import { BrandLoading } from '../components/BrandLoading';
 
 const spinConfig = { indicator: <BrandLoading /> };
+// 全局文字提示默认隐藏箭头；个别 Tooltip 可通过自身 arrow 属性覆盖。
+const tooltipConfig = { arrow: false };
 
 /** 包住路由加载骨架与正式页面，使加载等待、导航和设置切换使用同一套主题。 */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
@@ -38,7 +40,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(resolvedTheme, borderRadius, controlBorderRadius);
   }, [resolvedTheme, borderRadius, controlBorderRadius]);
   return (
-    <ConfigProvider theme={appTheme} spin={spinConfig}>
+    <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>
       {children}
     </ConfigProvider>
   );

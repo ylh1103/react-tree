@@ -318,7 +318,7 @@ export function CollectionWorkspace({
 
   return (
     <SplitPane
-      storageKey={`react-tree:split-pane:${database ? 'database' : 'application'}:v1`}
+      storageKey={`parameter-management:split-pane:${database ? 'database' : 'application'}:v1`}
       defaultWidth={database ? 300 : 290}
       sidebarLabel={`${label}列表`}
       title={workspaceTitle}

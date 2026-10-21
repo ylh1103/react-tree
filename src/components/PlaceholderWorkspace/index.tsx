@@ -37,7 +37,7 @@ export default function PlaceholderWorkspace({
   return (
     <SplitPane
       key={title}
-      storageKey={`react-tree:split-pane:${title}:v1`}
+      storageKey={`parameter-management:split-pane:${title}:v1`}
       sidebarLabel={`${title}侧边栏`}
       title={title}
       sidebar={

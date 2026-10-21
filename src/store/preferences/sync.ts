@@ -11,7 +11,7 @@ export interface UserSettingsSyncTransport {
   close: () => void;
 }
 
-const syncKey = 'react-tree:display-settings:v1';
+const syncKey = 'parameter-management:display-settings:v1';
 const changedMessage = 'user-settings-changed';
 
 /** 只传递变更通知，接收方重新读取设置接口，不在广播中传递配置正文。 */
