@@ -1,10 +1,12 @@
 /**
- * Redux Store 的装配入口；统一注册 Slice 并设置启动主题，使用 Redux Toolkit 默认中间件。
+ * Redux Store 的装配入口；统一注册 Slice 并设置启动主题和图标，使用 Redux Toolkit 默认中间件。
  * Store 管理显示偏好和抽屉等客户端状态，服务端业务清单交给 React Query。
  */
 import { configureStore } from '@reduxjs/toolkit';
 import preferencesReducer from './slices/preferencesSlice.ts';
 import { readBootstrapTheme } from './preferences/themeBootstrap.ts';
+import { readBootstrapLoading } from './preferences/loadingBootstrap.ts';
+import type { LoadingStyleId } from '../types/loading.ts';
 import type { ThemeMode } from '../types/preferences.ts';
 import { defaultUserSettings } from '../types/preferences.ts';
 
@@ -12,29 +14,38 @@ import { defaultUserSettings } from '../types/preferences.ts';
 export interface AppStoreOptions {
   /** 配置读取前的显示主题，不代表配置已经初始化，也不会直接写回服务端。 */
   themeMode?: ThemeMode;
+  /** 配置读取前的图标提示，同时作为读取失败时的回退值，不代表服务端配置已初始化。 */
+  loadingStyle?: LoadingStyleId;
 }
 
 /** 创建相互独立的 Store；保留默认中间件的不可变与可序列化检查。 */
 export function createAppStore({
   themeMode = defaultUserSettings.themeMode,
+  loadingStyle = defaultUserSettings.loadingStyle,
 }: AppStoreOptions = {}) {
   return configureStore({
     // 新增 Slice 在此注册 reducer；请求与业务流程放在对应 API 和 thunk 中。
     reducer: { preferences: preferencesReducer },
-    // 启动时用传入的 themeMode 显示主题；savedThemeMode 保存同一值，供配置读取失败时恢复。
-    // 此时 initialized 为 false；首次读取结束后变为 true，读取失败也算结束。
-    // 配置读取成功前不允许编辑，也不更新本地主题缓存；这些限制还需结合 status 判断。
+    // themeMode/loadingStyle 先采用启动提示，saved 字段保存相同值，供首次配置读取失败时回退。
+    // 这些初始 saved 值尚不代表本次请求已获服务端确认，因此保留 initialized=false 和初始请求状态。
+    // 首次读取失败也会结束等待；编辑资格与缓存写入仍需结合 status 判断，不能仅检查 initialized。
     preloadedState: {
       preferences: {
         ...preferencesReducer(undefined, { type: 'preferences/init' }),
         themeMode,
         savedThemeMode: themeMode,
+        loadingStyle,
+        savedLoadingStyle: loadingStyle,
       },
     },
   });
 }
-// HTML 已提前设置最小配色；此处只恢复用户选择到状态，完整 DOM 主题由 AppThemeProvider 接管。
-export const store = createAppStore({ themeMode: readBootstrapTheme() });
+// HTML 已选好本次启动的配色和图标；Store 读取相同缓存建立显示基线，不把配置标记为已初始化。
+// 后续完整 DOM 配色由 AppThemeProvider 接管，HTML 图标保留原方案直到交接时被移除。
+export const store = createAppStore({
+  themeMode: readBootstrapTheme(),
+  loadingStyle: readBootstrapLoading(),
+});
 /** 应用及同步订阅共用的 Store 类型，随 reducer 和中间件配置自动推导。 */
 export type AppStore = ReturnType<typeof createAppStore>;
 /** 根状态与派发类型保持由真实 Store 推导，新增 Slice 后无需手写维护。 */

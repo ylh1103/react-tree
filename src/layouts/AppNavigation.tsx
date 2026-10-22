@@ -1,31 +1,24 @@
 /** 导航消费统一路由定义，URL 决定选中项，设置动作显式打开抽屉。 */
 import { Button, Tooltip } from 'antd';
-import type { CSSProperties } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { openUserSettings } from '../store/slices/preferencesSlice';
 import { NavLink, useLocation } from 'react-router';
 import { navigationItems, databaseNavigationItems } from './navigation';
 import { useSystemWorkspace } from '../contexts/SystemContext';
 import { systemPath } from '../router/paths';
-import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
-import { navigationThemeVariables } from '../styles/theme';
+import { NavigationFrame } from './LayoutFrame';
 
 export function AppNavigation() {
   const { system, platform } = useSystemWorkspace();
-  const { layoutMode } = useLayoutPreferences();
   const { pathname } = useLocation();
   const dispatch = useAppDispatch();
   const navigationIconOnly = useAppSelector((state) => state.preferences.navigationIconOnly);
-  const navigationTheme = useAppSelector((state) => state.preferences.navigationTheme);
   const iconSizeClass = navigationIconOnly ? 'w-24px h-24px' : 'w-22px h-22px';
   const isDatabaseSetting =
     pathname.replace(/\/$/, '') === systemPath(system.systemName, 'db/setting');
   const items = platform === 'database' ? databaseNavigationItems : navigationItems;
   return (
-    <aside
-      style={navigationThemeVariables[navigationTheme] as CSSProperties}
-      className={`${navigationIconOnly ? 'w-48px' : 'w-60px'} shrink-0 overflow-y-auto bg-nav [scrollbar-width:thin] [scrollbar-color:var(--color-nav-hover)_var(--color-nav)] ${navigationTheme === 'theme' ? 'border-border-subtle' : 'border-nav-hover'} ${layoutMode === 'compact' ? 'rounded-0 border-r border-r-solid' : 'border border-solid rounded-ui'}`}
-    >
+    <NavigationFrame>
       <nav className="flex flex-col gap-0.5 min-h-full py-2 px-0.75" aria-label="主导航">
         {items.map(({ to, label, icon, bottom, action }) => (
           <Tooltip
@@ -84,6 +77,6 @@ export function AppNavigation() {
           </Tooltip>
         ))}
       </nav>
-    </aside>
+    </NavigationFrame>
   );
 }

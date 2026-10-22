@@ -10,10 +10,8 @@ import {
   openUserSettings,
 } from '../src/store/slices/preferencesSlice.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
-import {
-  createUserSettingsSyncTransport,
-  startUserSettingsSync,
-} from '../src/store/preferences/sync.ts';
+import { createUserSettingsSyncTransport } from '../src/store/preferences/sync.ts';
+import { startUserSettingsEffects } from '../src/store/preferences/effects.ts';
 
 function deferred() {
   let resolve;
@@ -82,7 +80,7 @@ test('保存成功同步所有已打开页签，保留抽屉状态，不回写�
   mockUserSettingsApi(t, api);
   const stores = [createAppStore(), createAppStore(), createAppStore()];
   for (const store of stores) {
-    t.after(startUserSettingsSync(store, bus.connect()));
+    t.after(startUserSettingsEffects(store, bus.connect()));
     await store.dispatch(loadUserSettings());
   }
   stores[1].dispatch(openUserSettings());
@@ -127,8 +125,8 @@ test('保存失败不广播；同步读取失败保留配置，后续通知可�
   });
   const writer = createAppStore();
   const reader = createAppStore();
-  t.after(startUserSettingsSync(writer, bus.connect()));
-  t.after(startUserSettingsSync(reader, bus.connect()));
+  t.after(startUserSettingsEffects(writer, bus.connect()));
+  t.after(startUserSettingsEffects(reader, bus.connect()));
   await writer.dispatch(loadUserSettings());
   await reader.dispatch(loadUserSettings());
   await writer.dispatch(saveUserSettings({ themeMode: 'dark' }));
@@ -162,7 +160,7 @@ test('启动读取及保存期间的通知排队，合并通知后读取服务�
   const store = createAppStore();
   const bus = createBus();
   const sender = bus.connect();
-  t.after(startUserSettingsSync(store, bus.connect()));
+  t.after(startUserSettingsEffects(store, bus.connect()));
   t.after(() => sender.close());
   const loading = store.dispatch(loadUserSettings());
   persisted = { ...defaultUserSettings, themeMode: 'dark' };
@@ -223,7 +221,7 @@ test('连续保存中较早请求成功、最后请求失败，其他页签仍�
   const writer = createAppStore();
   const reader = createAppStore();
   for (const store of [writer, reader]) {
-    t.after(startUserSettingsSync(store, bus.connect()));
+    t.after(startUserSettingsEffects(store, bus.connect()));
     await store.dispatch(loadUserSettings());
   }
   const theme = writer.dispatch(saveUserSettings({ themeMode: 'dark' }));
@@ -249,7 +247,7 @@ test('读取中的新通知合并为下一次读取，停止同步后不再监�
   await store.dispatch(loadUserSettings());
   const bus = createBus();
   const sender = bus.connect();
-  const stop = startUserSettingsSync(store, bus.connect());
+  const stop = startUserSettingsEffects(store, bus.connect());
   sender.publish();
   await settle();
   sender.publish();
@@ -386,7 +384,7 @@ test('页签恢复补读配置，重复恢复事件合并，清理时取消在�
   });
   const store = createAppStore();
   await store.dispatch(loadUserSettings());
-  const stop = startUserSettingsSync(store, null);
+  const stop = startUserSettingsEffects(store, null);
   t.after(stop);
   documentListeners.get('visibilitychange')();
   assert.equal(reads, 1);

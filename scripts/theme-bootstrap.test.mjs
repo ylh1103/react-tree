@@ -1,3 +1,5 @@
+import { startUserSettingsEffects } from '../src/store/preferences/effects.ts';
+import { mockPreferencesBrowser as mockStorage } from './helpers/preferencesBrowser.mjs';
 import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -16,27 +18,7 @@ import {
 import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
 import { themeBootstrapPlugin } from '../build/theme-bootstrap-plugin.mjs';
 import { defaultUserSettings } from '../src/types/preferences.ts';
-import {
-  readBootstrapTheme,
-  startThemePersistence,
-  bootstrapThemeKey,
-} from '../src/store/preferences/themeBootstrap.ts';
-
-function mockStorage(t) {
-  const original = Object.getOwnPropertyDescriptor(globalThis, 'window');
-  const values = new Map();
-  globalThis.window = {
-    localStorage: {
-      getItem: (key) => values.get(key) ?? null,
-      setItem: (key, value) => values.set(key, value),
-    },
-  };
-  t.after(() => {
-    if (original) Object.defineProperty(globalThis, 'window', original);
-    else delete globalThis.window;
-  });
-  return values;
-}
+import { readBootstrapTheme, bootstrapThemeKey } from '../src/store/preferences/themeBootstrap.ts';
 
 test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t) => {
   const values = mockStorage(t);
@@ -63,7 +45,7 @@ test('刷新等待服务端时保留暗色缓存，读取成功后使用服务�
   });
   mockUserSettingsApi(t, { load: () => loading, save: async (value) => value });
   const store = createAppStore({ themeMode: 'dark' });
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   const request = store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.initialized, false);
   assert.equal(store.getState().preferences.themeMode, 'dark');
@@ -83,7 +65,7 @@ test('只缓存成功保存及同步的主题，乐观切换和失败保存不�
     });
   mockUserSettingsApi(t, { load: async () => persisted, save: (value) => save(value) });
   const store = createAppStore({ themeMode: 'dark' });
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings());
   assert.equal(readBootstrapTheme(), 'dark');
   const request = store.dispatch(saveThemeMode('light'));
@@ -109,7 +91,7 @@ test('服务端读取失败保留启动暗色，避免再次闪为浅色', async
     save: async (value) => value,
   });
   const store = createAppStore({ themeMode: 'dark' });
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.themeMode, 'dark');
   assert.equal(store.getState().preferences.status, 'load-error');
@@ -131,7 +113,7 @@ test('连续保存后续失败时，首屏主题缓存仍保留较早已确认�
     },
   });
   const store = createAppStore();
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings());
   const theme = store.dispatch(saveThemeMode('dark'));
   const radius = store.dispatch(saveUserSettings({ borderRadius: 24 }));
@@ -153,7 +135,7 @@ test('显示配置独立读取最新值，刷新和读取失败时仍维护启�
     save: async (settings) => settings,
   });
   const store = createAppStore();
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings()).unwrap();
   assert.equal(values.get(bootstrapThemeKey), 'dark');
   const refreshed = createAppStore({ themeMode: readBootstrapTheme() });
@@ -173,7 +155,7 @@ test('无关操作不重复写缓存，停止监听和配置重置后都不写�
   const values = mockStorage(t);
   let writes = 0;
   globalThis.window.localStorage.setItem = (key, value) => {
-    writes++;
+    if (key === bootstrapThemeKey) writes++;
     values.set(key, value);
   };
   mockUserSettingsApi(t, {
@@ -181,7 +163,7 @@ test('无关操作不重复写缓存，停止监听和配置重置后都不写�
     save: async (value) => value,
   });
   const store = createAppStore();
-  const stop = startThemePersistence(store);
+  const stop = startUserSettingsEffects(store, null);
   t.after(stop);
   await store.dispatch(loadUserSettings());
   assert.equal(writes, 1);
@@ -202,7 +184,7 @@ test('取消订阅后成功保存也不再写入启动缓存', async (t) => {
     save: async (value) => value,
   });
   const store = createAppStore();
-  const stop = startThemePersistence(store);
+  const stop = startUserSettingsEffects(store, null);
   t.after(stop);
   await store.dispatch(loadUserSettings());
   stop();
@@ -221,7 +203,7 @@ test('缓存写入失败后，后续操作可重试且不影响主题状态', as
     save: async (value) => value,
   });
   const store = createAppStore();
-  t.after(startThemePersistence(store));
+  t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.themeMode, 'dark');
   assert.equal(values.has(bootstrapThemeKey), false);

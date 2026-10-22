@@ -25,8 +25,8 @@ export default defineConfig([
     settings: { react: { version: 'detect' } },
   },
   {
-    // 构建插件内含序列化后在浏览器执行的启动函数。
-    files: ['build/theme-bootstrap-plugin.mjs'],
+    // 插件由 Node 加载，但其中的启动函数会序列化到 HTML 并在浏览器执行，因此允许使用浏览器全局对象。
+    files: ['build/*-bootstrap-plugin.mjs'],
     languageOptions: { globals: globals.browser },
   },
   {

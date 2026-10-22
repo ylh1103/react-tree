@@ -1,7 +1,7 @@
 /**
  * 用户配置状态机：首次读取、后台同步、乐观保存、失败回退和重试。
  * 当前字段驱动即时 UI，配置成功初始化后的 saved 字段记录服务端确认值；requestId 阻止旧后台响应覆盖本地保存。
- * 初始化前 Store 可临时注入启动主题基线，但 initialized 保持 false，不能据此保存用户配置。
+ * 初始化前 Store 可临时注入启动主题和图标基线，但 initialized 保持 false，不能据此保存用户配置。
  * 流程入口：启动时调用 loadUserSettings，读取失败沿用同一入口重试；修改走 saveUserSettings。
  * 状态流转：idle → loading → ready/load-error；ready/save-error → saving → ready/save-error。
  * refreshUserSettings 只在后台更新，不进入 loading；抽屉关闭也不会取消已提交的保存。
@@ -24,7 +24,7 @@ import {
  * 本地仅补充读写和交互状态；saved* 保存确认基线，preview* 只用于临时预览。
  */
 interface PreferencesState extends UserSettings {
-  /** 已确认的加载图标方案，保存失败时恢复该值。 */
+  /** 首次读取成功前为启动图标提示，成功后为服务端确认方案；读取或保存失败时据此回退。 */
   savedLoadingStyle: LoadingStyleId;
   /** 是否结束首次配置等待；读取失败也置为 true，让页面展示回退配置与重试入口。 */
   initialized: boolean;
@@ -346,11 +346,11 @@ const preferencesSlice = createSlice({
         state.loadRequestId = null;
         applySavedSettings(state, action);
       })
-      // 首次读取失败：结束首屏等待，以默认显示项和已有主题基线回退，保留错误供重试。
+      // 初始读取或手动重试失败都结束等待：保留主题、图标基线，其他显示项恢复默认，并保留错误供重试。
       .addCase(loadUserSettings.rejected, (state, action) => {
         if (state.loadRequestId !== action.meta.requestId) return;
         state.loadRequestId = null;
-        state.loadingStyle = state.savedLoadingStyle = initialState.loadingStyle;
+        state.loadingStyle = state.savedLoadingStyle;
         state.navigationTheme = state.savedNavigationTheme = initialState.navigationTheme;
         state.navigationIconOnly = state.savedNavigationIconOnly = initialState.navigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly =
@@ -361,7 +361,7 @@ const preferencesSlice = createSlice({
         state.borderRadius = state.savedBorderRadius = initialState.borderRadius;
         state.controlBorderRadius = state.savedControlBorderRadius =
           initialState.controlBorderRadius;
-        // 读取失败时保留已有主题基线；其他显示项回到默认值，页面仍可展示错误与重试入口。
+        // 读取失败时保留已有主题和图标基线；其他显示项回到默认值，页面展示错误与重试入口。
         state.themeMode = state.savedThemeMode;
         state.status = 'load-error';
         state.error = action.error.message || '用户设置读取失败';

@@ -3,11 +3,114 @@
  * 分栏骨架读取与真实工作区一致的宽度、布局偏好和目标名称，减少切换时的布局跳动。
  */
 import { Grid, Skeleton } from 'antd';
-import { useContext } from 'react';
-import { useLocation, useNavigation } from 'react-router';
-import { matchLoadingParams, RouteLoadingContext } from './loading';
+import { useContext, type ReactNode } from 'react';
+import { matchRoutes, useLocation, useNavigation } from 'react-router';
+import { matchLoadingParams, matchPageSkeleton, RouteLoadingContext } from './loading';
 import { SplitPane } from '../components/SplitPane';
 import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
+import { ResourceLoading } from '../components/ResourceLoading';
+import { BootstrapLoadingHandoff } from '../components/ResourceLoading/BootstrapHandoff';
+import { AppViewport, NavigationFrame, SiteFrame, WorkspaceFrame } from '../layouts/LayoutFrame';
+import { useAppSelector } from '../store/hooks';
+import { databaseNavigationItems, navigationItems } from './config';
+
+/** 页头占位保持正式页头的 52px 高度；不挂载依赖系统上下文的切换控件和交互工具。 */
+function HeaderSkeleton() {
+  const inputClass = '[&_.ant-skeleton-input]:min-w-0! [&_.ant-skeleton-input]:w-full!';
+  return (
+    <header
+      className="shrink-0 min-w-0 bg-header border-b border-b-solid border-divider motion-reduce:[&_.ant-skeleton-active_*]:animate-none!"
+      aria-label="页头加载中"
+      aria-busy
+    >
+      <div className="flex items-center gap-4 h-51px px-4" aria-hidden="true">
+        <Skeleton.Avatar active size={28} shape="square" />
+        <Skeleton.Input active size="small" className={`w-128px! ${inputClass}`} />
+        <span className="h-20px w-1px shrink-0 bg-divider" />
+        <Skeleton.Input active className={`w-120px! ${inputClass}`} />
+        <Skeleton.Input active className={`w-240px! ${inputClass}`} />
+        <div className="flex items-center gap-2 ml-auto">
+          {[0, 1, 2, 3, 4].map((key) => (
+            <Skeleton.Avatar active key={key} size={28} shape="square" />
+          ))}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** 导航占位只从公开路由配置推导数量；授权完成前不展示系统成员或业务清单。 */
+function NavigationSkeleton({ database }: { database: boolean }) {
+  const iconOnly = useAppSelector((state) => state.preferences.navigationIconOnly);
+  const items = database ? databaseNavigationItems : navigationItems;
+  return (
+    <NavigationFrame>
+      <nav
+        className="flex flex-col gap-0.5 min-h-full py-2 px-0.75 motion-reduce:[&_.ant-skeleton-active_*]:animate-none!"
+        aria-label="主导航加载中"
+        aria-busy
+      >
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className={`flex shrink-0 flex-col items-center justify-center gap-0.5 ${iconOnly ? 'min-h-44px' : 'min-h-60px'} py-1 ${item.bottom ? 'mt-auto' : ''}`}
+            aria-hidden="true"
+          >
+            <Skeleton.Avatar
+              active
+              size={24}
+              shape="square"
+              className="[&_.ant-skeleton-avatar]:bg-nav-hover!"
+            />
+            {!iconOnly && <div className="w-32px h-12px rounded-control bg-nav-hover" />}
+          </div>
+        ))}
+      </nav>
+    </NavigationFrame>
+  );
+}
+
+/** 仅根级等待补齐外壳；页内回退仍只渲染页面骨架，避免在已挂载布局中重复页头和导航。 */
+function InitialLayoutSkeleton({ children }: { children: ReactNode }) {
+  const routes = useContext(RouteLoadingContext);
+  const { pathname } = useLocation();
+  const matches = matchRoutes(routes, pathname);
+  const workspace = matches?.some(({ route }) => route.id === 'system');
+  const database = databaseNavigationItems.some((item) => item.id === matches?.at(-1)?.route.id);
+  return (
+    <AppViewport>
+      {workspace ? (
+        <WorkspaceFrame
+          header={<HeaderSkeleton />}
+          navigation={<NavigationSkeleton database={database} />}
+        >
+          {children}
+        </WorkspaceFrame>
+      ) : (
+        <SiteFrame header={<HeaderSkeleton />}>{children}</SiteFrame>
+      )}
+    </AppViewport>
+  );
+}
+
+/**
+ * 根路由 HydrateFallback 与 App 的配置等待分支共用的首屏回退，避免两层等待互相遮住页面骨架。
+ * 根据当前 URL 读取静态注册的骨架；配置尚未返回时使用现有显示偏好，返回后随偏好更新。
+ * 有骨架时在提交后交接 HTML 画面；没有骨架时由 ResourceLoading 保留原动画或提供 React 图标。
+ * 此处不查询或展示受保护业务数据；骨架可提前显示，正式页面仍受原 loader 和系统布局的校验约束。
+ */
+export function InitialRouteFallback() {
+  const routes = useContext(RouteLoadingContext);
+  const location = useLocation();
+  const skeleton = matchPageSkeleton(routes, location.pathname);
+  return skeleton ? (
+    <BootstrapLoadingHandoff>
+      <InitialLayoutSkeleton>{skeleton}</InitialLayoutSkeleton>
+    </BootstrapLoadingHandoff>
+  ) : (
+    <ResourceLoading />
+  );
+}
 
 export function PageSkeleton() {
   return (
@@ -45,6 +148,7 @@ export function OverviewSkeleton() {
   );
 }
 
+/** 系统卡片占位沿用正文的自适应列宽和间距，避免加载阶段退化为整行纵向堆叠。 */
 export function SystemsHomeSkeleton() {
   return (
     <section
@@ -68,7 +172,10 @@ export function SystemsHomeSkeleton() {
         <Skeleton.Input active className="w-160px!" />
         <Skeleton.Button active />
       </div>
-      <div className="system-card-grid" aria-hidden="true">
+      <div
+        className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] gap-4"
+        aria-hidden="true"
+      >
         {Array.from({ length: 8 }, (_, index) => (
           <div key={index} className="workspace-panel p-5">
             <Skeleton active title={{ width: '45%' }} paragraph={{ rows: 3 }} />
