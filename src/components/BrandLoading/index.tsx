@@ -1,5 +1,5 @@
 /** 可选的品牌平面加载图标：使用分合回弹，尺寸由调用处字号控制。 */
-import { animationKeyframes } from './model/animations';
+import { animationKeyframes } from './model/animations.ts';
 import { useId, type SVGProps } from 'react';
 
 const redPanel =

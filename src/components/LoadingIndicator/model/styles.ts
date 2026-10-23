@@ -1,8 +1,8 @@
 /** 加载图标共享清单：设置面板与参数项图库使用相同文案、顺序和方案键。 */
-import type { BrandDataLoadingVariant } from '../../BrandDataLoading/model/styles';
-import type { BrandLoadingVariant } from '../../BrandLoading';
-import { dataLoadingStyles } from '../../BrandDataLoading/model/styles';
-import type { LoadingStyleId } from '../../../types/loading';
+import type { BrandDataLoadingVariant } from '../../BrandDataLoading/model/styles.ts';
+import type { BrandLoadingVariant } from '../../BrandLoading/index.tsx';
+import { dataLoadingStyles } from '../../BrandDataLoading/model/styles.ts';
+import type { LoadingStyleId } from '../../../types/loading.ts';
 
 /** 保留指示器与方案键的对应关系，渲染时按类型收窄，不使用不安全的类型断言。 */
 export type LoadingStyle = {

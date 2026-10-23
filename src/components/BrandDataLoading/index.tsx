@@ -1,9 +1,9 @@
 /** 可缩放的品牌数据加载指示器：复用透明 SVG，并为各方案提供独立动效及减少动态效果的静态回退。 */
-import { animationKeyframes } from './model/animations';
-import { red, blue } from './model/mark';
+import { animationKeyframes } from './model/animations.ts';
+import { red, blue } from './model/mark.ts';
 import type { SVGProps } from 'react';
-import type { BrandDataLoadingVariant } from './model/styles';
-export type { BrandDataLoadingVariant } from './model/styles';
+import type { BrandDataLoadingVariant } from './model/styles.ts';
+export type { BrandDataLoadingVariant } from './model/styles.ts';
 
 /** 尺寸继承字号，可作为 Ant Design Spin 的 indicator；加载语义由外层状态容器提供。 */
 interface BrandDataLoadingProps extends SVGProps<SVGSVGElement> {

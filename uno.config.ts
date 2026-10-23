@@ -1,6 +1,7 @@
+/** 全局工具类主题与图标配置，由 Vite 和首屏构建插件共用。 */
 import { defineConfig, presetWind3, presetIcons } from 'unocss';
-import { themeVariables } from './src/styles/theme';
-import lucideIcons from '@iconify-json/lucide/icons.json';
+import { themeVariables } from './src/styles/theme.ts';
+import lucideIcons from '@iconify-json/lucide/icons.json' with { type: 'json' };
 
 export default defineConfig({
   // 项目使用 React + TypeScript，扫描 TS/TSX 与 HTML 入口，包含路由配置中的完整图标类名。
