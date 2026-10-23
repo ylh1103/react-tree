@@ -16,7 +16,7 @@ import {
   resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
 import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
-import { themeBootstrapPlugin } from '../build/theme-bootstrap-plugin.mjs';
+import { bootstrapLoadingKey } from '../src/store/preferences/loadingBootstrap.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import { readBootstrapTheme, bootstrapThemeKey } from '../src/store/preferences/themeBootstrap.ts';
 
@@ -276,11 +276,9 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
   }
 });
 
-test('Vite 自动注入不依赖注释，兼容 head 变化及 charset 删除或移动', async (t) => {
+test('统一启动插件固定注入顺序，兼容 head 变化及 charset 删除或移动', async (t) => {
   const template = await readFile('index.html', 'utf8');
   const vite = await createServer({
-    configFile: false,
-    plugins: [themeBootstrapPlugin()],
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'custom',
     optimizeDeps: { noDiscovery: true, include: [] },
@@ -302,19 +300,40 @@ test('Vite 自动注入不依赖注释，兼容 head 变化及 charset 删除或
     assert.equal((html.match(/<script id="theme-bootstrap">/g) ?? []).length, 1);
     assert.ok(html.includes('<div id="root"></div>'));
     assert.ok(html.indexOf('<meta charset=') < html.indexOf('<script id="theme-bootstrap">'));
-    assert.ok(html.indexOf('<meta charset=') < 1024);
+    const charsetEnd = html.indexOf('>', html.indexOf('<meta charset=')) + 1;
+    assert.ok(Buffer.byteLength(html.slice(0, charsetEnd)) <= 1024);
+    assert.equal((html.match(/<script id="loading-bootstrap">/g) ?? []).length, 1);
+    assert.equal((html.match(/<style id="loading-bootstrap-style">/g) ?? []).length, 1);
+    assert.equal((html.match(/id="bootstrap-loading"/g) ?? []).length, 1);
+    assert.ok(
+      html.indexOf('<script id="theme-bootstrap">') <
+        html.indexOf('<script id="loading-bootstrap">'),
+    );
+    assert.ok(
+      html.indexOf('<script id="loading-bootstrap">') <
+        html.indexOf('<style id="loading-bootstrap-style">'),
+    );
+    assert.ok(html.indexOf('<style id="loading-bootstrap-style">') < html.indexOf('<link'));
     assert.ok(html.indexOf('<script id="theme-bootstrap">') < html.indexOf('<link'));
   }
 });
 
-test('配色运行异常被局部隔离，后续脚本仍可执行', async () => {
-  const result = themeBootstrapPlugin().transformIndexHtml.handler(
-    await readFile('index.html', 'utf8'),
-  );
-  const source = result.tags.find((tag) => tag.tag === 'script').children;
+test('配色异常不阻断同一启动插件的图标选择及样式监听', async (t) => {
+  const vite = await createServer({
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: 'custom',
+    optimizeDeps: { noDiscovery: true, include: [] },
+  });
+  t.after(() => vite.close());
+  const html = await vite.transformIndexHtml('/', await readFile('index.html', 'utf8'));
+  const scripts = [
+    ...html.matchAll(/<script id="(?:theme|loading)-bootstrap">([\s\S]*?)<\/script>/g),
+  ];
+  assert.equal(scripts.length, 2);
+  const source = scripts.map((match) => match[1]).join('\n');
   for (const failure of ['media', 'style']) {
     const browser = {
-      localStorage: { getItem: () => 'system' },
+      localStorage: { getItem: (key) => (key === bootstrapLoadingKey ? 'data-wave' : 'system') },
       matchMedia: () => {
         if (failure === 'media') throw new Error('media unavailable');
         return { matches: true };
@@ -328,10 +347,16 @@ test('配色运行异常被局部隔离，后续脚本仍可执行', async () =>
         },
       },
     };
+    const listeners = [];
     runInNewContext(`${source}\nwindow.nextScriptRan = true;`, {
       window: browser,
-      document: { documentElement: root },
+      document: {
+        documentElement: root,
+        addEventListener: (type) => listeners.push(type),
+      },
     });
     assert.equal(browser.nextScriptRan, true);
+    assert.equal(root.dataset.bootstrapLoadingStyle, 'data-wave');
+    assert.deepEqual(listeners, ['load', 'error', 'DOMContentLoaded']);
   }
 });
