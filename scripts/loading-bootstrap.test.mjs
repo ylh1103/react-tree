@@ -194,6 +194,8 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
   assert.equal([...html.matchAll(/data-loading-style="/g)].length, loadingStyleIds.length);
   assert.match(css[1], /prefers-reduced-motion/);
   assert.match(css[1], /animation:loading-wave/);
+  assert.match(css[1], /animation:brand-red/);
+  assert.match(css[1], /animation:brand-blue/);
   assert.match(css[1], /background-color:var\(--color-canvas\)/);
   const styled = await vite.transformIndexHtml(
     '/style-test',

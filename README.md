@@ -199,7 +199,9 @@ GroupedList 的 UI、Hooks 和树模型在 `src/components/GroupedList`，页面
 
 品牌动画的专用关键帧在所属组件 model/animations.ts，就近内嵌最小 `<style>`；原因是 @keyframes 无法通过普通工具类定义。动画属性和减少动态效果仍使用 UnoCSS，不新增 CSS 文件。现有 GroupedList.css 保留其现有复杂交互职责。
 
-参数项图库保留 5 款加载方案，默认预览「品牌描边」（`trace`），按当前展示顺序连续编号；所有方案共用暂停、全局主题与 24/32/48/64px 尺寸预览。
+全部 5 款加载方案的 SVG、轮廓和动画集中在 `src/components/LoadingIndicator`，启动 HTML 与应用内均使用 `<LoadingIndicator styleId={...} />`，无需区分图标系列；`UserLoadingIndicator` 只负责订阅 Redux 偏好。关键帧按当前方案内嵌，避免每个图标重复携带无关动画。
+
+参数项图库保留 5 款加载方案，默认预览「品牌描边」（`data-trace`），按当前展示顺序连续编号；所有方案共用暂停、全局主题与 24/32/48/64px 尺寸预览。
 
 用户设置的「外观 → 数据加载图标」与图库共用 `src/components/LoadingIndicator/model/styles.ts` 清单，可选择品牌描边、数据脉冲、点阵汇聚、彗尾流转和分合回弹。`loadingStyle` 使用稳定标识持久化，旧配置缺失时默认使用品牌描边（`data-trace`）；选择立即应用到全局 Ant Design Spin，并沿用设置串行保存、失败回退、重试、跨页签同步与恢复默认流程。图库预览保持独立，不修改用户偏好。
 

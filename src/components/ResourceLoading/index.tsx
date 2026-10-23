@@ -4,7 +4,7 @@
  */
 import { useContext } from 'react';
 import { BootstrapLoadingContext } from '@/contexts/BootstrapLoadingContext';
-import { UserLoadingIndicator } from '@/components/LoadingIndicator';
+import { UserLoadingIndicator } from '@/components/LoadingIndicator/UserLoadingIndicator';
 import { ResourceLoadingView } from './LoadingView';
 
 export function ResourceLoading() {

@@ -3,8 +3,7 @@
  * 这里只生成静态标记，不挂载组件；浏览器显示这份 HTML 时无需先下载 React。
  */
 import { renderToStaticMarkup } from 'react-dom/server';
-import { BrandDataLoading } from '../src/components/BrandDataLoading/index.tsx';
-import { BrandLoading } from '../src/components/BrandLoading/index.tsx';
+import { LoadingIndicator } from '../src/components/LoadingIndicator/index.tsx';
 import { loadingStyles } from '../src/components/LoadingIndicator/model/styles.ts';
 import { ResourceLoadingView } from '../src/components/ResourceLoading/LoadingView.tsx';
 
@@ -23,11 +22,7 @@ export function renderBootstrapLoading() {
             data-loading-style={item.id}
             className={`hidden [[data-bootstrap-loading-style=${item.id}]_&]:inline-flex`}
           >
-            {item.kind === 'flat' ? (
-              <BrandLoading variant={item.key} />
-            ) : (
-              <BrandDataLoading variant={item.key} />
-            )}
+            <LoadingIndicator styleId={item.id} />
           </span>
         ))}
       </ResourceLoadingView>

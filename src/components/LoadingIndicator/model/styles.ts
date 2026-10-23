@@ -1,31 +1,39 @@
-/** 加载图标共享清单：设置面板与参数项图库使用相同文案、顺序和方案键。 */
-import type { BrandDataLoadingVariant } from '../../BrandDataLoading/model/styles.ts';
-import type { BrandLoadingVariant } from '../../BrandLoading/index.tsx';
-import { dataLoadingStyles } from '../../BrandDataLoading/model/styles.ts';
+/** 加载图标共享清单：启动 HTML、设置面板与图库使用相同文案、顺序和稳定方案标识。 */
 import type { LoadingStyleId } from '../../../types/loading.ts';
 
-/** 保留指示器与方案键的对应关系，渲染时按类型收窄，不使用不安全的类型断言。 */
-export type LoadingStyle = {
+/** 直接使用持久化标识选择效果，调用方无需区分图标系列或维护额外方案键。 */
+export interface LoadingStyle {
   id: LoadingStyleId;
   name: string;
   description: string;
   rhythm?: string;
-} & ({ kind: 'data'; key: BrandDataLoadingVariant } | { kind: 'flat'; key: BrandLoadingVariant });
+}
 
-const flatStyles: { key: BrandLoadingVariant; name: string; description: string }[] = [
-  { key: 'split', name: '分合回弹', description: '红蓝分离、交错起伏，再回弹合拢' },
-];
-
-/** 所有方案一次展示；清单在模块加载时组装，不在组件渲染中反复筛选或维护派生状态。 */
+/** 展示顺序独立于方案标识；保留既有 data-/flat- 前缀，兼容用户配置及启动缓存。 */
 export const loadingStyles: readonly LoadingStyle[] = [
-  ...dataLoadingStyles.map((item) => ({
-    ...item,
-    id: `data-${item.key}` as const,
-    kind: 'data' as const,
-  })),
-  ...flatStyles.map((item) => ({
-    ...item,
-    id: `flat-${item.key}` as const,
-    kind: 'flat' as const,
-  })),
+  {
+    id: 'data-trace',
+    name: '品牌描边',
+    description: '红蓝光段沿 Logo 轮廓连续游走。保留品牌形状，轻盈、精细。',
+    rhythm: '连续描边 · 1.8s',
+  },
+  {
+    id: 'data-wave',
+    name: '数据脉冲',
+    description: '五条细柱错峰起伏，形成连续的数据节奏。小尺寸也容易辨认。',
+    rhythm: '错峰波动 · 1.1s',
+  },
+  {
+    id: 'data-matrix',
+    name: '点阵汇聚',
+    description: '红蓝点阵沿对角线依次亮起，像数据逐步汇聚。节奏平稳。',
+    rhythm: '点阵接力 · 1.4s',
+  },
+  {
+    id: 'data-comet',
+    name: '彗尾流转',
+    description: '渐隐圆点组成彗尾，沿环形轨道匀速流转。紧凑、流畅，适合通用加载。',
+    rhythm: '彗尾环行 · 1.6s',
+  },
+  { id: 'flat-split', name: '分合回弹', description: '红蓝分离、交错起伏，再回弹合拢' },
 ];

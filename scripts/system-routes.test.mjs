@@ -26,6 +26,48 @@ after(async () => {
 
 const match = (path) => matchRoutes(routes, path)?.at(-1);
 
+test('统一图标可独立静态渲染，保留 SVG 属性、默认回退与多实例裁剪隔离', async () => {
+  const { LoadingIndicator } = await vite.ssrLoadModule(
+    '/src/components/LoadingIndicator/index.tsx',
+  );
+  const render = (styleId, props = {}) =>
+    renderToStaticMarkup(createElement(LoadingIndicator, { styleId, ...props }));
+  const trace = render('data-trace', { className: 'text-32px', 'data-testid': 'indicator' });
+  assert.match(trace, /class="[^"]*text-32px/);
+  assert.match(trace, /data-testid="indicator"/);
+  assert.match(trace, /viewBox="0 0 200 200"/);
+  assert.match(trace, /aria-hidden="true"/);
+  assert.match(trace, /motion-reduce:animate-none/);
+  assert.equal(render('unknown'), render('data-trace'), '未知方案沿用品牌描边回退');
+  for (const [styleId, animation] of [
+    ['data-trace', 'loading-trace'],
+    ['data-wave', 'loading-wave'],
+    ['data-matrix', 'loading-dot'],
+    ['data-comet', 'loading-ring'],
+    ['flat-split', 'brand-blue'],
+  ]) {
+    const html = render(styleId);
+    assert.match(html, new RegExp(`@keyframes ${animation}`));
+    assert.doesNotMatch(
+      html,
+      new RegExp(`@keyframes ${styleId === 'data-trace' ? 'loading-wave' : 'loading-trace'}`),
+    );
+  }
+  const html = renderToStaticMarkup(
+    createElement(
+      'div',
+      null,
+      createElement(LoadingIndicator, { styleId: 'flat-split', className: 'text-32px' }),
+      createElement(LoadingIndicator, { styleId: 'flat-split', className: 'text-64px' }),
+    ),
+  );
+  const ids = [...html.matchAll(/<clipPath id="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(ids.length, 2);
+  assert.equal(new Set(ids).size, 2, '不同尺寸实例必须使用独立裁剪路径');
+  for (const id of ids) assert.ok(html.includes(`clip-path="url(#${id})"`));
+  assert.equal([...html.matchAll(/viewBox="0 0 196 184"/g)].length, 2);
+});
+
 test('配置与图库提供相同的五款图标，全局 Spin 随偏好渲染实际方案', async () => {
   const { AppThemeProvider } = await vite.ssrLoadModule('/src/providers/AppThemeProvider.tsx');
   const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
