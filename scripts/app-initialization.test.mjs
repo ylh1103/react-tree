@@ -108,7 +108,7 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   assert.match(render(), /workspace-content/);
 });
 
-test('路由首屏和配置等待骨架均在缓存暗色主题内渲染', async (t) => {
+test('没有 HTML 画面时，配置等待图标沿用缓存主题，读取成功后应用服务端主题', async (t) => {
   const vite = await createServer({
     server: { middlewareMode: true, hmr: false, ws: false },
     appType: 'custom',

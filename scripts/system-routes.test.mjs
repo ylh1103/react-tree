@@ -351,6 +351,13 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
 });
 
 test('页面 chunk 失败显示静态恢复入口，并保留父级布局', async (t) => {
+  // 错误边界与正式应用一样读取首次配置状态，此处模拟已经结束配置等待的导航。
+  const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
+  const { loadUserSettings } = await vite.ssrLoadModule('/src/store/slices/preferencesSlice.ts');
+  const { defaultUserSettings } = await vite.ssrLoadModule('/src/types/preferences.ts');
+  const store = createAppStore();
+  store.dispatch(loadUserSettings.pending('settings'));
+  store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   function Layout() {
     return createElement(
       'section',
@@ -388,7 +395,9 @@ test('页面 chunk 失败显示静态恢复入口，并保留父级布局', asyn
       });
     });
   }
-  const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+  const html = renderToStaticMarkup(
+    createElement(Provider, { store }, createElement(RouterProvider, { router })),
+  );
   assert.match(html, /persistent-header/);
   assert.match(html, /页面资源加载失败/);
   assert.match(html, /刷新页面/);

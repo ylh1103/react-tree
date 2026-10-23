@@ -1,5 +1,5 @@
 /**
- * 启动回退回归：用真实 App、内存 Router 和静态渲染验证各等待状态输出的骨架或图标。
+ * 启动回退回归：用真实 App、内存 Router 和静态渲染验证配置等待期间保留动画，结束后展示骨架或页面。
  * 静态渲染不会执行布局 Effect，因此这里验证回退选择及不重复生成 SVG，不验证浏览器移除 HTML 节点的时机。
  */
 import assert from 'node:assert/strict';
@@ -51,6 +51,7 @@ function deferred() {
 /**
  * 创建隔离的路由与 Store：保留真实根组件和错误边界，用受控 Promise 替代页面模块和父 loader。
  * actualRoutes=true 时复用完整路由配置；默认将子布局替换为 Outlet，preserveLayouts 可保留真实外壳。
+ * pendingRoot 可暂缓根 loader，确保测试根 HydrateFallback 的外壳，而非已就绪的正式站点页头。
  * initialized 控制配置是否结束等待，startup 模拟 HTML 画面是否存在；二者独立于 Router 的加载状态。
  * 不派发实际配置请求，每次 render 都从当前 Router/Store 状态重新生成静态标记。
  */
@@ -62,6 +63,7 @@ function setup(
     Skeleton = skeletons.ApplicationsSkeleton,
     initialized = true,
     pendingParent = true,
+    pendingRoot = false,
     startup = true,
     home = false,
     actualRoutes = false,
@@ -94,7 +96,9 @@ function setup(
   const holdRoute = (route) => ({
     ...route,
     ...(route !== rootRoute && route.children && !preserveLayouts ? { Component: Outlet } : {}),
-    ...(route.loader ? { loader: () => parent.promise } : {}),
+    ...(route.loader || (route === rootRoute && pendingRoot)
+      ? { loader: () => parent.promise }
+      : {}),
     ...(route.lazy ? { lazy: () => page.promise } : {}),
     ...(route.children ? { children: route.children.map(holdRoute) } : {}),
   });
@@ -153,7 +157,7 @@ for (const path of [
       path,
       actualRoutes: true,
       preserveLayouts: true,
-      initialized: path !== '/',
+      pendingRoot: true,
     });
     assert.equal(fixture.router.state.initialized, false);
     const html = fixture.render();
@@ -173,6 +177,9 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
     initialized: false,
   });
   let html = fixture.render();
+  assert.equal(html, '', '首次配置未完成时不显示骨架，继续使用 root 外的 HTML 动画');
+  fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
+  html = fixture.render();
   assert.match(html, /--layout-gap:4px/);
   assert.match(html, /<aside[^>]*class="w-48px /);
   const nav = /<nav[^>]*aria-label="主导航加载中"[\s\S]*?<\/nav>/.exec(html)?.[0];
@@ -181,6 +188,8 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
     [...nav.matchAll(/ant-skeleton-avatar(?: |")/g)].length,
     workspaceRoutes.filter((route) => route.platform === 'database').length,
   );
+  fixture.store.dispatch(loadUserSettings.pending('updated-settings'));
+  assert.match(fixture.render(), /ant-skeleton/, '初始化后的配置重试不应恢复全屏启动等待');
   fixture.store.dispatch(
     loadUserSettings.fulfilled(
       {
@@ -190,7 +199,7 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
         navigationIconOnly: false,
         navigationTheme: 'theme',
       },
-      'settings',
+      'updated-settings',
     ),
   );
   html = fixture.render();
@@ -226,12 +235,14 @@ test('页面级骨架不包含基础布局，挂入已有工作区时不会嵌�
 });
 
 for (const [name, path, id, message] of routeCases) {
-  test(`真实路由 ${id}（${name}）首次进入或刷新时展示对应骨架`, (t) => {
-    const fixture = setup(t, { path, actualRoutes: true });
+  test(`真实路由 ${id}（${name}）等待配置后再展示对应骨架`, (t) => {
+    const fixture = setup(t, { path, actualRoutes: true, initialized: false });
     const target = matchRoutes(fixture.routes, path)?.at(-1)?.route;
     assert.equal(target?.id, id, '静态设置地址不应被数据库类型动态路由覆盖');
     assert.equal(target?.HydrateFallback, target?.handle?.Skeleton);
     assert.equal(fixture.router.state.initialized, false);
+    assert.equal(fixture.render(), '', '有缓存和静态骨架也不能提前交接 HTML 启动画面');
+    fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
     const html = fixture.render();
     assert.match(html, new RegExp(message));
     assert.match(html, /ant-skeleton/);
@@ -241,14 +252,12 @@ for (const [name, path, id, message] of routeCases) {
   });
 }
 
-test('首页刷新：设置尚未返回时也展示系统骨架，不能让 App 的配置等待遮住子路由回退', async (t) => {
+test('页面先就绪：配置未返回时始终保留 HTML 动画，配置完成后直接进入页面', async (t) => {
   const fixture = setup(t, { path: '/', actualRoutes: true, initialized: false });
   fixture.page.resolve({ Component: () => createElement('div', null, 'home-ready') });
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(fixture.router.state.initialized, false, '系统清单仍在加载');
-  assert.match(fixture.render(), /系统列表加载中/);
-  assert.match(fixture.render(), /ant-skeleton/);
-  assert.doesNotMatch(fixture.render(), /<svg/, '不能重建启动图标');
+  assert.equal(fixture.render(), '', '父 loader 等待期间也不能提前显示骨架或重建图标');
 
   const ready = new Promise((resolve) => {
     const unsubscribe = fixture.router.subscribe((state) => {
@@ -260,7 +269,7 @@ test('首页刷新：设置尚未返回时也展示系统骨架，不能让 App 
   });
   fixture.parent.resolve(null);
   await ready;
-  assert.match(fixture.render(), /系统列表加载中/, '设置未返回时保留骨架，不暴露未初始化页面');
+  assert.equal(fixture.render(), '', '页面已就绪仍由 App 保留 HTML 动画，不暴露未初始化页面');
   fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   assert.match(fixture.render(), /home-ready/);
   assert.doesNotMatch(fixture.render(), /ant-skeleton/);
@@ -332,35 +341,39 @@ for (const [name, options, message] of [
   });
 }
 
-test('已具备静态骨架时不等待配置，配置完成前后都不重建启动图标', (t) => {
+test('配置先完成：设置返回后交接到目标骨架，不重建启动图标', (t) => {
   const fixture = setup(t, { initialized: false });
-  assert.match(fixture.render(), /ant-skeleton/);
-  assert.doesNotMatch(fixture.render(), /<svg/);
+  assert.equal(fixture.render(), '');
   fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   assert.equal(fixture.router.state.initialized, false);
   assert.match(fixture.render(), /ant-skeleton/);
+  assert.doesNotMatch(fixture.render(), /<svg/);
 });
 
 test('配置读取失败仍结束启动等待，目标骨架可显示', (t) => {
   const fixture = setup(t, { initialized: false });
+  assert.equal(fixture.render(), '');
   fixture.store.dispatch(loadUserSettings.rejected(Error('设置读取失败'), 'settings'));
   assert.equal(fixture.store.getState().preferences.initialized, true);
   assert.match(fixture.render(), /ant-skeleton/);
 });
 
-test('没有静态骨架及 HTML 启动画面时，根级等待仍有 React 图标回退', (t) => {
-  const fixture = setup(t, { initialized: false, startup: false, registeredSkeleton: false });
-  assert.match(fixture.render(), /资源加载中/);
-  assert.match(fixture.render(), /<svg/);
-});
+for (const registeredSkeleton of [true, false]) {
+  test(`没有 HTML 启动画面时，配置等待使用 React 图标而非骨架（骨架注册=${registeredSkeleton}）`, (t) => {
+    const fixture = setup(t, { initialized: false, startup: false, registeredSkeleton });
+    assert.match(fixture.render(), /资源加载中/);
+    assert.match(fixture.render(), /<svg/);
+    assert.doesNotMatch(fixture.render(), /ant-skeleton/);
+  });
+}
 
 test('没有静态骨架且 HTML 启动画面仍在时，配置等待继续复用原动画', (t) => {
   const fixture = setup(t, { initialized: false, registeredSkeleton: false });
   assert.equal(fixture.render(), '');
 });
 
-test('页面资源失败仍渲染恢复入口，不让启动画面遮挡错误页', async (t) => {
-  const fixture = setup(t, { pendingParent: false });
+test('页面资源先失败：等待配置结束后再交接错误恢复入口', async (t) => {
+  const fixture = setup(t, { pendingParent: false, initialized: false });
   const ready = new Promise((resolve) => {
     const unsubscribe = fixture.router.subscribe((state) => {
       if (state.initialized) {
@@ -371,9 +384,22 @@ test('页面资源失败仍渲染恢复入口，不让启动画面遮挡错误�
   });
   fixture.page.reject(new TypeError('Failed to fetch dynamically imported module'));
   await ready;
+  assert.equal(fixture.render(), '', '路由错误页也不能在首次配置完成前切换主题和交接动画');
+  fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   assert.match(fixture.render(), /页面资源加载失败/);
   assert.match(fixture.render(), /刷新页面/);
   assert.doesNotMatch(fixture.render(), /资源加载中/);
+});
+
+test('页面和配置都失败时仍展示恢复入口，不会永久保留启动动画', async (t) => {
+  const fixture = setup(t, { pendingParent: false, initialized: false });
+  fixture.page.reject(new TypeError('Failed to fetch dynamically imported module'));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(fixture.router.state.initialized, true);
+  assert.equal(fixture.render(), '');
+  fixture.store.dispatch(loadUserSettings.rejected(Error('请求超时，请稍后重试'), 'settings'));
+  assert.match(fixture.render(), /页面资源加载失败/);
+  assert.match(fixture.render(), /刷新页面/);
 });
 
 test('系统列表骨架的卡片容器生成与正文相同的自适应网格，而非未定义的样式类', async (t) => {

@@ -94,14 +94,16 @@ function InitialLayoutSkeleton({ children }: { children: ReactNode }) {
 }
 
 /**
- * 根路由 HydrateFallback 与 App 的配置等待分支共用的首屏回退，避免两层等待互相遮住页面骨架。
- * 根据当前 URL 读取静态注册的骨架；配置尚未返回时使用现有显示偏好，返回后随偏好更新。
- * 有骨架时在提交后交接 HTML 画面；没有骨架时由 ResourceLoading 保留原动画或提供 React 图标。
- * 此处不查询或展示受保护业务数据；骨架可提前显示，正式页面仍受原 loader 和系统布局的校验约束。
+ * 根路由 HydrateFallback：首次配置等待结束前保留启动动画，避免骨架先按缓存显示再切换主题或布局。
+ * 配置成功或失败后，才根据当前 URL 展示使用确认配置或回退配置的静态骨架；没有骨架时继续等待。
+ * 请求和页面模块仍由 Router 并行加载，此处只控制显示，不查询或展示受保护业务数据。
+ * 有骨架时在提交后交接 HTML 画面；正式页面仍受原 loader 和系统布局的校验约束。
  */
 export function InitialRouteFallback() {
   const routes = useContext(RouteLoadingContext);
   const location = useLocation();
+  const initialized = useAppSelector((state) => state.preferences.initialized);
+  if (!initialized) return <ResourceLoading />;
   const skeleton = matchPageSkeleton(routes, location.pathname);
   return skeleton ? (
     <BootstrapLoadingHandoff>

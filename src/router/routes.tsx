@@ -22,7 +22,7 @@ export const routes: RouteObject[] = [
     id: 'root',
     Component: App,
     ErrorBoundary: RouteErrorPage,
-    // 父 loader 或页面模块未完成时，根回退也按目标 URL 选择骨架，不必等待 App 和子路由能够渲染。
+    // 父 loader 或页面模块未完成时，由根回退保留启动动画；配置等待结束后再按目标 URL 展示骨架。
     HydrateFallback: InitialRouteFallback,
     children: [
       {

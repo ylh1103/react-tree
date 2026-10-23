@@ -37,7 +37,7 @@ const stopAccessFailures = startSystemAccessFailureHandling();
 import.meta.hot?.dispose(stopAccessFailures);
 
 // router 在模块初始化时已启动路由加载；此处立即读取设置，不让它与样式等待形成串行请求。
-// 样式结束并挂载 React 后，根路由/App 可先显示静态骨架，无骨架时继续使用 HTML 原动画。
+// 样式结束并挂载 React 后，根路由/App 先保留 HTML 原动画，首次配置等待结束后再展示骨架或正文。
 void store.dispatch(loadUserSettings());
 // HMR 可能发生在样式等待期间；标记旧入口失效，阻止其异步回调在新入口之后再次挂载。
 // 此标记不取消浏览器的样式下载，也不会使 waitForBootstrapStyles 主动拒绝。
@@ -49,7 +49,7 @@ import.meta.hot?.dispose(() => {
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 
 // 等标记样式结束后再挂载，减少样式尚未应用时的页面闪现；失败的链接也会结束等待。
-// 无需额外等待配置或整个 Router 初始化：可展示的骨架、正文或错误页会通过交接边界移除 HTML 画面。
+// 无需在入口串行等待配置或整个 Router 初始化：各显示分支在首次配置等待结束后再交接 HTML 画面。
 void waitForBootstrapStyles().then(
   () => {
     if (disposed) return;

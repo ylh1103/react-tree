@@ -1,6 +1,6 @@
 /**
  * 管理 root 外 HTML 启动画面的交接状态，供根级等待回退和内容交接边界共享。
- * 只要 React 已提交可展示的骨架、正文或错误页，就可结束启动画面，无需等全部请求完成。
+ * 首次配置等待结束且 React 已提交骨架、正文或错误页时结束启动画面，无需等全部业务请求完成。
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { BootstrapLoadingContext } from '@/contexts/BootstrapLoadingContext';

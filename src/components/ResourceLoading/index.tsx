@@ -1,5 +1,5 @@
 /**
- * 没有静态页面骨架时使用的等待回退：HTML 启动画面存在时继续使用原 SVG，否则显示 React 图标。
+ * 首次配置等待或没有静态页面骨架时的回退：HTML 启动画面存在时继续使用原 SVG，否则显示 React 图标。
  * 此组件不结束启动阶段；移除 HTML 画面的时机由提交实际内容的 BootstrapLoadingHandoff 决定。
  */
 import { useContext } from 'react';
