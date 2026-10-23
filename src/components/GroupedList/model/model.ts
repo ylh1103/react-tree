@@ -3,8 +3,8 @@
  * 清单是叶子字段的唯一来源；分组仅控制位置，空 children 仍表示目录。
  */
 import type { ListNode, TreeNode } from '../types';
-import type { ApplicationItem } from '../../../types/applications';
-import type { ParameterItem } from '../../../types/parameters';
+import type { ApplicationItem } from '@/types/applications';
+import type { ParameterItem } from '@/types/parameters';
 
 /** 解析并递归校验后端分组 JSON。null 表示无分组；格式错误直接抛出，避免把坏数据当空树覆盖。 */
 export function parseGroups(value: string | null): ListNode[] {

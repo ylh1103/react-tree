@@ -2,11 +2,11 @@
  * 应用页面私有的列表配置适配器，定义应用类型标签并绑定列表服务。
  * 分组编辑等交互由复用 GroupedList 提供，应用选中回调由页面转成导航。
  */
-import { GroupedList } from '../../../components/GroupedList';
-import type { GroupedListConfig } from '../../../components/GroupedList/types';
-import { applicationService } from '../../../queries/applications';
-import type { GroupedListService, ListNode } from '../../../components/GroupedList/types';
-import { applicationListId } from '../../../queries/groupedList';
+import { GroupedList } from '@/components/GroupedList';
+import type { GroupedListConfig } from '@/components/GroupedList/types';
+import { applicationService } from '@/queries/applications';
+import type { GroupedListService, ListNode } from '@/components/GroupedList/types';
+import { applicationListId } from '@/queries/groupedList';
 
 const config: GroupedListConfig = {
   label: '应用',

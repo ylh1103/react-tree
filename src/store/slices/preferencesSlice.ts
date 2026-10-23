@@ -8,8 +8,8 @@
  */
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { createAppAsyncThunk } from '../createAppAsyncThunk.ts';
-import { userSettingsApi } from '../../api/preferences.ts';
-import type { LoadingStyleId } from '../../types/loading.ts';
+import { userSettingsApi } from '@/api/preferences.ts';
+import type { LoadingStyleId } from '@/types/loading.ts';
 import {
   defaultUserSettings,
   parseUserSettings,
@@ -17,7 +17,7 @@ import {
   type NavigationTheme,
   type LayoutMode,
   type UserSettings,
-} from '../../types/preferences.ts';
+} from '@/types/preferences.ts';
 
 /**
  * 用户偏好状态：继承 UserSettings 的可持久化配置，当前值驱动 UI，保存时乐观更新。

@@ -1,8 +1,8 @@
 /** 参数项开发展示入口：全部加载图标按展示顺序连续编号，共用网格、预览控件和全局主题变量。 */
 import { Button, Select, Spin } from 'antd';
 import { useState } from 'react';
-import { LoadingIndicator } from '../../../components/LoadingIndicator';
-import { loadingStyles } from '../../../components/LoadingIndicator/model/styles';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
+import { loadingStyles } from '@/components/LoadingIndicator/model/styles';
 
 export default function LoadingGallery() {
   const [selectedId, setSelectedId] = useState(loadingStyles[0].id);

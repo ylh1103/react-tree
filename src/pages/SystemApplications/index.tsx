@@ -5,18 +5,18 @@
 import { useMemo } from 'react';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router';
-import { createSystemApplicationService } from '../../queries/applications';
-import { applicationListId, groupedListKeys, groupedListOptions } from '../../queries/groupedList';
-import type { ListNode } from '../../components/GroupedList/types';
+import { createSystemApplicationService } from '@/queries/applications';
+import { applicationListId, groupedListKeys, groupedListOptions } from '@/queries/groupedList';
+import type { ListNode } from '@/components/GroupedList/types';
 import ApplicationList from './components/ApplicationList';
-import { useSystemWorkspace } from '../../contexts/SystemContext';
-import { applicationPath } from '../../router/paths';
+import { useSystemWorkspace } from '@/contexts/SystemContext';
+import { applicationPath } from '@/router/paths';
 import {
   ApplicationParametersEmptyState,
   ApplicationParametersToolbar,
   ApplicationParametersWorkspace,
 } from './components/ApplicationParametersWorkspace';
-import { CollectionWorkspace, type CollectionItem } from '../../components/CollectionWorkspace';
+import { CollectionWorkspace, type CollectionItem } from '@/components/CollectionWorkspace';
 
 export default function SystemApplicationsPage() {
   const { system } = useSystemWorkspace();

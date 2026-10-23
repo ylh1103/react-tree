@@ -4,8 +4,8 @@
  * 清理时释放 Store、通知和浏览器监听，并取消在途及排队请求，供应用入口/HMR 使用。
  */
 import type { AppStore } from '../index.ts';
-import type { ThemeMode } from '../../types/preferences.ts';
-import type { LoadingStyleId } from '../../types/loading.ts';
+import type { ThemeMode } from '@/types/preferences.ts';
+import type { LoadingStyleId } from '@/types/loading.ts';
 import { cancelPreferencesRequests, refreshUserSettings } from '../slices/preferencesSlice.ts';
 import { bootstrapThemeKey } from './themeBootstrap.ts';
 import { bootstrapLoadingKey } from './loadingBootstrap.ts';

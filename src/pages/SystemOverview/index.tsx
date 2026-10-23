@@ -1,8 +1,8 @@
 import { Button, Descriptions } from 'antd';
 import { useNavigate } from 'react-router';
-import { useSystemWorkspace } from '../../contexts/SystemContext';
-import { descriptionText } from '../../utils/systems';
-import { applicationPath, databasePath } from '../../router/paths';
+import { useSystemWorkspace } from '@/contexts/SystemContext';
+import { descriptionText } from '@/utils/systems';
+import { applicationPath, databasePath } from '@/router/paths';
 
 export default function SystemOverviewPage() {
   const { system } = useSystemWorkspace();

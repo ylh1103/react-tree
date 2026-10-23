@@ -5,10 +5,10 @@
 import { Button, Drawer, Popconfirm, Tooltip } from 'antd';
 import { useEffect, useState } from 'react';
 import { useDebounceFn, useEventListener } from 'ahooks';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { closeUserSettings, saveUserSettings } from '../../store/slices/preferencesSlice';
-import { LayoutSettings } from '../../components/LayoutSettings';
-import { defaultUserSettings, type UserSettings } from '../../types/preferences';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { closeUserSettings, saveUserSettings } from '@/store/slices/preferencesSlice';
+import { LayoutSettings } from '@/components/LayoutSettings';
+import { defaultUserSettings, type UserSettings } from '@/types/preferences';
 
 export function UserSettingsDrawer() {
   // 只订阅抽屉实际展示的字段，布局预览等无关变更不触发整层抽屉更新。

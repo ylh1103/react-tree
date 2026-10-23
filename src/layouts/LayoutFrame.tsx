@@ -3,9 +3,9 @@
  * 将视口、页头、导航及内容区的几何结构集中维护，避免异步等待前后发生布局跳动。
  */
 import type { CSSProperties, ReactNode } from 'react';
-import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
-import { useAppSelector } from '../store/hooks';
-import { navigationThemeVariables } from '../styles/theme';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
+import { useAppSelector } from '@/store/hooks';
+import { navigationThemeVariables } from '@/styles/theme';
 
 /** 根应用与根路由回退使用同一最小宽度及布局间距，配置未返回时也有完整尺寸约束。 */
 export function AppViewport({ children }: { children: ReactNode }) {

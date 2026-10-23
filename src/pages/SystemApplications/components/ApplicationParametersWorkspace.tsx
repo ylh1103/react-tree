@@ -1,8 +1,8 @@
 import { App as AntdApp, Button, Checkbox, Empty, Popover, Switch, Tooltip } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { fitEnvironmentCount, getToolbarActionLabelMode } from './toolbarLayout';
-import { useLayoutPreferences } from '../../../hooks/useLayoutPreferences';
-import { OverlayHorizontalScroll } from '../../../components/OverlayHorizontalScroll';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
+import { OverlayHorizontalScroll } from '@/components/OverlayHorizontalScroll';
 
 // 布局预览数据；后续由应用关联的环境接口提供。
 const previewEnvironments = [

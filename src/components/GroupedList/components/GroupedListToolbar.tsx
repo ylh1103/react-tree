@@ -3,8 +3,8 @@
  * 工具栏只消费当前视图状态，查询和树修改由对应 Hook 处理。
  */
 import { useIsFetching } from '@tanstack/react-query';
-import { groupedListKeys, type GroupedListId } from '../../../queries/groupedList';
-import { useLayoutPreferences } from '../../../hooks/useLayoutPreferences';
+import { groupedListKeys, type GroupedListId } from '@/queries/groupedList';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TreeToolbarContext, GroupedListConfig } from '../types';

@@ -3,8 +3,8 @@
  * 此组件不结束启动阶段；移除 HTML 画面的时机由提交实际内容的 BootstrapLoadingHandoff 决定。
  */
 import { useContext } from 'react';
-import { BootstrapLoadingContext } from '../../contexts/BootstrapLoadingContext';
-import { UserLoadingIndicator } from '../LoadingIndicator';
+import { BootstrapLoadingContext } from '@/contexts/BootstrapLoadingContext';
+import { UserLoadingIndicator } from '@/components/LoadingIndicator';
 import { ResourceLoadingView } from './LoadingView';
 
 export function ResourceLoading() {

@@ -1,11 +1,11 @@
 /** 导航消费统一路由定义，URL 决定选中项，设置动作显式打开抽屉。 */
 import { Button, Tooltip } from 'antd';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { openUserSettings } from '../store/slices/preferencesSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { openUserSettings } from '@/store/slices/preferencesSlice';
 import { NavLink, useLocation } from 'react-router';
 import { navigationItems, databaseNavigationItems } from './navigation';
-import { useSystemWorkspace } from '../contexts/SystemContext';
-import { systemPath } from '../router/paths';
+import { useSystemWorkspace } from '@/contexts/SystemContext';
+import { systemPath } from '@/router/paths';
 import { NavigationFrame } from './LayoutFrame';
 
 export function AppNavigation() {

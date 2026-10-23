@@ -8,7 +8,7 @@ import { Button, Typography } from 'antd';
 import { useDebounceFn, useEventListener, useSize } from 'ahooks';
 import { dragResize } from './dragResize';
 import type { DragResizeState } from './dragResize';
-import { useLayoutPreferences } from '../../hooks/useLayoutPreferences';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 
 export interface SplitPaneProps {
   sidebar: ReactNode;

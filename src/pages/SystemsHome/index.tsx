@@ -6,12 +6,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Empty, Input, Pagination, Segmented, Spin, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
-import { systemsOptions } from '../../queries/systems';
+import { systemsOptions } from '@/queries/systems';
 import CreateSystemModal from './components/CreateSystemModal';
-import { descriptionText, filterSystems, isAccessDenied } from '../../utils/systems';
-import { platformHome } from '../../router/paths';
-import type { SystemInfo } from '../../types/systems';
-import RouteStatusPage from '../RouteStatus';
+import { descriptionText, filterSystems, isAccessDenied } from '@/utils/systems';
+import { platformHome } from '@/router/paths';
+import type { SystemInfo } from '@/types/systems';
+import RouteStatusPage from '@/pages/RouteStatus';
 
 type SystemView = 'card' | 'list';
 // 页面私有样式组合只在此维护，不进入全局 UnoCSS shortcuts。

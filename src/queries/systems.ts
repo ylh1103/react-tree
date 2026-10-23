@@ -3,12 +3,12 @@
  * 查询键包含系统维度；数据库结果剔除 setting 保留名称，避免与静态设置路由冲突。
  */
 import { queryOptions } from '@tanstack/react-query';
-import { loadSystems, loadSystemAccess } from '../api/systems.ts';
-import { HttpError } from '../http/request.ts';
+import { loadSystems, loadSystemAccess } from '@/api/systems.ts';
+import { HttpError } from '@/http/request.ts';
 import { queryClient } from './client.ts';
-import type { SystemInfo } from '../types/systems.ts';
-import { loadSystemParameters } from '../api/parameters.ts';
-import type { ParameterType } from '../types/systems.ts';
+import type { SystemInfo } from '@/types/systems.ts';
+import { loadSystemParameters } from '@/api/parameters.ts';
+import type { ParameterType } from '@/types/systems.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
 
 export const systemsOptions = () =>

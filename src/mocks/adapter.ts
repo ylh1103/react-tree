@@ -63,7 +63,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       fail(503, '模拟设置服务暂时不可用');
     if (method === 'GET') return response({ userSetting: readMockSettings() });
     if (method === 'PUT') {
-      const { settingsFromDocument } = await import('../types/userSettings.ts');
+      const { settingsFromDocument } = await import('@/types/userSettings.ts');
       if (config.signal?.aborted) throw new CanceledError();
       try {
         settingsFromDocument(body?.userSetting ?? '');
@@ -80,7 +80,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     if (method === 'GET') return response(allSystems());
     if (method === 'POST')
       return response(
-        createSystem(body as unknown as import('../types/systems').CreateSystemInput, fail),
+        createSystem(body as unknown as import('@/types/systems').CreateSystemInput, fail),
         201,
       );
   }

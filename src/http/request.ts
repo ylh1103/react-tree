@@ -3,7 +3,7 @@
  * 统一 adapter 承接 Mock；取消错误原样保留，HTTP 状态供权限处理，网络和超时错误可展示。
  */
 import axios, { type AxiosRequestConfig } from 'axios';
-import { mockAdapter } from '../mocks/adapter.ts';
+import { mockAdapter } from '@/mocks/adapter.ts';
 
 /** HTTP 状态保留给请求调用方及路由，不把 403 混同成普通网络失败。 */
 export class HttpError extends Error {

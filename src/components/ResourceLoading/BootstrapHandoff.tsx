@@ -1,6 +1,6 @@
 /** 内容交接边界：确认 React 已提交可展示内容后，通知 Provider 移除 root 外的 HTML 启动画面。 */
 import { useContext, useLayoutEffect, type ReactNode } from 'react';
-import { BootstrapLoadingContext } from '../../contexts/BootstrapLoadingContext';
+import { BootstrapLoadingContext } from '@/contexts/BootstrapLoadingContext';
 
 /**
  * 包裹可直接展示的骨架、正文或错误页，不应包裹仍需保留启动动画的空回退。

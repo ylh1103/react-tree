@@ -12,7 +12,7 @@ import {
   groupedListOptions,
   refreshGroupedList,
   type GroupedListId,
-} from '../../../queries/groupedList';
+} from '@/queries/groupedList';
 import type { TreeNode, ListNode, ListNodeAction, GroupedListService } from '../types';
 
 const EMPTY_TREE: TreeNode[] = [];

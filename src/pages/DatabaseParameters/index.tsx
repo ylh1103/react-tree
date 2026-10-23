@@ -4,9 +4,9 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router';
-import { parameterTypesOptions } from '../../queries/systems';
-import { useSystemWorkspace } from '../../contexts/SystemContext';
-import { CollectionWorkspace } from '../../components/CollectionWorkspace';
+import { parameterTypesOptions } from '@/queries/systems';
+import { useSystemWorkspace } from '@/contexts/SystemContext';
+import { CollectionWorkspace } from '@/components/CollectionWorkspace';
 
 export default function DatabaseParametersPage() {
   const { system } = useSystemWorkspace();

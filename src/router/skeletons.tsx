@@ -6,12 +6,12 @@ import { Grid, Skeleton } from 'antd';
 import { useContext, type ReactNode } from 'react';
 import { matchRoutes, useLocation, useNavigation } from 'react-router';
 import { matchLoadingParams, matchPageSkeleton, RouteLoadingContext } from './loading';
-import { SplitPane } from '../components/SplitPane';
-import { useLayoutPreferences } from '../hooks/useLayoutPreferences';
-import { ResourceLoading } from '../components/ResourceLoading';
-import { BootstrapLoadingHandoff } from '../components/ResourceLoading/BootstrapHandoff';
-import { AppViewport, NavigationFrame, SiteFrame, WorkspaceFrame } from '../layouts/LayoutFrame';
-import { useAppSelector } from '../store/hooks';
+import { SplitPane } from '@/components/SplitPane';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
+import { ResourceLoading } from '@/components/ResourceLoading';
+import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
+import { AppViewport, NavigationFrame, SiteFrame, WorkspaceFrame } from '@/layouts/LayoutFrame';
+import { useAppSelector } from '@/store/hooks';
 import { databaseNavigationItems, navigationItems } from './config';
 
 /** 页头占位保持正式页头的 52px 高度；不挂载依赖系统上下文的切换控件和交互工具。 */

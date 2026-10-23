@@ -1,6 +1,6 @@
 /** 路由与导航唯一配置；图标使用完整工具类名，供 UnoCSS 构建管线自动提取。 */
 import type { ParameterPlatform } from './paths.ts';
-type PageModule = typeof import('../pages/SystemsHome/index.tsx');
+type PageModule = typeof import('@/pages/SystemsHome/index.tsx');
 export interface WorkspaceRoute {
   id: string;
   path: string;
@@ -24,7 +24,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     icon: 'i-lucide-layout-grid',
     platform: 'application',
     skeleton: 'overview',
-    page: () => import('../pages/SystemOverview/index.tsx'),
+    page: () => import('@/pages/SystemOverview/index.tsx'),
   },
   {
     id: 'application',
@@ -36,7 +36,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     splitPane: true,
     loader: 'applications',
     skeleton: 'applications',
-    page: () => import('../pages/SystemApplications/index.tsx'),
+    page: () => import('@/pages/SystemApplications/index.tsx'),
   },
   {
     id: 'params',
@@ -45,7 +45,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     label: '参数项',
     icon: 'i-lucide-sliders-horizontal',
     platform: 'application',
-    page: () => import('../pages/SystemParameters/index.tsx'),
+    page: () => import('@/pages/SystemParameters/index.tsx'),
   },
   {
     id: 'search',
@@ -98,7 +98,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     platform: 'application',
     bottom: true,
     action: 'settings',
-    page: () => import('../pages/UserSettings/index.tsx'),
+    page: () => import('@/pages/UserSettings/index.tsx'),
   },
   {
     id: 'database-setting',
@@ -109,7 +109,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     platform: 'database',
     bottom: true,
     action: 'settings',
-    page: () => import('../pages/UserSettings/index.tsx'),
+    page: () => import('@/pages/UserSettings/index.tsx'),
   },
   {
     id: 'database',
@@ -120,7 +120,7 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     platform: 'database',
     loader: 'database',
     skeleton: 'database',
-    page: () => import('../pages/DatabaseParameters/index.tsx'),
+    page: () => import('@/pages/DatabaseParameters/index.tsx'),
   },
 ];
 export const navigationItems = workspaceRoutes.filter((item) => item.platform === 'application');

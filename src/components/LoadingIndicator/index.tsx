@@ -1,11 +1,11 @@
 /** 统一渲染用户可选的加载图标；图库预览显式传入方案，全局加载仅订阅对应偏好字段。 */
 import type { SVGProps } from 'react';
-import { BrandDataLoading } from '../BrandDataLoading';
-import { BrandLoading } from '../BrandLoading';
+import { BrandDataLoading } from '@/components/BrandDataLoading';
+import { BrandLoading } from '@/components/BrandLoading';
 import { loadingStyles } from './model/styles';
-import { defaultUserSettings } from '../../types/preferences';
-import type { LoadingStyleId } from '../../types/loading';
-import { useAppSelector } from '../../store/hooks';
+import { defaultUserSettings } from '@/types/preferences';
+import type { LoadingStyleId } from '@/types/loading';
+import { useAppSelector } from '@/store/hooks';
 
 /** SVG 尺寸与加载语义由调用处或 Ant Design Spin 提供。 */
 interface LoadingIndicatorProps extends SVGProps<SVGSVGElement> {

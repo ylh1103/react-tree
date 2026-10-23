@@ -16,7 +16,7 @@ import type {
   ListNodeAction,
   GroupedListService,
 } from './types';
-import type { GroupedListId } from '../../queries/groupedList';
+import type { GroupedListId } from '@/queries/groupedList';
 import { useGroupedList } from './hooks/useGroupedList';
 import { GroupedListToolbar } from './components/GroupedListToolbar';
 import { GroupedListRow } from './components/GroupedListRow';

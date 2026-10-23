@@ -1,4 +1,4 @@
-import type { SystemInfo } from '../types/systems.ts';
+import type { SystemInfo } from '@/types/systems.ts';
 
 const cac: SystemInfo = {
   systemName: 'CAC',

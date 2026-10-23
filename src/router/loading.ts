@@ -5,7 +5,7 @@
 import { createContext, createElement, type ComponentType } from 'react';
 import { matchRoutes, type RouteObject } from 'react-router';
 import { PageSkeleton } from './skeletons';
-import RouteErrorPage from '../pages/RouteError';
+import RouteErrorPage from '@/pages/RouteError';
 
 export interface PageLoadingHandle {
   Skeleton: ComponentType;

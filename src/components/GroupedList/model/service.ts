@@ -2,7 +2,7 @@
  * 把清单接口与分组接口组合成列表的 load/save 服务。
  * load 并行读取后交由传入的合并函数处理；save 按后端字段约定写入 JSON 字符串。
  */
-import type { ListApi } from '../../../api/grouped-list/types';
+import type { ListApi } from '@/api/grouped-list/types';
 import type { ListNode } from '../types';
 
 export function createListService<Item, Field extends string>(

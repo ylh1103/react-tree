@@ -4,25 +4,25 @@
  */
 import { Alert, Button, InputNumber, Radio, Segmented, Slider, Tabs } from 'antd';
 import { useEffect, useId, useState, type CSSProperties } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   loadUserSettings,
   previewLayoutGap,
   previewBorderRadius,
   previewControlBorderRadius,
-} from '../../store/slices/preferencesSlice';
-import { navigationThemeVariables, themeVariablesByMode } from '../../styles/theme';
+} from '@/store/slices/preferencesSlice';
+import { navigationThemeVariables, themeVariablesByMode } from '@/styles/theme';
 import type {
   LayoutMode,
   NavigationTheme,
   ResolvedThemeMode,
   UserSettings,
-} from '../../types/preferences';
-import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '../../types/preferences';
-import { useResolvedTheme } from '../../hooks/useResolvedTheme';
+} from '@/types/preferences';
+import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '@/types/preferences';
+import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
-import { navigationItems } from '../../router/config';
+import { navigationItems } from '@/router/config';
 
 /** 预览取实际导航前两个入口，图标和名称随路由配置更新，不另维护一份示例菜单。 */
 const navigationPreviewItems = navigationItems.filter((item) => !item.bottom).slice(0, 2);

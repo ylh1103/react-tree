@@ -3,9 +3,9 @@
  * 保存行为通过 Slice 完成，Hook 不单独持久化数据或维护额外的本地配置副本。
  */
 import { useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { saveLayoutMode } from '../store/slices/preferencesSlice';
-import type { LayoutMode } from '../types/preferences';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { saveLayoutMode } from '@/store/slices/preferencesSlice';
+import type { LayoutMode } from '@/types/preferences';
 
 export function useLayoutPreferences() {
   const layoutMode = useAppSelector((state) => state.preferences.layoutMode);

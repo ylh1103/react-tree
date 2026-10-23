@@ -2,7 +2,7 @@
  * 系统列表搜索、描述文本提取及接口拒绝访问的错误判断。
  * 描述只提取离线 HTML 文本；错误沿 cause 链识别 403，不依赖用户资料。
  */
-import type { SystemInfo } from '../types/systems.ts';
+import type { SystemInfo } from '@/types/systems.ts';
 
 /** 搜索仅依赖系统业务资料，不再包含当前访问者的个人角色筛选。 */
 export function filterSystems<T extends SystemInfo>(systems: T[], search: string) {

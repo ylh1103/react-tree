@@ -2,7 +2,7 @@
  * 固定种子应用示例；数量由模拟配置或测试参数提供。
  * 使用固定种子的随机英文名，保证刷新后选择、路由和分组引用稳定。
  */
-import type { ApplicationItem } from '../types/applications.ts';
+import type { ApplicationItem } from '@/types/applications.ts';
 import { mockConfig } from './config.ts';
 
 export function createMockApplications(mockApplicationCount = mockConfig.applicationCount) {

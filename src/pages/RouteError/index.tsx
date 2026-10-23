@@ -4,9 +4,9 @@
  */
 import { Button, Result, Space } from 'antd';
 import { useNavigate, useRouteError } from 'react-router';
-import { HttpError } from '../../http/request';
-import RouteStatusPage from '../RouteStatus';
-import { BootstrapLoadingHandoff } from '../../components/ResourceLoading/BootstrapHandoff';
+import { HttpError } from '@/http/request';
+import RouteStatusPage from '@/pages/RouteStatus';
+import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 
 /** 静态注册，页面 chunk 加载失败时仍能提供恢复入口。 */
 export default function RouteErrorPage() {

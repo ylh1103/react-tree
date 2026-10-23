@@ -2,11 +2,11 @@
 import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
-import logo from '../assets/logo.jpg';
-import { SystemContext } from '../contexts/SystemContext';
-import { platformHome } from '../router/paths';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { openUserSettings } from '../store/slices/preferencesSlice';
+import logo from '@/assets/logo.jpg';
+import { SystemContext } from '@/contexts/SystemContext';
+import { platformHome } from '@/router/paths';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { openUserSettings } from '@/store/slices/preferencesSlice';
 
 const headerTools = [
   { label: '友情链接', icon: 'i-lucide-panels-top-left', content: '暂无友情链接' },

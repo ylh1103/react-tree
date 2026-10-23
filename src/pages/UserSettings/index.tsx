@@ -1,7 +1,7 @@
 import { Button } from 'antd';
 import { useEffect } from 'react';
-import { useAppDispatch } from '../../store/hooks';
-import { openUserSettings } from '../../store/slices/preferencesSlice';
+import { useAppDispatch } from '@/store/hooks';
+import { openUserSettings } from '@/store/slices/preferencesSlice';
 
 /** 保留旧设置地址；配置统一在全局抽屉中完成。 */
 export default function UserSettingsPage() {

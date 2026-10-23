@@ -1,11 +1,11 @@
 /** 加载图标选择：以选中态标识当前方案，名称由悬停、键盘聚焦提示及无障碍标签提供。 */
 import { Button, Radio, Tooltip } from 'antd';
 import { useId } from 'react';
-import { useAppSelector } from '../../../store/hooks';
-import { defaultUserSettings, type UserSettings } from '../../../types/preferences';
-import { isLoadingStyleId } from '../../../types/loading';
-import { LoadingIndicator } from '../../LoadingIndicator';
-import { loadingStyles } from '../../LoadingIndicator/model/styles';
+import { useAppSelector } from '@/store/hooks';
+import { defaultUserSettings, type UserSettings } from '@/types/preferences';
+import { isLoadingStyleId } from '@/types/loading';
+import { LoadingIndicator } from '@/components/LoadingIndicator';
+import { loadingStyles } from '@/components/LoadingIndicator/model/styles';
 import { SettingsOptionCard } from './SettingsOptionCard';
 
 /** 默认信息不占用图标选项面积；与配置默认值共享来源，后续更换默认方案时同步文案。 */

@@ -6,9 +6,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import preferencesReducer from './slices/preferencesSlice.ts';
 import { readBootstrapTheme } from './preferences/themeBootstrap.ts';
 import { readBootstrapLoading } from './preferences/loadingBootstrap.ts';
-import type { LoadingStyleId } from '../types/loading.ts';
-import type { ThemeMode } from '../types/preferences.ts';
-import { defaultUserSettings } from '../types/preferences.ts';
+import type { LoadingStyleId } from '@/types/loading.ts';
+import type { ThemeMode } from '@/types/preferences.ts';
+import { defaultUserSettings } from '@/types/preferences.ts';
 
 /** Store 启动选项；业务 API 由各 Slice 直接调用，不参与 Store 装配。 */
 export interface AppStoreOptions {

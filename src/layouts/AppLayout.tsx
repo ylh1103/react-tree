@@ -1,4 +1,4 @@
-import { RouteOutlet } from '../router/RouteOutlet';
+import { RouteOutlet } from '@/router/RouteOutlet';
 import { AppHeader } from './AppHeader';
 import { AppNavigation } from './AppNavigation';
 import { WorkspaceFrame } from './LayoutFrame';

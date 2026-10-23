@@ -2,7 +2,7 @@
  * 将清单、分组和删除操作映射为 GET、PUT、DELETE HTTP 请求。
  * 这里只负责请求契约，不处理树结构；系统参数在所有请求中保持一致，GET 支持取消。
  */
-import { requestData } from '../../http/request.ts';
+import { requestData } from '@/http/request.ts';
 import type { ListApi } from './types';
 
 /** 对接真实后端时传入实际 URL；默认 HTTP 契约：GET 清单、GET 分组、PUT 分组。 */

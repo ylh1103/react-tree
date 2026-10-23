@@ -17,12 +17,12 @@ import {
   Typography,
 } from 'antd';
 import { NavLink, useNavigate } from 'react-router';
-import { SplitPane } from '../SplitPane';
-import { useSystemWorkspace } from '../../contexts/SystemContext';
-import { applicationPath, databasePath } from '../../router/paths';
-import { isAccessDenied } from '../../utils/systems';
-import RouteStatusPage from '../../pages/RouteStatus';
-import { useLayoutPreferences } from '../../hooks/useLayoutPreferences';
+import { SplitPane } from '@/components/SplitPane';
+import { useSystemWorkspace } from '@/contexts/SystemContext';
+import { applicationPath, databasePath } from '@/router/paths';
+import { isAccessDenied } from '@/utils/systems';
+import RouteStatusPage from '@/pages/RouteStatus';
+import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 
 interface EnvironmentSelection {
   selectedEnvironments: string[];

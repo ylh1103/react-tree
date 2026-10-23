@@ -4,13 +4,13 @@
  * Ant Design 的消息/弹窗上下文在此建立；可展示内容通过交接边界结束 HTML 启动画面。
  */
 import { App as AntdApp, Alert, Button } from 'antd';
-import { useAppDispatch, useAppSelector } from './store/hooks';
-import { loadUserSettings } from './store/slices/preferencesSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { loadUserSettings } from '@/store/slices/preferencesSlice';
 import { Outlet } from 'react-router';
-import { AppViewport } from './layouts/LayoutFrame';
-import { UserSettingsDrawer } from './layouts/UserSettingsDrawer';
-import { InitialRouteFallback } from './router/skeletons';
-import { BootstrapLoadingHandoff } from './components/ResourceLoading/BootstrapHandoff';
+import { AppViewport } from '@/layouts/LayoutFrame';
+import { UserSettingsDrawer } from '@/layouts/UserSettingsDrawer';
+import { InitialRouteFallback } from '@/router/skeletons';
+import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 
 export default function App() {
   const dispatch = useAppDispatch();

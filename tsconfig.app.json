@@ -10,6 +10,8 @@
 
     /* Bundler mode */
     "moduleResolution": "bundler",
+    /* 跨模块导入与 Vite 共用 @ 路径别名。 */
+    "paths": { "@/*": ["./src/*"] },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",

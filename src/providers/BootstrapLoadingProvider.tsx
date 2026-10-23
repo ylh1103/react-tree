@@ -3,7 +3,7 @@
  * 只要 React 已提交可展示的骨架、正文或错误页，就可结束启动画面，无需等全部请求完成。
  */
 import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { BootstrapLoadingContext } from '../contexts/BootstrapLoadingContext';
+import { BootstrapLoadingContext } from '@/contexts/BootstrapLoadingContext';
 
 /**
  * initialActive 由 main 在渲染前检查 DOM 后传入，仅作为本次挂载的初始值。

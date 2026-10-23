@@ -5,10 +5,10 @@
  */
 import { ConfigProvider } from 'antd';
 import { useLayoutEffect, useMemo, type ReactNode } from 'react';
-import { useAppSelector } from '../store/hooks';
-import { useResolvedTheme } from '../hooks/useResolvedTheme';
-import { createAppTheme, applyTheme } from '../styles/theme';
-import { UserLoadingIndicator } from '../components/LoadingIndicator';
+import { useAppSelector } from '@/store/hooks';
+import { useResolvedTheme } from '@/hooks/useResolvedTheme';
+import { createAppTheme, applyTheme } from '@/styles/theme';
+import { UserLoadingIndicator } from '@/components/LoadingIndicator';
 
 const spinConfig = { indicator: <UserLoadingIndicator /> };
 // 全局文字提示默认隐藏箭头；个别 Tooltip 可通过自身 arrow 属性覆盖。

@@ -1,5 +1,5 @@
 import { LayoutOutlined } from '@ant-design/icons';
-import { SplitPane } from '../SplitPane';
+import { SplitPane } from '@/components/SplitPane';
 
 interface PlaceholderWorkspaceProps {
   title: string;

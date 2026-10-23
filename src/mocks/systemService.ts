@@ -1,5 +1,5 @@
 /** 模拟系统服务：保留系统数据读写和接口错误，不模拟登录身份或成员关系。 */
-import type { CreateSystemInput, SystemInfo } from '../types/systems.ts';
+import type { CreateSystemInput, SystemInfo } from '@/types/systems.ts';
 import { mockSystems } from './systems.ts';
 import { createMockParameters } from './parameters.ts';
 import { mockConfig } from './config.ts';

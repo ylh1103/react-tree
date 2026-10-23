@@ -2,9 +2,9 @@
  * 用户设置 HTTP 边界：GET/PUT 交换完整 userSetting JSON 字符串，向状态机返回解析后的显示配置。
  * API 不决定 Mock 或 Redux 行为；请求 signal 贯穿保存前读取和实际 PUT，支持整体取消。
  */
-import { requestData } from '../http/request.ts';
-import type { UserSettingsApi } from '../types/preferences.ts';
-import { parseSettingsDocument, settingsFromDocument } from '../types/userSettings.ts';
+import { requestData } from '@/http/request.ts';
+import type { UserSettingsApi } from '@/types/preferences.ts';
+import { parseSettingsDocument, settingsFromDocument } from '@/types/userSettings.ts';
 export function createUserSettingsApi(url: string, loadTimeoutMs = 10_000): UserSettingsApi {
   return {
     load: async (signal) => {

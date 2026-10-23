@@ -93,6 +93,14 @@ src/
 
 不创建 features 总目录或页面/组件汇总 barrel。详见 AGENTS.md。
 
+### 路径别名
+
+`@/` 指向 `src/`，例如 `import { useAppSelector } from '@/store/hooks'`。
+跨模块引用使用别名，页面或组件内部的私有文件继续使用短相对路径。
+Vite alias 与 TypeScript paths 保持一致；`pnpm test` 通过 `scripts/helpers/register-alias.mjs` 注册 Node 解析钩子，使直接加载源码的测试支持同一别名，无需新增依赖。
+首屏构建插件直接复用的少量模块保留相对路径，因为它们在 Vite 配置加载阶段执行，早于应用 alias 生效。
+由 Node 直接加载的模块保留 `.ts` 扩展名；页面仍通过动态 import 按需加载。
+
 ### 单一配置
 
 `src/router/config.ts` 是系统业务路由与菜单的唯一配置，定义路径、菜单地址、标题、图标、平台、设置动作、懒加载页面及需要的 loader。导航从该配置派生，UnoCSS safelist 同步读取图标。配置不静态导入页面或 Store。

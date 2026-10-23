@@ -5,11 +5,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
-import { systemsOptions, systemAccessOptions } from '../queries/systems';
-import { HttpError } from '../http/request';
-import { SystemContext } from '../contexts/SystemContext';
-import { isAccessDenied } from '../utils/systems';
-import RouteStatusPage from '../pages/RouteStatus';
+import { systemsOptions, systemAccessOptions } from '@/queries/systems';
+import { HttpError } from '@/http/request';
+import { SystemContext } from '@/contexts/SystemContext';
+import { isAccessDenied } from '@/utils/systems';
+import RouteStatusPage from '@/pages/RouteStatus';
 
 export default function SystemLayout() {
   const { systemName } = useParams();

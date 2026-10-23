@@ -1,8 +1,8 @@
 /** 新增系统表单：人员/组织结构在界面内输入，提交时转换为现有字符串契约。 */
 import { Alert, Button, Form, Input, Modal, Select } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createSystem } from '../../../api/systems';
-import type { CreateSystemInput } from '../../../types/systems';
+import { createSystem } from '@/api/systems';
+import type { CreateSystemInput } from '@/types/systems';
 interface FormValues extends CreateSystemInput {
   roomId?: string;
   roomName?: string;

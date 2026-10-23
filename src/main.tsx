@@ -5,9 +5,9 @@
  * 主样式下载结束后挂载 React；HTML 启动画面继续保留到内容交接边界提交，不在入口直接移除。
  */
 import { QueryClientProvider } from '@tanstack/react-query';
-import { queryClient } from './queries/client';
+import { queryClient } from '@/queries/client';
 import { Provider } from 'react-redux';
-import { store } from './store';
+import { store } from '@/store';
 import { createRoot } from 'react-dom/client';
 import {
   StyleProvider,
@@ -16,16 +16,16 @@ import {
 } from '@ant-design/cssinjs';
 import { RouterProvider } from 'react-router/dom';
 import 'virtual:uno.css';
-import './styles/index.css';
-import { router } from './router';
-import { routes } from './router/routes';
-import { RouteLoadingContext } from './router/loading';
-import { startSystemAccessFailureHandling } from './queries/accessFailures';
-import { loadUserSettings } from './store/slices/preferencesSlice';
-import { AppThemeProvider } from './providers/AppThemeProvider';
-import { startUserSettingsEffects } from './store/preferences/effects';
-import { waitForBootstrapStyles } from './utils/bootstrapStyles';
-import { BootstrapLoadingProvider } from './providers/BootstrapLoadingProvider';
+import '@/styles/index.css';
+import { router } from '@/router';
+import { routes } from '@/router/routes';
+import { RouteLoadingContext } from '@/router/loading';
+import { startSystemAccessFailureHandling } from '@/queries/accessFailures';
+import { loadUserSettings } from '@/store/slices/preferencesSlice';
+import { AppThemeProvider } from '@/providers/AppThemeProvider';
+import { startUserSettingsEffects } from '@/store/preferences/effects';
+import { waitForBootstrapStyles } from '@/utils/bootstrapStyles';
+import { BootstrapLoadingProvider } from '@/providers/BootstrapLoadingProvider';
 
 // 一个 Store 订阅处理启动缓存、跨页签广播与排队刷新；DOM 配色仍由 Provider 管理。
 const stopUserSettingsEffects = startUserSettingsEffects(store);

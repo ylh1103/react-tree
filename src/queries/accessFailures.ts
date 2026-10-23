@@ -1,6 +1,6 @@
 /** 系统接口拒绝访问时撤下工作区缓存并取消相关请求，不依赖登录资料或前端身份推导。 */
 import { queryClient } from './client.ts';
-import { cancelHttpRequests, onAccessFailure } from '../http/request.ts';
+import { cancelHttpRequests, onAccessFailure } from '@/http/request.ts';
 
 /** 只处理接口明确返回的 403；其他状态仍交给各请求及路由展示。 */
 export function startSystemAccessFailureHandling() {

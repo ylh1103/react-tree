@@ -3,7 +3,7 @@
  * 系统外观是浏览器外部状态，由 useSyncExternalStore 读取和订阅，不通过 Effect 复制进 Redux。
  */
 import { useSyncExternalStore } from 'react';
-import type { ResolvedThemeMode, ThemeMode } from '../types/preferences';
+import type { ResolvedThemeMode, ThemeMode } from '@/types/preferences';
 
 /** 同步读取系统外观；Node、SSR 或缺少 matchMedia 的环境回退浅色，不读写用户设置。 */
 export function getSystemTheme(): ResolvedThemeMode {
