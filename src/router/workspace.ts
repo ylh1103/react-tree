@@ -3,37 +3,33 @@ import type { RouteObject } from 'react-router';
 import { workspaceRoutes } from './config.ts';
 import { lazyPage, lazyWorkspace } from './lazy.tsx';
 import { pageLoading } from './loading.ts';
-import {
-  OverviewSkeleton,
-  ApplicationsSkeleton,
-  DatabaseSkeleton,
-  CollectionSkeleton,
-} from './skeletons.tsx';
+import { OverviewSkeleton, CollectionRouteSkeleton } from './skeletons.tsx';
 import { preloadApplications, preloadDatabase, revalidateSystemCollection } from './loaders.ts';
 import type { ParameterPlatform } from './paths.ts';
 const skeletons = {
   overview: OverviewSkeleton,
-  applications: ApplicationsSkeleton,
-  database: DatabaseSkeleton,
-  collection: CollectionSkeleton,
+  collection: CollectionRouteSkeleton,
 };
 export function createWorkspaceRoutes(platform: ParameterPlatform): RouteObject[] {
   return workspaceRoutes
     .filter((item) => item.platform === platform)
-    .map((item) => ({
-      id: item.id,
-      path: item.path,
-      ...pageLoading(item.skeleton ? skeletons[item.skeleton] : undefined),
-      handle: {
-        ...pageLoading(item.skeleton ? skeletons[item.skeleton] : undefined).handle,
-        ...item,
-      },
-      lazy: item.page ? lazyPage(item.page) : lazyWorkspace(item.label, item.splitPane),
-      ...(item.loader
-        ? {
-            loader: item.loader === 'applications' ? preloadApplications : preloadDatabase,
-            shouldRevalidate: revalidateSystemCollection,
-          }
-        : {}),
-    }));
+    .map((item) => {
+      const loading = pageLoading(item.skeleton ? skeletons[item.skeleton] : undefined);
+      return {
+        id: item.id,
+        path: item.path,
+        ...loading,
+        handle: {
+          ...loading.handle,
+          ...item,
+        },
+        lazy: item.page ? lazyPage(item.page) : lazyWorkspace(item.label, item.splitPane),
+        ...(item.loader
+          ? {
+              loader: item.loader === 'applications' ? preloadApplications : preloadDatabase,
+              shouldRevalidate: revalidateSystemCollection,
+            }
+          : {}),
+      };
+    });
 }

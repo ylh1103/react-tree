@@ -5,6 +5,6 @@ export const mockConfig: {
   applicationCount: number;
 } = {
   systemAccessError: null,
-  delayMs: 200,
+  delayMs: 150,
   applicationCount: 785,
 };

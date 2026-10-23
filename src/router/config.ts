@@ -1,6 +1,15 @@
 /** 路由与导航唯一配置；图标使用完整工具类名，供 UnoCSS 构建管线自动提取。 */
 import type { ParameterPlatform } from './paths.ts';
 type PageModule = typeof import('@/pages/SystemsHome/index.tsx');
+/** 清单骨架只声明布局参数；新业务复用结构，不把专用页面组件带入静态路由。 */
+export interface CollectionLoadingLayout {
+  storageKey: string;
+  title: string;
+  defaultWidth?: number;
+  selectionParam?: string;
+  integratedHeaderWhenEmpty?: boolean;
+}
+
 export interface WorkspaceRoute {
   id: string;
   path: string;
@@ -13,7 +22,8 @@ export interface WorkspaceRoute {
   platform: ParameterPlatform;
   page?: () => Promise<PageModule>;
   loader?: 'applications' | 'database';
-  skeleton?: 'overview' | 'applications' | 'database' | 'collection';
+  skeleton?: 'overview' | 'collection';
+  loadingLayout?: CollectionLoadingLayout;
 }
 export const workspaceRoutes: WorkspaceRoute[] = [
   {
@@ -35,7 +45,14 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     platform: 'application',
     splitPane: true,
     loader: 'applications',
-    skeleton: 'applications',
+    skeleton: 'collection',
+    loadingLayout: {
+      storageKey: 'parameter-management:split-pane:application:v1',
+      title: '应用参数',
+      defaultWidth: 290,
+      selectionParam: 'appName',
+      integratedHeaderWhenEmpty: true,
+    },
     page: () => import('@/pages/SystemApplications/index.tsx'),
   },
   {
@@ -119,7 +136,13 @@ export const workspaceRoutes: WorkspaceRoute[] = [
     icon: 'i-lucide-database',
     platform: 'database',
     loader: 'database',
-    skeleton: 'database',
+    skeleton: 'collection',
+    loadingLayout: {
+      storageKey: 'parameter-management:split-pane:database:v1',
+      title: '数据库参数',
+      defaultWidth: 300,
+      selectionParam: 'paramTypeName',
+    },
     page: () => import('@/pages/DatabaseParameters/index.tsx'),
   },
 ];

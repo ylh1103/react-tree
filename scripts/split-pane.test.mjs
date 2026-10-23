@@ -1,6 +1,34 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { dragResize } from '../src/components/SplitPane/dragResize.ts';
+import { readSplitPaneLayout } from '../src/components/SplitPane/model/layout.ts';
+
+test('骨架和正式分栏共用历史尺寸，读取不会覆盖损坏或不完整的缓存', (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  });
+  let saved = JSON.stringify({ width: 420, visible: false });
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: { getItem: () => saved, setItem: () => assert.fail('只读布局不应写缓存') },
+  });
+  assert.deepEqual(readSplitPaneLayout('application', 290), { width: 420, visible: false });
+  saved = JSON.stringify({ width: 900, visible: 'invalid' });
+  assert.deepEqual(readSplitPaneLayout('application', 290), { width: 640, visible: true });
+  saved = JSON.stringify({ width: 100 });
+  assert.deepEqual(readSplitPaneLayout('application', 300), { width: 260, visible: true });
+  saved = '{invalid';
+  assert.deepEqual(readSplitPaneLayout('application', 300), { width: 300, visible: true });
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get: () => {
+      throw new Error('storage blocked');
+    },
+  });
+  assert.deepEqual(readSplitPaneLayout('application', 290), { width: 290, visible: true });
+});
 
 const initial = { x: 340, width: 340, visible: true, pointerId: 1 };
 

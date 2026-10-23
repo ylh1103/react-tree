@@ -60,7 +60,7 @@ function setup(
   {
     path = '/systems/CAC/application/demo',
     childPath = 'application/:appName?',
-    Skeleton = skeletons.ApplicationsSkeleton,
+    Skeleton = skeletons.CollectionRouteSkeleton,
     initialized = true,
     pendingParent = true,
     pendingRoot = false,
@@ -78,6 +78,15 @@ function setup(
     ...(registeredSkeleton ? pageLoading(Skeleton) : {}),
     lazy: () => page.promise,
   };
+  // 合成路由也登记真实清单布局，验证通用骨架读取目标 handle 而非写死业务名称。
+  if (registeredSkeleton) {
+    leaf.handle = {
+      ...leaf.handle,
+      loadingLayout: workspaceRoutes.find(
+        (route) => route.id === (childPath.startsWith('db/') ? 'database' : 'application'),
+      ).loadingLayout,
+    };
+  }
   const fixtureRoutes = [
     {
       ...rootRoute,
@@ -214,8 +223,7 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
 test('页面级骨架不包含基础布局，挂入已有工作区时不会嵌套页头和主区域', (t) => {
   for (const Component of [
     skeletons.SystemsHomeSkeleton,
-    skeletons.ApplicationsSkeleton,
-    skeletons.DatabaseSkeleton,
+    skeletons.CollectionRouteSkeleton,
     skeletons.OverviewSkeleton,
     skeletons.CollectionSkeleton,
     skeletons.PageSkeleton,
@@ -231,6 +239,41 @@ test('页面级骨架不包含基础布局，挂入已有工作区时不会嵌�
     );
     assert.doesNotMatch(html, /<header\b|<main\b|主导航加载中/, Component.name);
     assert.match(html, /ant-skeleton/);
+  }
+});
+
+test('通用清单骨架沿用目标布局、URL 解码和历史折叠偏好，不生成分栏交互控件', (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  });
+  const reads = [];
+  let visible = true;
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) => {
+        reads.push(key);
+        return JSON.stringify({ width: 420, visible });
+      },
+      setItem: () => assert.fail('骨架不应写入分栏缓存'),
+    },
+  });
+  for (const [path, key] of [
+    ['/systems/CAC/application/' + encodeURIComponent('应用 / 100%'), 'application'],
+    ['/systems/CAC/db/' + encodeURIComponent('类型 / 100%'), 'database'],
+  ]) {
+    const fixture = setup(t, { path, actualRoutes: true });
+    const html = fixture.render();
+    assert.ok(reads.includes(`parameter-management:split-pane:${key}:v1`));
+    assert.match(html, /width:min\(420px/);
+    assert.match(html, /aria-label="(?:应用|类型) \/ 100%列表"/);
+    assert.doesNotMatch(html, /role="separator"|切换侧边栏|调整.*列表宽度/);
+    visible = false;
+    assert.match(fixture.render(), /data-sidebar-expanded="false"/);
+    assert.match(fixture.render(), /<aside[^>]*hidden=""[^>]*width:min\(420px/);
+    visible = true;
   }
 });
 
@@ -317,7 +360,7 @@ for (const [name, options, message] of [
     {
       path: '/systems/CAC/db/demo',
       childPath: 'db/:paramTypeName',
-      Skeleton: () => createElement(skeletons.DatabaseSkeleton),
+      Skeleton: () => createElement(skeletons.CollectionRouteSkeleton),
     },
     '列表资源加载中',
   ],

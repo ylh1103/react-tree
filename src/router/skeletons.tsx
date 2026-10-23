@@ -1,18 +1,19 @@
 /**
  * 静态路由骨架集合，与页面懒加载模块分开以覆盖首次加载和 chunk 等待。
- * 分栏骨架读取与真实工作区一致的宽度、布局偏好和目标名称，减少切换时的布局跳动。
+ * 分栏仅复用轻量展示层和只读尺寸规则，不加载拖拽、键盘监听或业务页面。
  */
 import { Grid, Skeleton } from 'antd';
-import { useContext, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { matchRoutes, useLocation, useNavigation } from 'react-router';
-import { matchLoadingParams, matchPageSkeleton, RouteLoadingContext } from './loading';
-import { SplitPane } from '@/components/SplitPane';
+import { matchPageSkeleton, RouteLoadingContext } from './loading';
+import { SplitPaneFrame } from '@/components/SplitPane/components/Frame';
+import { readSplitPaneLayout } from '@/components/SplitPane/model/layout';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { ResourceLoading } from '@/components/ResourceLoading';
 import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 import { AppViewport, NavigationFrame, SiteFrame, WorkspaceFrame } from '@/layouts/LayoutFrame';
 import { useAppSelector } from '@/store/hooks';
-import { databaseNavigationItems, navigationItems } from './config';
+import { databaseNavigationItems, navigationItems, type WorkspaceRoute } from './config';
 
 /** 页头占位保持正式页头的 52px 高度；不挂载依赖系统上下文的切换控件和交互工具。 */
 function HeaderSkeleton() {
@@ -193,7 +194,7 @@ export function SystemsHomeSkeleton() {
   );
 }
 
-/** 使用实际分栏读取同一份宽度、收起状态和布局偏好。 */
+/** 只读历史尺寸；容器宽度由 CSS 限制，骨架不安装 ResizeObserver 或注册分栏交互。 */
 export function CollectionSkeleton({
   storageKey = 'parameter-management:split-pane:搜索:v1',
   defaultWidth = 290,
@@ -206,6 +207,7 @@ export function CollectionSkeleton({
   integratedHeader?: boolean;
 }) {
   const { layoutMode } = useLayoutPreferences();
+  const [layout] = useState(() => readSplitPaneLayout(storageKey, defaultWidth));
   const compact = Grid.useBreakpoint().md === false;
   const content = integratedHeader ? (
     <div className="grid min-h-full min-w-0 place-items-center px-6 py-12">
@@ -250,12 +252,21 @@ export function CollectionSkeleton({
           </div>
         </div>
       ) : (
-        <SplitPane
-          readOnly
-          storageKey={storageKey}
-          defaultWidth={defaultWidth}
+        <SplitPaneFrame
           sidebarLabel={`${title}列表`}
-          title={title}
+          expanded={layout.visible}
+          width={`min(${layout.width}px, max(0px, calc(100% - ${layoutMode === 'compact' ? 241 : 244}px)))`}
+          titleContent={<Skeleton.Input active size="small" className="max-w-full" />}
+          separator={
+            <div
+              aria-hidden="true"
+              className={
+                layoutMode === 'compact'
+                  ? `shrink-0 ${layout.visible ? 'w-1px bg-divider' : 'w-0'}`
+                  : 'shrink-0 w-[var(--layout-gap)]'
+              }
+            />
+          }
           integratedHeader={integratedHeader}
           sidebar={
             <div className="workspace-panel min-h-full p-4">
@@ -264,43 +275,28 @@ export function CollectionSkeleton({
           }
         >
           {content}
-        </SplitPane>
+        </SplitPaneFrame>
       )}
     </section>
   );
 }
 
-export function ApplicationsSkeleton() {
+/** 清单路由统一根据目标 handle 选择尺寸与标题，应用、数据库和后续业务共享同一模板。 */
+export function CollectionRouteSkeleton() {
   const routes = useContext(RouteLoadingContext);
   const navigation = useNavigation();
   const location = useLocation();
-  const { appName } = matchLoadingParams(
-    routes,
-    navigation.location?.pathname ?? location.pathname,
-  );
+  const target = matchRoutes(routes, navigation.location?.pathname ?? location.pathname)?.at(-1);
+  const handle = target?.route.handle as WorkspaceRoute | undefined;
+  const options = handle?.loadingLayout;
+  const selectedName = options?.selectionParam ? target?.params[options.selectionParam] : undefined;
   return (
     <CollectionSkeleton
-      storageKey="parameter-management:split-pane:application:v1"
-      defaultWidth={290}
-      title={appName || '应用参数'}
-      integratedHeader={!appName}
-    />
-  );
-}
-
-export function DatabaseSkeleton() {
-  const routes = useContext(RouteLoadingContext);
-  const navigation = useNavigation();
-  const location = useLocation();
-  const { paramTypeName } = matchLoadingParams(
-    routes,
-    navigation.location?.pathname ?? location.pathname,
-  );
-  return (
-    <CollectionSkeleton
-      storageKey="parameter-management:split-pane:database:v1"
-      defaultWidth={300}
-      title={paramTypeName || '数据库参数'}
+      key={options?.storageKey ?? handle?.id}
+      storageKey={options?.storageKey}
+      defaultWidth={options?.defaultWidth}
+      title={selectedName || options?.title || handle?.label}
+      integratedHeader={Boolean(options?.integratedHeaderWhenEmpty && !selectedName)}
     />
   );
 }
