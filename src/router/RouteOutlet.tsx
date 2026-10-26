@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigation } from 'react-router';
 import { matchPageSkeleton, RouteLoadingContext } from './loading';
 
 /** 同一布局内导航时显示目标页面的骨架，保留旧页面直到导航完成。 */
-export function RouteOutlet({ layoutId, delayMs = 180 }: { layoutId: string; delayMs?: number }) {
+export function RouteOutlet({ layoutId, delayMs = 250 }: { layoutId: string; delayMs?: number }) {
   const routes = useContext(RouteLoadingContext);
   const navigation = useNavigation();
   const location = useLocation();

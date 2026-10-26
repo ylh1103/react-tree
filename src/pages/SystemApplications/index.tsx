@@ -17,6 +17,7 @@ import {
   ApplicationParametersWorkspace,
 } from './components/ApplicationParametersWorkspace';
 import { CollectionWorkspace, type CollectionItem } from '@/components/CollectionWorkspace';
+import { CollectionSkeleton } from '@/components/CollectionWorkspace/components/CollectionSkeleton';
 
 export default function SystemApplicationsPage() {
   const { system } = useSystemWorkspace();
@@ -33,6 +34,16 @@ export default function SystemApplicationsPage() {
     enabled: !writing,
     select: applicationItems,
   });
+  // 首次无数据时才占位；路由只加载通用骨架，已有缓存的刷新仍保留交互工作区。
+  if (query.isPending)
+    return (
+      <CollectionSkeleton
+        storageKey="parameter-management:split-pane:application:v1"
+        defaultWidth={290}
+        title={appName || '应用参数'}
+        integratedHeader={!appName}
+      />
+    );
   return (
     <CollectionWorkspace
       database={false}

@@ -7,8 +7,7 @@ import { writeMock, readMock } from '../src/mocks/storage.ts';
 import { loadSystems, loadSystemAccess, createSystem } from '../src/api/systems.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
 import { createSystemApplicationApi } from '../src/api/applications.ts';
-import { httpClient, requestData, cancelHttpRequests } from '../src/http/request.ts';
-import { startSystemAccessFailureHandling } from '../src/queries/accessFailures.ts';
+import { httpClient, requestData } from '../src/http/request.ts';
 import { createAppStore } from '../src/store/index.ts';
 import { queryClient } from '../src/queries/client.ts';
 import { requireSystemAccess, systemAccessOptions } from '../src/queries/systems.ts';
@@ -25,7 +24,6 @@ mockConfig.delayMs = 0;
 afterEach(() => {
   mockConfig.systemAccessError = null;
   mockConfig.delayMs = 0;
-  cancelHttpRequests();
   queryClient.clear();
 });
 
@@ -120,15 +118,15 @@ test('父子 loader 共用系统访问请求，接口拒绝前不发送业务请
   assert.deepEqual(requests, ['/api/systems/ParamPlat/access']);
 });
 
-test('接口返回 403 后发布拒绝结果并移除相关系统业务缓存', async (t) => {
-  t.after(startSystemAccessFailureHandling());
-  await requireSystemAccess('CAC');
+test('接口返回 403 时传播错误，系统与业务缓存不再由全局监听改写', async () => {
+  const system = await requireSystemAccess('CAC');
   const key = ['grouped-list', 'applications:CAC'];
   queryClient.setQueryData(key, ['旧数据']);
   mockConfig.systemAccessError = 403;
   await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 403);
-  assert.equal(queryClient.getQueryData(key), undefined);
-  assert.deepEqual(queryClient.getQueryData(systemAccessOptions('CAC').queryKey), { denied: true });
+  assert.deepEqual(queryClient.getQueryData(key), ['旧数据']);
+  assert.deepEqual(queryClient.getQueryData(systemAccessOptions('CAC').queryKey), system);
+  assert.equal(queryClient.getQueryState(systemAccessOptions('CAC').queryKey).error.status, 403);
 });
 
 test('显示偏好保留完整文档；配置损坏时禁止覆盖并允许独立重试', async () => {
@@ -193,12 +191,14 @@ test('模拟请求超时和取消保持有效，取消的创建不产生业务�
   mockConfig.delayMs = 50;
   await assert.rejects(requestData({ url: '/api/systems', timeout: 5 }), /请求超时/);
   const name = `CANCELLED_${Date.now()}`;
+  const controller = new AbortController();
   const writing = requestData({
     url: '/api/systems',
     method: 'POST',
     data: { systemName: name, systemChineseName: '取消创建', systemArchNo: name },
+    signal: controller.signal,
   });
-  cancelHttpRequests();
+  controller.abort();
   await assert.rejects(writing, (error) => error.code === 'ERR_CANCELED');
   assert.equal(
     (await loadSystems()).some((item) => item.systemName === name),

@@ -54,6 +54,7 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
   const bundle = fixture();
   bundle['shell.js'].modules = {
     '/project/src/components/SplitPane/index.tsx': {},
+    '/project/src/components/CollectionWorkspace/components/CollectionSkeleton.tsx': {},
     '/project/src/layouts/UserSettingsDrawer/index.tsx': {},
     '/project/src/mocks/adapter.ts': {},
     '/project/src/mocks/config.ts': {},
@@ -65,6 +66,7 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
   const report = createStartupReport(bundle);
   assert.deepEqual(report.forbidden, [
     'components/SplitPane/index.tsx',
+    'components/CollectionWorkspace/components/CollectionSkeleton.tsx',
     'layouts/UserSettingsDrawer/index.tsx',
     'mocks/applications.ts',
     'pages/FutureBusiness/index.tsx',

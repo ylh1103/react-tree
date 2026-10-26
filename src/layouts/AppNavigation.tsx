@@ -1,9 +1,9 @@
-/** 导航消费统一路由定义，URL 决定选中项，设置动作显式打开抽屉。 */
-import { Button, Tooltip } from 'antd';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { openUserSettings } from '@/store/slices/preferencesSlice';
-import { NavLink, useLocation } from 'react-router';
-import { navigationItems, databaseNavigationItems } from './navigation';
+/** 导航消费分平台路由定义，所有菜单均跳转页面，URL 决定选中项。 */
+import { Tooltip } from 'antd';
+import { useAppSelector } from '@/store/hooks';
+import { generatePath, NavLink, useLocation } from 'react-router';
+import { applicationRouteConfig as navigationItems } from '@/router/application';
+import { databaseRouteConfig as databaseNavigationItems } from '@/router/database';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
 import { systemPath } from '@/router/paths';
 import { NavigationFrame } from './LayoutFrame';
@@ -11,7 +11,6 @@ import { NavigationFrame } from './LayoutFrame';
 export function AppNavigation() {
   const { system, platform } = useSystemWorkspace();
   const { pathname } = useLocation();
-  const dispatch = useAppDispatch();
   const navigationIconOnly = useAppSelector((state) => state.preferences.navigationIconOnly);
   const iconSizeClass = navigationIconOnly ? 'w-24px h-24px' : 'w-22px h-22px';
   const isDatabaseSetting =
@@ -20,34 +19,21 @@ export function AppNavigation() {
   return (
     <NavigationFrame>
       <nav className="flex flex-col gap-0.5 min-h-full py-2 px-0.75" aria-label="主导航">
-        {items.map(({ to, label, icon, bottom, action }) => (
-          <Tooltip
-            key={to}
-            title={navigationIconOnly ? label : undefined}
-            placement="right"
-            trigger={['hover', 'focus']}
-          >
-            {action === 'settings' ? (
-              <Button
-                key={to}
-                type="text"
-                onClick={() => dispatch(openUserSettings())}
-                aria-label="用户设置"
-                className={`group mt-auto! flex! flex-col! items-center! justify-center! gap-0.5! min-h-60px h-auto! w-full! py-1! px-0! rounded-control! border-0! bg-transparent! text-nav-text! hover:text-nav-emphasis! layout-focus motion-reduce:transition-none! ${navigationIconOnly ? 'min-h-44px!' : ''}`}
-              >
-                <span className="flex items-center justify-center w-36px h-36px shrink-0 rounded-control transition-colors duration-140 motion-reduce:transition-none group-hover:bg-nav-hover group-active:bg-nav-pressed">
-                  <span className={`${icon} ${iconSizeClass} shrink-0`} aria-hidden="true" />
-                </span>
-                {!navigationIconOnly && (
-                  <span className="text-11px leading-16px whitespace-nowrap">{label}</span>
-                )}
-              </Button>
-            ) : (
+        {items.map(({ path, label, icon, bottom }) => {
+          // 不传可选参数时生成清单入口，避免与路由 path 维护两份地址。
+          const page = generatePath(path);
+          return (
+            <Tooltip
+              key={path}
+              title={navigationIconOnly ? label : undefined}
+              placement="right"
+              trigger={['hover', 'focus']}
+            >
               <NavLink
-                key={to}
-                to={systemPath(system.systemName, to.slice(1))}
+                key={path}
+                to={systemPath(system.systemName, page)}
                 aria-label={label}
-                end={to !== '/application' && (to !== '/db' || isDatabaseSetting)}
+                end={page !== 'application' && (page !== 'db' || isDatabaseSetting)}
                 className={({ isActive }) =>
                   `group relative flex shrink-0 flex-col items-center justify-center gap-0.5 ${navigationIconOnly ? 'min-h-44px' : 'min-h-60px'} py-1 px-0 rounded-control no-underline transition-colors duration-140 motion-reduce:transition-none layout-focus ${bottom ? 'mt-auto' : ''} ${isActive ? 'text-nav-emphasis! visited:text-nav-emphasis! font-600' : 'text-nav-text! visited:text-nav-text! hover:text-nav-emphasis! visited:hover:text-nav-emphasis!'}`
                 }
@@ -73,9 +59,9 @@ export function AppNavigation() {
                   </>
                 )}
               </NavLink>
-            )}
-          </Tooltip>
-        ))}
+            </Tooltip>
+          );
+        })}
       </nav>
     </NavigationFrame>
   );

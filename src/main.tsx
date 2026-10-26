@@ -20,7 +20,6 @@ import '@/styles/index.css';
 import { router } from '@/router';
 import { routes } from '@/router/routes';
 import { RouteLoadingContext } from '@/router/loading';
-import { startSystemAccessFailureHandling } from '@/queries/accessFailures';
 import { loadUserSettings } from '@/store/slices/preferencesSlice';
 import { AppThemeProvider } from '@/providers/AppThemeProvider';
 import { startUserSettingsEffects } from '@/store/preferences/effects';
@@ -32,13 +31,10 @@ const stopUserSettingsEffects = startUserSettingsEffects(store);
 // HMR 时统一清理监听并取消配置请求，避免旧入口继续写缓存或应用迟到响应。
 import.meta.hot?.dispose(stopUserSettingsEffects);
 
-// 系统接口错误仍由统一处理器清理相关缓存，应用启动不再读取登录会话。
-const stopAccessFailures = startSystemAccessFailureHandling();
-import.meta.hot?.dispose(stopAccessFailures);
-
 // router 在模块初始化时已启动路由加载；此处立即读取设置，不让它与样式等待形成串行请求。
 // 样式结束并挂载 React 后，根路由/App 先保留 HTML 原动画，首次配置等待结束后再展示骨架或正文。
 void store.dispatch(loadUserSettings());
+
 // HMR 可能发生在样式等待期间；标记旧入口失效，阻止其异步回调在新入口之后再次挂载。
 // 此标记不取消浏览器的样式下载，也不会使 waitForBootstrapStyles 主动拒绝。
 let disposed = false;

@@ -13,14 +13,17 @@ import { createAppStore } from '../src/store/index.ts';
 import { loadUserSettings } from '../src/store/slices/preferencesSlice.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import { createGenerator } from 'unocss';
-import { workspaceRoutes } from '../src/router/config.ts';
+import { applicationRouteConfig } from '../src/router/application.ts';
+import { databaseRouteConfig } from '../src/router/database.ts';
+
+// 两个平台独立定义；测试合并枚举入口，保持首屏回退的全量覆盖。
+const routeConfigs = [...applicationRouteConfig, ...databaseRouteConfig];
 
 let vite;
 let rootRoute;
 let BootstrapLoadingProvider;
 let RouteLoadingContext;
-let pageLoading;
-let skeletons;
+let RouteSkeleton;
 before(async () => {
   vite = await createServer({
     server: { middlewareMode: true, hmr: false, ws: false },
@@ -32,8 +35,8 @@ before(async () => {
   ({ BootstrapLoadingProvider } = await vite.ssrLoadModule(
     '/src/providers/BootstrapLoadingProvider.tsx',
   ));
-  ({ RouteLoadingContext, pageLoading } = await vite.ssrLoadModule('/src/router/loading.ts'));
-  skeletons = await vite.ssrLoadModule('/src/router/skeletons.tsx');
+  ({ RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading.ts'));
+  ({ RouteSkeleton } = await vite.ssrLoadModule('/src/components/RouteSkeleton/index.tsx'));
 });
 after(() => vite?.close());
 
@@ -60,7 +63,6 @@ function setup(
   {
     path = '/systems/CAC/application/demo',
     childPath = 'application/:appName?',
-    Skeleton = skeletons.CollectionRouteSkeleton,
     initialized = true,
     pendingParent = true,
     pendingRoot = false,
@@ -75,18 +77,11 @@ function setup(
   const parent = deferred();
   const leaf = {
     ...(home ? { index: true } : { path: childPath }),
-    ...(registeredSkeleton ? pageLoading(Skeleton) : {}),
+    ...(registeredSkeleton
+      ? { HydrateFallback: RouteSkeleton, ErrorBoundary: rootRoute.ErrorBoundary }
+      : {}),
     lazy: () => page.promise,
   };
-  // 合成路由也登记真实清单布局，验证通用骨架读取目标 handle 而非写死业务名称。
-  if (registeredSkeleton) {
-    leaf.handle = {
-      ...leaf.handle,
-      loadingLayout: workspaceRoutes.find(
-        (route) => route.id === (childPath.startsWith('db/') ? 'database' : 'application'),
-      ).loadingLayout,
-    };
-  }
   const fixtureRoutes = [
     {
       ...rootRoute,
@@ -139,19 +134,15 @@ function setup(
 
 // 从业务路由清单派生覆盖范围，并补充带动态参数的深链接，避免新增入口后漏测首屏骨架。
 const routeCases = [
-  ['系统列表', '/', 'home', '系统列表加载中'],
-  ...workspaceRoutes.map((route) => [
+  ['系统列表', '/', undefined, '页面加载中'],
+  ...routeConfigs.map((route) => [
     route.label,
     '/systems/CAC/' + route.path.replace(/\/:[^/]+\?/g, ''),
-    route.id,
-    route.skeleton === 'overview'
-      ? '概览资源加载中'
-      : route.skeleton
-        ? '列表资源加载中'
-        : '资源加载中',
+    route.path,
+    '页面加载中',
   ]),
-  ['指定应用', '/systems/CAC/application/demo', 'application', '列表资源加载中'],
-  ['指定数据库类型', '/systems/CAC/db/数据库连接', 'database', '列表资源加载中'],
+  ['指定应用', '/systems/CAC/application/demo', 'application/:appName?', '页面加载中'],
+  ['指定数据库类型', '/systems/CAC/db/数据库连接', 'db/:paramTypeName?', '页面加载中'],
 ];
 
 // 保留真实布局层级，验证根回退在父 loader 尚未完成时也占据完整基础布局。
@@ -193,10 +184,7 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
   assert.match(html, /<aside[^>]*class="w-48px /);
   const nav = /<nav[^>]*aria-label="主导航加载中"[\s\S]*?<\/nav>/.exec(html)?.[0];
   assert.ok(nav);
-  assert.equal(
-    [...nav.matchAll(/ant-skeleton-avatar(?: |")/g)].length,
-    workspaceRoutes.filter((route) => route.platform === 'database').length,
-  );
+  assert.equal([...nav.matchAll(/ant-skeleton-avatar(?: |")/g)].length, databaseRouteConfig.length);
   fixture.store.dispatch(loadUserSettings.pending('updated-settings'));
   assert.match(fixture.render(), /ant-skeleton/, '初始化后的配置重试不应恢复全屏启动等待');
   fixture.store.dispatch(
@@ -220,69 +208,29 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
   assert.equal([...html.matchAll(/<main\b/g)].length, 1);
 });
 
-test('页面级骨架不包含基础布局，挂入已有工作区时不会嵌套页头和主区域', (t) => {
-  for (const Component of [
-    skeletons.SystemsHomeSkeleton,
-    skeletons.CollectionRouteSkeleton,
-    skeletons.OverviewSkeleton,
-    skeletons.CollectionSkeleton,
-    skeletons.PageSkeleton,
-  ]) {
-    const router = createMemoryRouter([{ path: '*', Component }]);
-    t.after(() => router.dispose());
-    const html = renderToStaticMarkup(
-      createElement(
-        Provider,
-        { store: createAppStore() },
-        createElement(RouterProvider, { router }),
-      ),
-    );
-    assert.doesNotMatch(html, /<header\b|<main\b|主导航加载中/, Component.name);
-    assert.match(html, /ant-skeleton/);
-  }
-});
-
-test('通用清单骨架沿用目标布局、URL 解码和历史折叠偏好，不生成分栏交互控件', (t) => {
+test('统一路由骨架不包含基础布局或业务分栏，也不读取分栏缓存', (t) => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   t.after(() => {
     if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
     else delete globalThis.localStorage;
   });
-  const reads = [];
-  let visible = true;
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
-    value: {
-      getItem: (key) => {
-        reads.push(key);
-        return JSON.stringify({ width: 420, visible });
-      },
-      setItem: () => assert.fail('骨架不应写入分栏缓存'),
-    },
+    value: { getItem: () => assert.fail('通用路由骨架不应读取业务分栏偏好') },
   });
-  for (const [path, key] of [
-    ['/systems/CAC/application/' + encodeURIComponent('应用 / 100%'), 'application'],
-    ['/systems/CAC/db/' + encodeURIComponent('类型 / 100%'), 'database'],
-  ]) {
-    const fixture = setup(t, { path, actualRoutes: true });
-    const html = fixture.render();
-    assert.ok(reads.includes(`parameter-management:split-pane:${key}:v1`));
-    assert.match(html, /width:min\(420px/);
-    assert.match(html, /aria-label="(?:应用|类型) \/ 100%列表"/);
-    assert.doesNotMatch(html, /role="separator"|切换侧边栏|调整.*列表宽度/);
-    visible = false;
-    assert.match(fixture.render(), /data-sidebar-expanded="false"/);
-    assert.match(fixture.render(), /<aside[^>]*hidden=""[^>]*width:min\(420px/);
-    visible = true;
-  }
+  const html = renderToStaticMarkup(createElement(RouteSkeleton));
+  assert.doesNotMatch(html, /<header\b|<main\b|主导航加载中|data-split-pane/);
+  assert.match(html, /ant-skeleton/);
+  assert.match(html, /页面加载中/);
 });
 
-for (const [name, path, id, message] of routeCases) {
-  test(`真实路由 ${id}（${name}）等待配置后再展示对应骨架`, (t) => {
+for (const [name, path, routePath, message] of routeCases) {
+  test(`真实路由 ${path}（${name}）等待配置后再展示统一路由骨架`, (t) => {
     const fixture = setup(t, { path, actualRoutes: true, initialized: false });
     const target = matchRoutes(fixture.routes, path)?.at(-1)?.route;
-    assert.equal(target?.id, id, '静态设置地址不应被数据库类型动态路由覆盖');
-    assert.equal(target?.HydrateFallback, target?.handle?.Skeleton);
+    assert.equal(target?.path, routePath, '静态设置地址不应被数据库类型动态路由覆盖');
+    if (path === '/') assert.equal(target?.index, true);
+    assert.equal(target?.HydrateFallback, RouteSkeleton);
     assert.equal(fixture.router.state.initialized, false);
     assert.equal(fixture.render(), '', '有缓存和静态骨架也不能提前交接 HTML 启动画面');
     fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
@@ -290,8 +238,7 @@ for (const [name, path, id, message] of routeCases) {
     assert.match(html, new RegExp(message));
     assert.match(html, /ant-skeleton/);
     assert.doesNotMatch(html, /<svg/, '目标骨架交接后不应重新挂载启动图标');
-    if (path.endsWith('/demo')) assert.match(html, /demo/);
-    if (path.endsWith('/数据库连接')) assert.match(html, /数据库连接/);
+    assert.doesNotMatch(html, /data-split-pane=|demo|数据库连接/, '路由骨架不依赖业务选中项');
   });
 }
 
@@ -318,7 +265,7 @@ test('页面先就绪：配置未返回时始终保留 HTML 动画，配置完�
   assert.doesNotMatch(fixture.render(), /ant-skeleton/);
 });
 
-test('所有路由骨架和共享分栏使用的工具类都有实际样式，避免遗漏已移除的 shortcut', async (t) => {
+test('所有路由骨架使用的工具类都有实际样式，避免遗漏已移除的 shortcut', async (t) => {
   const { default: unoConfig } = await vite.ssrLoadModule('/uno.config.ts');
   const uno = await createGenerator(unoConfig);
   for (const [, path] of routeCases) {
@@ -348,37 +295,17 @@ test('所有路由骨架和共享分栏使用的工具类都有实际样式，�
   }
 });
 
-for (const [name, options, message] of [
-  [
-    '系统首页',
-    { path: '/', home: true, Skeleton: () => createElement(skeletons.SystemsHomeSkeleton) },
-    '系统列表加载中',
-  ],
-  ['应用参数深链接', {}, '列表资源加载中'],
-  [
-    '数据库参数深链接',
-    {
-      path: '/systems/CAC/db/demo',
-      childPath: 'db/:paramTypeName',
-      Skeleton: () => createElement(skeletons.CollectionRouteSkeleton),
-    },
-    '列表资源加载中',
-  ],
-  [
-    '系统概览深链接',
-    {
-      path: '/systems/CAC/overview',
-      childPath: 'overview',
-      Skeleton: () => createElement(skeletons.OverviewSkeleton),
-    },
-    '概览资源加载中',
-  ],
+for (const [name, options] of [
+  ['系统首页', { path: '/', home: true }],
+  ['应用参数深链接', {}],
+  ['数据库参数深链接', { path: '/systems/CAC/db/demo', childPath: 'db/:paramTypeName' }],
+  ['系统概览深链接', { path: '/systems/CAC/overview', childPath: 'overview' }],
 ]) {
-  test(`${name}首次进入或刷新时，页面 chunk 未完成也能展示目标骨架`, (t) => {
+  test(`${name}首次进入或刷新时，页面 chunk 未完成也能展示通用骨架`, (t) => {
     const fixture = setup(t, options);
     assert.equal(fixture.router.state.initialized, false);
     const html = fixture.render();
-    assert.match(html, new RegExp(message));
+    assert.match(html, /页面加载中/);
     assert.match(html, /ant-skeleton/);
     assert.doesNotMatch(html, /<svg/, '不能再接连挂载另一份根级 loading 图标');
   });
@@ -443,23 +370,4 @@ test('页面和配置都失败时仍展示恢复入口，不会永久保留启�
   fixture.store.dispatch(loadUserSettings.rejected(Error('请求超时，请稍后重试'), 'settings'));
   assert.match(fixture.render(), /页面资源加载失败/);
   assert.match(fixture.render(), /刷新页面/);
-});
-
-test('系统列表骨架的卡片容器生成与正文相同的自适应网格，而非未定义的样式类', async (t) => {
-  const { default: unoConfig } = await vite.ssrLoadModule('/uno.config.ts');
-  const uno = await createGenerator(unoConfig);
-  const fixture = setup(t, {
-    path: '/',
-    home: true,
-    Skeleton: skeletons.SystemsHomeSkeleton,
-  });
-  const skeletonHtml = fixture.render();
-  const grid = /<div class="([^"]+)" aria-hidden="true"><div class="workspace-panel /.exec(
-    skeletonHtml,
-  );
-  assert.ok(grid, '系统卡片占位必须有独立的布局容器');
-  const { css } = await uno.generate(grid[1], { preflights: false });
-  assert.match(css, /display:grid/, '骨架节点存在还不够，容器必须实际生成网格样式');
-  assert.match(css, /grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,360px\),1fr\)\)/);
-  assert.match(css, /gap:1rem/, '卡片间距应与正文一致');
 });

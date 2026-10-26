@@ -1,5 +1,5 @@
 /**
- * 设置页面与抽屉共用的布局、主题和图标显示配置面板。
+ * 页头显示设置入口使用的布局、主题和图标配置面板。
  * 所有更改通过 Redux 保存；失败反馈和重试读取同一个状态机，主题预览复用主题定义。
  */
 import { Alert, Button, InputNumber, Radio, Segmented, Slider, Tabs } from 'antd';
@@ -22,7 +22,7 @@ import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '@/types/
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
-import { navigationItems } from '@/router/config';
+import { applicationRouteConfig as navigationItems } from '@/router/application';
 
 /** 预览取实际导航前两个入口，图标和名称随路由配置更新，不另维护一份示例菜单。 */
 const navigationPreviewItems = navigationItems.filter((item) => !item.bottom).slice(0, 2);
@@ -155,9 +155,9 @@ function NavigationColorPreview({
       <span
         className={`flex shrink-0 flex-col gap-0.5 bg-nav px-0.75 py-1 ${iconOnly ? 'w-40px' : 'w-52px'}`}
       >
-        {navigationPreviewItems.map(({ id, label, icon }, index) => (
+        {navigationPreviewItems.map(({ path, label, icon }, index) => (
           <span
-            key={id}
+            key={path}
             className={`flex w-full shrink-0 flex-col items-center justify-center gap-0.5 ${iconOnly ? 'min-h-36px' : 'min-h-46px'} ${index === 0 ? 'font-600 text-nav-emphasis' : 'text-nav-text'}`}
           >
             <span

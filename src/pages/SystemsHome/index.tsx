@@ -4,10 +4,11 @@
  */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Empty, Input, Pagination, Segmented, Spin, Tooltip } from 'antd';
+import { Alert, Button, Empty, Input, Pagination, Segmented, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import { systemsOptions } from '@/queries/systems';
 import CreateSystemModal from './components/CreateSystemModal';
+import SystemsHomeSkeleton from './components/SystemsHomeSkeleton';
 import { descriptionText, filterSystems, isAccessDenied } from '@/utils/systems';
 import { platformHome } from '@/router/paths';
 import type { SystemInfo } from '@/types/systems';
@@ -187,6 +188,8 @@ export default function SystemsHomePage() {
   const current = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
   const visible = filtered.slice((current - 1) * pageSize, current * pageSize);
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
+  // loader 通常已备好缓存；仅无数据的首次等待使用业务骨架，后台刷新保留列表及页面状态。
+  if (query.isPending) return <SystemsHomeSkeleton />;
 
   return (
     <section className="max-w-1600px mx-auto p-5 desktop:p-8" aria-label="系统列表">
@@ -270,15 +273,7 @@ export default function SystemsHomePage() {
           action={<Button onClick={() => void query.refetch()}>重试</Button>}
         />
       )}
-      {query.isPending ? (
-        <div
-          className="grid place-items-center min-h-360px"
-          role="status"
-          aria-label="正在加载系统列表"
-        >
-          <Spin />
-        </div>
-      ) : visible.length ? (
+      {visible.length ? (
         view === 'card' ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] gap-4">
             {visible.map((system) => (

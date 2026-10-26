@@ -4,7 +4,6 @@
  */
 import { queryOptions } from '@tanstack/react-query';
 import { loadSystems, loadSystemAccess } from '@/api/systems.ts';
-import { HttpError } from '@/http/request.ts';
 import { queryClient } from './client.ts';
 import type { SystemInfo } from '@/types/systems.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
@@ -37,7 +36,7 @@ export function parameterTypesOptions(systemName: string) {
 }
 
 export function systemAccessOptions(systemName: string) {
-  return queryOptions<SystemInfo | { denied: true }>({
+  return queryOptions<SystemInfo>({
     queryKey: ['system-access', systemName],
     queryFn: ({ signal }) => loadSystemAccess(systemName, signal),
     staleTime: 0,
@@ -48,7 +47,5 @@ export function systemAccessOptions(systemName: string) {
 }
 /** 并发父子 loader 共用在途查询，每次导航校验新鲜授权，失败不得回退旧缓存。 */
 export async function requireSystemAccess(systemName: string) {
-  const system = await queryClient.fetchQuery(systemAccessOptions(systemName));
-  if ('denied' in system) throw new HttpError(403, '无权访问此系统');
-  return system;
+  return queryClient.fetchQuery(systemAccessOptions(systemName));
 }

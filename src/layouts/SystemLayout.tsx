@@ -16,9 +16,8 @@ export default function SystemLayout() {
   const isDatabase = Boolean(useMatch('/systems/:systemName/db/*'));
   const query = useQuery(systemAccessOptions(systemName!));
   const list = useQuery(systemsOptions());
-  const system = query.data && !('denied' in query.data) ? query.data : undefined;
+  const system = query.data;
   const systems = list.data ?? [];
-  const denied = query.data && 'denied' in query.data;
   if (query.isPending || (!system && query.isFetching))
     return (
       <div className="grid place-items-center flex-1" role="status" aria-label="正在加载系统">
@@ -26,12 +25,7 @@ export default function SystemLayout() {
       </div>
     );
   // 授权失败优先于旧数据；失效的工作区不能继续保留 Outlet。
-  if (
-    denied ||
-    isAccessDenied(query.error) ||
-    (query.error instanceof HttpError && query.error.status === 403)
-  )
-    return <RouteStatusPage forbidden />;
+  if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   if (query.error instanceof HttpError && query.error.status === 404) return <RouteStatusPage />;
   if (query.error && !system) {
     return (
