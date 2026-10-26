@@ -104,7 +104,7 @@ test('业务页面无数据时使用自身骨架，有缓存的刷新及刷新�
       assert.doesNotMatch(pending, /页面加载中|<header\b|<main\b/);
       fixture.client.setQueryData(config.key, config.data);
       let reject;
-      const refresh = fixture.client.fetchQuery({
+      const refresh = fixture.client.query({
         queryKey: config.key,
         queryFn: () =>
           new Promise((_, no) => {
@@ -129,7 +129,7 @@ test('首次数据请求失败后展示错误与重试，不停留在业务骨�
     await t.test(config.path, async (t) => {
       const fixture = setup(t, { ...config, data: undefined });
       await assert.rejects(
-        fixture.client.fetchQuery({
+        fixture.client.query({
           queryKey: config.key,
           queryFn: async () => {
             throw new Error('模拟首次加载失败');

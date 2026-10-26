@@ -15,13 +15,13 @@ test('系统应用列表与旧列表的查询和写入锁完全隔离', async ()
   const cac = applicationListId('CAC');
   const other = applicationListId('其他/系统');
   try {
-    await client.fetchQuery(
+    await client.query(
       groupedListOptions(cac, { load: async () => [{ key: 'a', title: 'CAC应用' }] }),
     );
-    await client.fetchQuery(
+    await client.query(
       groupedListOptions(other, { load: async () => [{ key: 'a', title: '其他应用' }] }),
     );
-    await client.fetchQuery(groupedListOptions('applications', { load: async () => [] }));
+    await client.query(groupedListOptions('applications', { load: async () => [] }));
     assert.equal(client.getQueryData(groupedListKeys.list(cac))[0].title, 'CAC应用');
     assert.equal(client.getQueryData(groupedListKeys.list(other))[0].title, '其他应用');
     assert.notDeepEqual(groupedListKeys.write(cac), groupedListKeys.write(other));

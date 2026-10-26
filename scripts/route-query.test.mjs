@@ -1,3 +1,4 @@
+/** 验证普通路由预取的等待、缓存与错误消费策略，授权查询不经过此预取入口。 */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
@@ -19,7 +20,8 @@ test('无缓存的路由预取等待数据，有缓存的过期查询立即返�
   });
   const options = { queryKey: ['route', 'cold'], queryFn: () => pending };
   let completed = false;
-  const loading = preloadRouteQuery(client, options).then(() => {
+  const loading = preloadRouteQuery(client, options).then((result) => {
+    assert.equal(result, undefined);
     completed = true;
   });
   await new Promise((done) => setImmediate(done));
@@ -34,11 +36,11 @@ test('无缓存的路由预取等待数据，有缓存的过期查询立即返�
   });
   const cached = { queryKey: ['route', 'cached'], staleTime: 0, queryFn: () => refreshing };
   client.setQueryData(cached.queryKey, ['previous']);
-  await preloadRouteQuery(client, cached);
+  assert.equal(await preloadRouteQuery(client, cached), undefined);
   assert.deepEqual(client.getQueryData(cached.queryKey), ['previous']);
   assert.equal(client.getQueryState(cached.queryKey).fetchStatus, 'fetching');
   finishRefresh(['next']);
-  await client.prefetchQuery(cached);
+  await client.query(cached);
   assert.deepEqual(client.getQueryData(cached.queryKey), ['next']);
 });
 
@@ -55,7 +57,7 @@ test('首次预取失败后挂载不重复请求，用户显式重试可恢复',
       return ['recovered'];
     },
   };
-  await preloadRouteQuery(client, options);
+  assert.equal(await preloadRouteQuery(client, options), undefined);
   const observer = new QueryObserver(client, options);
   t.after(observer.subscribe(() => {}));
   await new Promise((done) => setImmediate(done));
@@ -70,18 +72,25 @@ test('首次预取失败后挂载不重复请求，用户显式重试可恢复',
 test('后台刷新失败保留缓存，新页面挂载不再重试同一失败请求', async (t) => {
   const client = setup(t);
   let calls = 0;
+  let rejectRefresh;
+  const refreshing = new Promise((_, reject) => {
+    rejectRefresh = reject;
+  });
   const options = {
     ...routeQueryMountOptions,
     queryKey: ['route', 'background'],
     staleTime: 0,
-    queryFn: async () => {
+    queryFn: () => {
       calls++;
-      throw new Error('offline');
+      return refreshing;
     },
   };
   client.setQueryData(options.queryKey, []);
   await preloadRouteQuery(client, options);
-  await client.prefetchQuery(options);
+  assert.equal(client.getQueryState(options.queryKey).fetchStatus, 'fetching');
+  // 显式控制失败时机，等待后台刷新结束，避免再次预取引入额外请求或依赖微任务顺序。
+  rejectRefresh(new Error('offline'));
+  await new Promise((done) => setImmediate(done));
   const observer = new QueryObserver(client, options);
   t.after(observer.subscribe(() => {}));
   await new Promise((done) => setImmediate(done));

@@ -377,8 +377,10 @@ test('父子 loader 等待授权后并行预取，与组件共享系统维度缓
   queryClient.clear();
   t.after(() => queryClient.clear());
   const requests = [];
-  const original = queryClient.prefetchQuery.bind(queryClient);
-  t.mock.method(queryClient, 'prefetchQuery', (options) => {
+  const original = queryClient.query.bind(queryClient);
+  const prefetch = t.mock.method(queryClient, 'query', (options) => {
+    // 授权与普通预取共用 query；保留真实授权，只替换本测试关注的业务预取。
+    if (options.queryKey[0] === 'system-access') return original(options);
     requests.push(options.queryKey);
     return original({ ...options, queryFn: async () => [] });
   });
@@ -388,13 +390,17 @@ test('父子 loader 等待授权后并行预取，与组件共享系统维度缓
   const child = match('/systems/CAC/db').route.loader({ params: { systemName: 'CAC' } });
   assert.deepEqual(requests, []);
   await Promise.all([parent, child]);
+  // 缓存复用检查使用真实 query，避免预取替身遮蔽意外重发的请求。
+  prefetch.mock.restore();
   assert.deepEqual(
     requests.map(JSON.stringify).sort(),
     [systemsOptions().queryKey, parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
   );
   let refetched = false;
-  const data = await queryClient.fetchQuery({
+  const data = await queryClient.query({
     ...parameterTypesOptions('CAC'),
+    // 此处验证 loader 与组件共用缓存键；显式保持缓存新鲜，不依赖全局 staleTime 的刷新策略。
+    staleTime: Infinity,
     queryFn: async () => {
       refetched = true;
       return ['unexpected'];
@@ -411,11 +417,16 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
     lock = options.mutationKey;
     return 1;
   });
-  const prefetch = t.mock.method(queryClient, 'prefetchQuery', async () => {});
+  const original = queryClient.query.bind(queryClient);
+  const requests = [];
+  t.mock.method(queryClient, 'query', (options) => {
+    requests.push(options.queryKey);
+    return original(options);
+  });
   await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
   const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
   assert.deepEqual(lock, groupedListKeys.write('applications:CAC'));
-  assert.equal(prefetch.mock.callCount(), 0);
+  assert.deepEqual(requests, [['system-access', 'CAC']]);
 });
 
 test('页面 chunk 失败显示静态恢复入口，并保留父级布局', async (t) => {

@@ -47,5 +47,5 @@ export function systemAccessOptions(systemName: string) {
 }
 /** 并发父子 loader 共用在途查询，每次导航校验新鲜授权，失败不得回退旧缓存。 */
 export async function requireSystemAccess(systemName: string) {
-  return queryClient.fetchQuery(systemAccessOptions(systemName));
+  return queryClient.query(systemAccessOptions(systemName));
 }
