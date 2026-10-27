@@ -12,12 +12,11 @@ export function HeaderSkeleton() {
       <div className="flex items-center gap-4 h-51px px-4" aria-hidden="true">
         <Skeleton.Avatar active size={28} shape="square" />
         <Skeleton.Input active size="small" className={`w-128px! ${inputClass}`} />
-        <span className="h-20px w-1px shrink-0 bg-divider" />
         <Skeleton.Input active className={`w-120px! ${inputClass}`} />
         <Skeleton.Input active className={`w-240px! ${inputClass}`} />
-        <div className="flex items-center gap-2 ml-auto">
-          {[0, 1, 2, 3, 4].map((key) => (
-            <Skeleton.Avatar active key={key} size={28} shape="square" />
+        <div className="flex shrink-0 items-center gap-1 ml-auto">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((key) => (
+            <Skeleton.Avatar active key={key} size={36} shape="square" />
           ))}
         </div>
       </div>

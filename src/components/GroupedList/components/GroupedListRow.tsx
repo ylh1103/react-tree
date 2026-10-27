@@ -208,7 +208,7 @@ export const GroupedListRow = memo(function GroupedListRow({
         <span aria-hidden="true" className="w-4 min-w-4 shrink-0" />
 
         <div
-          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-ui bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
+          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
           data-has-actions={!isRenaming || undefined}
           data-menu-open={isMenuOpen || undefined}
           data-has-badge={
@@ -376,7 +376,7 @@ function RenameInput({
 function Highlight({ text, query }: { text: string; query: string }) {
   return highlightText(text, query).map((part, index) =>
     part.match ? (
-      <mark className="bg-tree-search-bg text-tree-search-text rounded-ui" key={index}>
+      <mark className="bg-tree-search-bg text-tree-search-text rounded-control" key={index}>
         {part.text}
       </mark>
     ) : (
@@ -470,7 +470,7 @@ const GroupedLeaf = memo(function GroupedLeaf({
             </span>
             {kind === config.badgeType && (
               <span
-                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--ui-radius)_0_var(--ui-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
+                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--control-radius)_0_var(--control-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
                 data-color={typeColor}
                 title={typeLabel}
                 role="img"

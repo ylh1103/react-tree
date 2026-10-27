@@ -74,8 +74,34 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     }
     return fail(405, '不支持的请求方法');
   }
-  const { allSystems, createSystem, accessSystem } = await import('./systemService.ts');
+  const { allSystems, mySystems, systemPage, createSystem, accessSystem } =
+    await import('./systemService.ts');
   if (config.signal?.aborted) throw new CanceledError();
+  if (url.pathname === '/api/systems/mine' && method === 'GET') return response(mySystems());
+  if (url.pathname === '/api/systems/page' && method === 'GET') {
+    const param = (name: string) => config.params?.[name] ?? url.searchParams.get(name);
+    const pageNum = Number(param('pageNum') ?? 1);
+    const pageSize = Number(param('pageSize') ?? 8);
+    const relation = param('userRelation');
+    if (
+      !Number.isSafeInteger(pageNum) ||
+      pageNum < 1 ||
+      !Number.isSafeInteger(pageSize) ||
+      pageSize < 1 ||
+      pageSize > 100
+    )
+      return fail(400, '分页参数无效');
+    if (relation != null && ![true, false, 'true', 'false'].includes(relation))
+      return fail(400, '加入状态无效');
+    return response(
+      systemPage({
+        pageNum,
+        pageSize,
+        keyword: String(param('keyword') ?? ''),
+        userRelation: relation == null ? undefined : relation === true || relation === 'true',
+      }),
+    );
+  }
   if (url.pathname === '/api/systems') {
     if (method === 'GET') return response(allSystems());
     if (method === 'POST')

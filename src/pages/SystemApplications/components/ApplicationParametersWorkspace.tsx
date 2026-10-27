@@ -1,6 +1,11 @@
 import { App as AntdApp, Button, Checkbox, Empty, Popover, Switch, Tooltip } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-import { fitEnvironmentCount, getToolbarActionLabelMode } from './toolbarLayout';
+import {
+  actionLabelModes,
+  fitToolbarLayout,
+  type ActionLabelMode,
+  type ToolbarLayout,
+} from './toolbarLayout';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { OverlayHorizontalScroll } from '@/components/OverlayHorizontalScroll';
 
@@ -84,62 +89,77 @@ export function ApplicationParametersEmptyState({
   );
 }
 
+/** 按实际剩余宽度收纳环境与按钮文字，环境选择及比对状态不随收纳改变。 */
 export function ApplicationParametersToolbar({
   selectedEnvironments,
   onChange,
 }: EnvironmentSelectionProps) {
   const [comparisonEnabled, setComparisonEnabled] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
-  const [visibleCount, setVisibleCount] = useState(previewEnvironments.length);
-  const [actionLabelMode, setActionLabelMode] = useState<'icons' | 'primary' | 'all'>('icons');
-  const [showMoreLabel, setShowMoreLabel] = useState(false);
+  const [layout, setLayout] = useState<ToolbarLayout>({
+    visibleCount: previewEnvironments.length,
+    actionLabelMode: 'icons',
+    showMoreLabel: false,
+  });
+  const { visibleCount, actionLabelMode, showMoreLabel } = layout;
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowId = useId();
   // 应用切换会重新挂载工具栏，首帧绘制前完成测量，避免图标先显示再补上文字。
   useLayoutEffect(() => {
-    const header = toolbarRef.current?.parentElement;
-    const actions = actionsRef.current;
+    const toolbar = toolbarRef.current;
     const comparison = comparisonRef.current;
     const measure = measureRef.current;
-    if (!header || !actions || !comparison || !measure) return;
-    let previousContentWidth = 0;
+    if (!toolbar || !comparison || !measure) return;
+    let previous: ToolbarLayout | undefined;
     function updateLayout() {
-      if (!header || !actions || !comparison || !measure) return;
-      const style = getComputedStyle(header);
-      setActionLabelMode(getToolbarActionLabelMode(header.getBoundingClientRect().width));
-      const contentWidth =
-        header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-      const resizing =
-        previousContentWidth !== 0 && Math.abs(contentWidth - previousContentWidth) > 0.5;
-      previousContentWidth = contentWidth;
+      if (!toolbar || !comparison || !measure) return;
       const labels = Array.from(measure.querySelectorAll('label'));
-      const allWidth = labels[0]?.getBoundingClientRect().width ?? 50;
-      const environmentWidths = labels.slice(1).map((label) => label.getBoundingClientRect().width);
-      const reserveTitle = contentWidth < 680 ? 100 : 220;
-      const availableWidth =
-        contentWidth -
-        reserveTitle -
-        actions.getBoundingClientRect().width -
-        comparison.getBoundingClientRect().width -
-        45;
-      const more = measure.querySelector('button');
-      const moreWidth = more?.getBoundingClientRect().width ?? 70;
-      setShowMoreLabel(contentWidth >= 760);
-      setVisibleCount((previousCount) =>
-        fitEnvironmentCount({
-          availableWidth,
-          allWidth,
-          environmentWidths,
-          moreWidth,
-          previousCount: resizing ? previousCount : environmentWidths.length,
-        }),
+      const widthOf = (selector: string) =>
+        measure.querySelector(selector)?.getBoundingClientRect().width ?? 0;
+      const gap = parseFloat(getComputedStyle(toolbar).columnGap) || 0;
+      const comparisonGroup = comparison.parentElement;
+      const comparisonGap = comparisonGroup
+        ? parseFloat(getComputedStyle(comparisonGroup).columnGap) || 0
+        : 0;
+      const dividerWidth =
+        comparisonGroup?.querySelector('[data-toolbar-divider]')?.getBoundingClientRect().width ??
+        0;
+      const next = fitToolbarLayout({
+        // 标题自然占宽后，flex 分配给工具栏的宽度就是可用空间，无需预估标题长度。
+        availableWidth:
+          toolbar.clientWidth -
+          comparison.getBoundingClientRect().width -
+          comparisonGap * 2 -
+          dividerWidth,
+        allWidth: labels[0]?.getBoundingClientRect().width ?? 0,
+        environmentWidths: labels.slice(1).map((label) => label.getBoundingClientRect().width),
+        moreWidths: { label: widthOf('[data-more="label"]'), icon: widthOf('[data-more="icon"]') },
+        actionWidths: {
+          all: widthOf('[data-actions="all"]'),
+          primary: widthOf('[data-actions="primary"]'),
+          icons: widthOf('[data-actions="icons"]'),
+        },
+        groupGap: gap,
+        previous,
+      });
+      previous = next;
+      setLayout((current) =>
+        current.visibleCount === next.visibleCount &&
+        current.actionLabelMode === next.actionLabelMode &&
+        current.showMoreLabel === next.showMoreLabel
+          ? current
+          : next,
       );
     }
     const observer = new ResizeObserver(updateLayout);
-    [header, actions, comparison, measure].forEach((element) => observer.observe(element));
+    [
+      toolbar,
+      comparison,
+      measure,
+      ...measure.querySelectorAll('[data-actions], [data-more], label'),
+    ].forEach((element) => observer.observe(element));
     updateLayout();
     return () => observer.disconnect();
   }, []);
@@ -165,10 +185,7 @@ export function ApplicationParametersToolbar({
     },
   };
   return (
-    <div
-      ref={toolbarRef}
-      className="flex min-w-0 flex-[1_0_auto] items-center justify-between gap-3"
-    >
+    <div ref={toolbarRef} className="ml-2 flex min-w-0 flex-1 items-center justify-between gap-3">
       <div
         aria-hidden="true"
         inert
@@ -182,13 +199,25 @@ export function ApplicationParametersToolbar({
           environments={previewEnvironments}
           inline
         />
-        <Button
-          type="text"
-          className="px-1.5! gap-1! text-12px!"
-          icon={<span className="i-lucide-ellipsis w-16px h-16px" />}
-        >
-          更多 <span className="text-12px">5</span>
-        </Button>
+        {(['label', 'icon'] as const).map((mode) => (
+          <Button
+            key={mode}
+            data-more={mode}
+            type="text"
+            className="px-1.5! gap-1! text-12px!"
+            icon={<span className="i-lucide-ellipsis w-16px h-16px" />}
+          >
+            {mode === 'label' && <span>更多</span>}
+            <span className="min-w-16px rounded-control bg-hover px-1 text-11px text-accent-text tabular-nums">
+              5
+            </span>
+          </Button>
+        ))}
+        {actionLabelModes.map((mode) => (
+          <div key={mode} data-actions={mode} className="w-max">
+            <ToolbarActions labelMode={mode} />
+          </div>
+        ))}
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="flex items-center gap-1">
@@ -236,7 +265,7 @@ export function ApplicationParametersToolbar({
             </Popover>
           )}
         </div>
-        <span className="h-18px w-1px bg-divider" aria-hidden="true" />
+        <span data-toolbar-divider className="h-18px w-1px bg-divider" aria-hidden="true" />
         <Tooltip title={comparisonHint} trigger={['hover', 'focus']}>
           <div
             ref={comparisonRef}
@@ -271,39 +300,46 @@ export function ApplicationParametersToolbar({
           </div>
         </Tooltip>
       </div>
-      <div ref={actionsRef} className="ml-auto flex shrink-0 items-center gap-2">
-        <Tooltip title="快照对比" trigger={['hover', 'focus']}>
-          <Button
-            type="primary"
-            aria-label="快照对比"
-            className={actionLabelMode === 'icons' ? 'w-32px! px-0! gap-0!' : undefined}
-            icon={<span className="i-lucide-git-compare-arrows h-16px w-16px" aria-hidden="true" />}
-            onClick={() => void message.info('快照对比功能尚未接入')}
-          >
-            {actionLabelMode !== 'icons' && <span>快照对比</span>}
-          </Button>
-        </Tooltip>
-        <Tooltip title="参数值加密及验证" trigger={['hover', 'focus']}>
-          <Button
-            aria-label="参数值加密及验证"
-            className={actionLabelMode !== 'all' ? 'w-32px! px-0! gap-0!' : undefined}
-            icon={<span className="i-lucide-shield-check h-16px w-16px" aria-hidden="true" />}
-            onClick={() => void message.info('参数值加密及验证功能尚未接入')}
-          >
-            {actionLabelMode === 'all' && <span>参数值加密及验证</span>}
-          </Button>
-        </Tooltip>
-        <Tooltip title="一键修改多环境配置" trigger={['hover', 'focus']}>
-          <Button
-            aria-label="一键修改多环境配置"
-            className={actionLabelMode !== 'all' ? 'w-32px! px-0! gap-0!' : undefined}
-            icon={<span className="i-lucide-file-pen-line h-16px w-16px" aria-hidden="true" />}
-            onClick={() => void message.info('多环境配置修改功能尚未接入')}
-          >
-            {actionLabelMode === 'all' && <span>一键修改多环境配置</span>}
-          </Button>
-        </Tooltip>
-      </div>
+      <ToolbarActions
+        labelMode={actionLabelMode}
+        onAction={(label) => void message.info(`${label}功能尚未接入`)}
+      />
+    </div>
+  );
+}
+
+const toolbarActions = [
+  { label: '快照对比', icon: 'i-lucide-git-compare-arrows', primary: true },
+  { label: '参数值加密及验证', icon: 'i-lucide-shield-check', primary: false },
+  { label: '一键修改多环境配置', icon: 'i-lucide-file-pen-line', primary: false },
+];
+
+/** 测量副本和可见按钮复用同一结构；只过渡颜色，避免首帧测量切换文字时触发尺寸动画。 */
+function ToolbarActions({
+  labelMode,
+  onAction,
+}: {
+  labelMode: ActionLabelMode;
+  onAction?: (label: string) => void;
+}) {
+  return (
+    <div className="ml-auto flex shrink-0 items-center gap-2">
+      {toolbarActions.map((action) => {
+        const showLabel = labelMode === 'all' || (labelMode === 'primary' && action.primary);
+        return (
+          <Tooltip key={action.label} title={action.label} trigger={['hover', 'focus']}>
+            <Button
+              type={action.primary ? 'primary' : 'default'}
+              aria-label={action.label}
+              className={`[transition-property:color,background-color,border-color,box-shadow]! ${showLabel ? '' : 'w-32px! px-0! gap-0!'}`}
+              icon={<span className={`${action.icon} h-16px w-16px`} aria-hidden="true" />}
+              onClick={() => onAction?.(action.label)}
+            >
+              {showLabel && <span>{action.label}</span>}
+            </Button>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 }

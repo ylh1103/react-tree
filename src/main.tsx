@@ -35,20 +35,12 @@ import.meta.hot?.dispose(stopUserSettingsEffects);
 // 样式结束并挂载 React 后，根路由/App 先保留 HTML 原动画，首次配置等待结束后再展示骨架或正文。
 void store.dispatch(loadUserSettings());
 
-// HMR 可能发生在样式等待期间；标记旧入口失效，阻止其异步回调在新入口之后再次挂载。
-// 此标记不取消浏览器的样式下载，也不会使 waitForBootstrapStyles 主动拒绝。
-let disposed = false;
-import.meta.hot?.dispose(() => {
-  disposed = true;
-});
-
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 
 // 等标记样式结束后再挂载，减少样式尚未应用时的页面闪现；失败的链接也会结束等待。
 // 无需在入口串行等待配置或整个 Router 初始化：各显示分支在首次配置等待结束后再交接 HTML 画面。
 void waitForBootstrapStyles().then(
   () => {
-    if (disposed) return;
     createRoot(document.getElementById('root')!).render(
       <BootstrapLoadingProvider
         initialActive={Boolean(document.getElementById('bootstrap-loading'))}
@@ -68,7 +60,7 @@ void waitForBootstrapStyles().then(
     );
   },
   (error: unknown) => {
-    // 样式资源的 load/error 均由等待函数正常处理；此处仅传播意外异常，旧入口失效后忽略它。
-    if (!disposed) throw error;
+    // 样式资源的 load/error 均由等待函数正常处理；此处仅传播意外异常。
+    throw error;
   },
 );

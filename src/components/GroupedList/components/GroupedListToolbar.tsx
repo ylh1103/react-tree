@@ -8,6 +8,7 @@ import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import type { TreeToolbarContext, GroupedListConfig } from '../types';
+import { useToolbarOverflow } from '../hooks/useToolbarOverflow';
 
 export function GroupedListToolbar({
   context,
@@ -23,6 +24,8 @@ export function GroupedListToolbar({
   refresh: () => Promise<void>;
 }) {
   const { layoutMode } = useLayoutPreferences();
+  const { collapsed, headerRef, headingRef, actionsRef, secondaryRef, primaryRef } =
+    useToolbarOverflow();
   const refreshing = useIsFetching({ queryKey: groupedListKeys.list(listId), exact: true }) > 0;
   const {
     selectedKey,
@@ -66,63 +69,68 @@ export function GroupedListToolbar({
       onClick: isEditing ? cancel : enterEdit,
     },
   ];
-  // 筛选统计需要显示“匹配 / 总数”，优先为标题和完整统计留出空间。
-  const fullActionsClass = context.isFiltered
-    ? 'inline-flex [@container(max-width:319px)]:hidden'
-    : 'inline-flex [@container(max-width:255px)]:hidden';
-  const compactActionsClass = context.isFiltered
-    ? 'hidden [@container(max-width:319px)]:inline-flex'
-    : 'hidden [@container(max-width:255px)]:inline-flex';
   return (
     <>
       <div className="shrink-0 min-w-0 [container-type:inline-size]">
         <header
+          ref={headerRef}
           className={`${layoutMode === 'compact' ? 'workspace-titlebar mb-3' : 'workspace-titlebar-layout workspace-titlebar-frame-edge'} workspace-collection-titlebar`}
         >
-          <GroupedListHeading context={context} config={config} />
-          <div className="flex shrink-0 gap-1 ml-auto [@container(min-width:320px)]:gap-1.5">
-            {secondaryActions.slice(0, 2).map((action) => (
-              <span key={action.key} className={fullActionsClass}>
-                <Tooltip title={action.tooltip ?? action.label}>
+          <div ref={headingRef} className="shrink-0">
+            <GroupedListHeading context={context} config={config} />
+          </div>
+          <div ref={actionsRef} className="relative flex shrink-0 gap-1 ml-auto">
+            <div
+              ref={secondaryRef}
+              className={`flex shrink-0 gap-1 ${collapsed ? 'absolute invisible pointer-events-none' : ''}`}
+              aria-hidden={collapsed || undefined}
+              inert={collapsed}
+            >
+              {secondaryActions.slice(0, 2).map((action) => (
+                <span key={action.key} className="inline-flex">
+                  <Tooltip title={action.tooltip ?? action.label}>
+                    <Button
+                      size="small"
+                      aria-label={action.label}
+                      disabled={action.disabled}
+                      onClick={action.onClick}
+                      icon={action.icon}
+                    />
+                  </Tooltip>
+                </span>
+              ))}
+            </div>
+            <div ref={primaryRef} className="flex shrink-0 gap-1">
+              <Tooltip title={`刷新${config.label}列表`}>
+                <Button
+                  size="small"
+                  aria-label={`刷新${config.label}列表`}
+                  disabled={isEditing || busy}
+                  loading={refreshing}
+                  onClick={refresh}
+                  icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
+                />
+              </Tooltip>
+              <span className="inline-flex">
+                <Tooltip title={secondaryActions[2].label}>
                   <Button
                     size="small"
-                    aria-label={action.label}
-                    disabled={action.disabled}
-                    onClick={action.onClick}
-                    icon={action.icon}
+                    type={isEditing ? 'primary' : 'default'}
+                    aria-label={isEditing ? '关闭分组编辑模式' : '打开分组编辑模式'}
+                    aria-pressed={isEditing}
+                    onClick={isEditing ? cancel : enterEdit}
+                    disabled={busy}
+                    icon={
+                      <span
+                        aria-hidden="true"
+                        className="i-lucide:list-chevrons-up-down rotate-180"
+                      />
+                    }
                   />
                 </Tooltip>
               </span>
-            ))}
-            <Tooltip title={`刷新${config.label}列表`}>
-              <Button
-                size="small"
-                aria-label={`刷新${config.label}列表`}
-                disabled={isEditing || busy}
-                loading={refreshing}
-                onClick={refresh}
-                icon={<span aria-hidden="true" className="i-lucide-refresh-cw" />}
-              />
-            </Tooltip>
-            <span className="inline-flex">
-              <Tooltip title={secondaryActions[2].label}>
-                <Button
-                  size="small"
-                  type={isEditing ? 'primary' : 'default'}
-                  aria-label={isEditing ? '关闭分组编辑模式' : '打开分组编辑模式'}
-                  aria-pressed={isEditing}
-                  onClick={isEditing ? cancel : enterEdit}
-                  disabled={busy}
-                  icon={
-                    <span
-                      aria-hidden="true"
-                      className="i-lucide:list-chevrons-up-down rotate-180"
-                    />
-                  }
-                />
-              </Tooltip>
-            </span>
-            <span className={compactActionsClass}>
+            </div>
+            <span className={collapsed ? 'inline-flex' : 'hidden'}>
               <Dropdown
                 trigger={['click']}
                 placement="bottomRight"

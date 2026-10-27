@@ -4,13 +4,19 @@
  */
 import type { SystemInfo } from '@/types/systems.ts';
 
-/** 搜索仅依赖系统业务资料，不再包含当前访问者的个人角色筛选。 */
+/** 搜索覆盖系统标识、组织和人员，关系与角色筛选由各目录独立处理。 */
 export function filterSystems<T extends SystemInfo>(systems: T[], search: string) {
   const keyword = search.trim().toLocaleLowerCase();
   return systems.filter((system) =>
-    [system.systemName, system.systemChineseName, system.systemArchNo].some((value) =>
-      (value ?? '').toLocaleLowerCase().includes(keyword),
-    ),
+    [
+      system.systemName,
+      system.systemChineseName,
+      system.systemArchNo,
+      system.ownRoom,
+      system.ownGroup,
+      system.systemCharges,
+      system.approverCharge,
+    ].some((value) => (value ?? '').toLocaleLowerCase().includes(keyword)),
   );
 }
 

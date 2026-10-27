@@ -1,4 +1,5 @@
-import type { SystemInfo } from '@/types/systems.ts';
+/** 系统目录示例与独立关系夹具；关系仅模拟列表响应，不代表登录用户或授权。 */
+import type { MySystemInfo, SystemInfo } from '@/types/systems.ts';
 
 const cac: SystemInfo = {
   systemName: 'CAC',
@@ -18,6 +19,17 @@ const cac: SystemInfo = {
 
 export const mockSystems: SystemInfo[] = [
   cac,
+  {
+    ...cac,
+    systemName: 'CACTEST1',
+    systemArchNo: 'LL57.CACTEST1',
+    systemDesc: '<p>信用卡核心账务处理，包括利息 入账 账单 延滞 管制 等账务业务</p >',
+    appCount: 3,
+    paramTypeCount: 1,
+    systemCharges: '余甜/307281,刘涛/324985,晏露辉/IT009682',
+    approverYstId: 'AAFNTD,307281,310798',
+    approverCharge: '余甜/307281,谢伟业/310798,吴图威/IT009653',
+  },
   ...[
     ['CCCMonitor', '新核心监控系统', 10, 137, '核心业务运行监控与参数管理'],
     ['LR13_CCP', '信用卡核心 - 支付业务', 0, 0, ''],
@@ -38,3 +50,10 @@ export const mockSystems: SystemInfo[] = [
     systemCharges: '谢伟业/310798,陈韦达/280480',
   })),
 ];
+
+/** 使用明确的接口示例关系，绝不根据负责人、姓名或员工编号推断成员资格。 */
+export const mockSystemRelations: Record<string, Pick<MySystemInfo, 'ystId' | 'role'>> = {
+  CAC: { ystId: '310798', role: 'R' },
+  CACTEST1: { ystId: '310798', role: 'V' },
+  ParamPlat: { ystId: '310798', role: 'D' },
+};

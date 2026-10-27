@@ -13,6 +13,7 @@ let vite;
 let createAppStore;
 let SystemContext;
 let home;
+let allSystemsPanel;
 let application;
 let database;
 let uno;
@@ -26,6 +27,9 @@ before(async () => {
   ({ createAppStore } = await vite.ssrLoadModule('/src/store/index.ts'));
   ({ SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx'));
   ({ default: home } = await vite.ssrLoadModule('/src/pages/SystemsHome/index.tsx'));
+  ({ default: allSystemsPanel } = await vite.ssrLoadModule(
+    '/src/pages/SystemsHome/components/AllSystemsPanel.tsx',
+  ));
   ({ default: application } = await vite.ssrLoadModule('/src/pages/SystemApplications/index.tsx'));
   ({ default: database } = await vite.ssrLoadModule('/src/pages/DatabaseParameters/index.tsx'));
   const { default: config } = await vite.ssrLoadModule('/uno.config.ts');
@@ -36,7 +40,9 @@ after(() => vite?.close());
 /** 使用真实页面和独立缓存控制 pending/fetching/error，不运行 loader 或业务接口。 */
 function setup(t, { Page, path, routePath, key, data, platform = 'application' }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  if (data !== undefined) client.setQueryData(key, data);
+  if (data !== undefined) {
+    client.setQueryData(key, data);
+  }
   const router = createMemoryRouter([{ path: routePath, Component: Page }], {
     initialEntries: [path],
   });
@@ -64,15 +70,19 @@ function setup(t, { Page, path, routePath, key, data, platform = 'application' }
   return { client, render };
 }
 
+function AllSystemsFixture() {
+  return createElement(allSystemsPanel, { active: true, onDetails: () => {} });
+}
+
 function cases() {
   return [
     {
       Page: home,
       path: '/',
       routePath: '/',
-      key: ['systems', 'list'],
+      key: ['systems', 'mine'],
       message: '系统列表加载中',
-      data: [system],
+      data: [{ ...system, role: 'V', ystId: '' }],
     },
     {
       Page: application,
@@ -90,6 +100,14 @@ function cases() {
       message: '列表资源加载中',
       data: [],
       platform: 'database',
+    },
+    {
+      Page: AllSystemsFixture,
+      path: '/catalog-test',
+      routePath: '/catalog-test',
+      key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }],
+      message: '系统列表加载中',
+      data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 8 },
     },
   ];
 }
@@ -210,6 +228,7 @@ test('业务骨架布局工具类有实际样式，系统卡片保持与正文�
   assert.ok(grid, '系统卡片占位必须有独立的布局容器');
   const { css } = await uno.generate(grid[1], { preflights: false });
   assert.match(css, /display:grid/);
-  assert.match(css, /grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,360px\),1fr\)\)/);
+  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(css, /gap:1rem/);
 });

@@ -1,4 +1,4 @@
-/** 全局页头：系统切换、平台切换、常用工具与显示设置入口。 */
+/** 全局页头：系统与平台切换、平铺展示的快捷工具和显示设置入口。 */
 import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
@@ -22,8 +22,6 @@ const headerTools = [
     content: '从左侧菜单切换功能。应用与搜索支持拖动分割线调整侧栏，Ctrl / ⌘ B 可切换侧栏。',
   },
 ] as const;
-const primaryTools = headerTools.slice(5);
-const secondaryTools = headerTools.slice(0, 5);
 
 function subscribeWideHeader(onChange: () => void) {
   const media = window.matchMedia('(min-width: 1280px)');
@@ -39,12 +37,12 @@ export function AppHeader() {
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
   const wideHeader = useSyncExternalStore(subscribeWideHeader, getWideHeaderSnapshot);
   const [activeTool, setActiveTool] = useState<string | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const activeSecondaryTool = secondaryTools.find((tool) => tool.label === activeTool);
   const showToolTips = headerToolsIconOnly || !wideHeader;
   const contextControlClass =
     'h-36px! px-2.5! gap-2! text-13px! rounded-control! layout-focus motion-reduce:transition-none!';
   const toolControlClass = `shrink-0 h-36px! text-13px! text-text-secondary! rounded-control! layout-focus motion-reduce:transition-none! ${showToolTips ? 'w-36px! px-0! gap-0!' : 'px-2.5! gap-2!'}`;
+  // 仅图标模式放大图形以提高辨识度，保持按钮尺寸和头部布局稳定。
+  const toolIconSizeClass = showToolTips ? 'w-18px h-18px' : 'w-16px h-16px';
 
   return (
     <header className="shrink-0 min-w-0 text-text bg-header border-b border-b-solid border-divider">
@@ -69,11 +67,9 @@ export function AppHeader() {
             <span className="text-18px font-600 leading-26px whitespace-nowrap">灵动参数管家</span>
           </Button>
         </h1>
-        <span className="h-20px w-1px shrink-0 bg-divider" aria-hidden="true" />
-
         <div className="flex flex-1 items-center gap-3 min-w-0">
           <nav aria-label="当前工作上下文" className="flex flex-1 items-center gap-2 min-w-0">
-            {workspace ? (
+            {workspace && (
               <>
                 <Dropdown
                   trigger={['click']}
@@ -123,7 +119,6 @@ export function AppHeader() {
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="shrink-0 font-600">{workspace.system.systemName}</span>
-                      <span className="h-12px w-1px shrink-0 bg-divider" aria-hidden="true" />
                       <span className="truncate text-text-secondary">
                         {workspace.system.systemChineseName}
                       </span>
@@ -135,13 +130,14 @@ export function AppHeader() {
                   </Button>
                 </Dropdown>
               </>
-            ) : (
-              <span className="text-13px text-text-muted">参数管理平台</span>
             )}
           </nav>
 
-          <nav aria-label="快捷工具" className="flex shrink-0 items-center ml-auto gap-1">
-            {primaryTools.map((tool) => (
+          <nav
+            aria-label="快捷工具"
+            className={`flex shrink-0 items-center ml-auto ${showToolTips ? 'gap-2' : 'gap-1'}`}
+          >
+            {headerTools.map((tool) => (
               <Popover
                 key={tool.label}
                 title={tool.label}
@@ -160,7 +156,9 @@ export function AppHeader() {
                   <Button
                     type="text"
                     htmlType="button"
-                    icon={<span className={`${tool.icon} w-16px h-16px`} aria-hidden="true" />}
+                    icon={
+                      <span className={`${tool.icon} ${toolIconSizeClass}`} aria-hidden="true" />
+                    }
                     aria-label={tool.label}
                     className={toolControlClass}
                   >
@@ -169,85 +167,19 @@ export function AppHeader() {
                 </Tooltip>
               </Popover>
             ))}
-            <Popover
-              title={activeSecondaryTool?.label}
-              content={
-                <div className="max-w-260px text-13px leading-22px">
-                  {activeSecondaryTool?.content}
-                </div>
-              }
-              trigger="click"
-              placement="bottomRight"
-              open={Boolean(activeSecondaryTool)}
-              onOpenChange={(open) => {
-                if (!open) setActiveTool(null);
-              }}
-            >
-              <Dropdown
-                trigger={['click']}
-                placement="bottomRight"
-                open={moreOpen}
-                onOpenChange={(open) => {
-                  setMoreOpen(open);
-                  if (open) setActiveTool(null);
-                }}
-                menu={{
-                  selectable: false,
-                  className:
-                    'min-w-200px [&_.ant-dropdown-menu-item]:min-h-36px [&_.ant-dropdown-menu-item]:gap-2!',
-                  items: [
-                    {
-                      type: 'group',
-                      label: '管理与检视',
-                      children: secondaryTools.slice(2).map((tool) => ({
-                        key: tool.label,
-                        label: tool.label,
-                        icon: <span className={`${tool.icon} w-16px h-16px`} aria-hidden="true" />,
-                      })),
-                    },
-                    { type: 'divider' },
-                    {
-                      type: 'group',
-                      label: '相关入口',
-                      children: secondaryTools.slice(0, 2).map((tool) => ({
-                        key: tool.label,
-                        label: tool.label,
-                        icon: <span className={`${tool.icon} w-16px h-16px`} aria-hidden="true" />,
-                      })),
-                    },
-                  ],
-                  onClick: ({ key }) => {
-                    setMoreOpen(false);
-                    setActiveTool(key);
-                  },
-                }}
-              >
-                <Tooltip
-                  title={showToolTips && !moreOpen && !activeSecondaryTool ? '更多工具' : undefined}
-                  trigger={['hover', 'focus']}
-                >
-                  <Button
-                    type="text"
-                    aria-label="更多工具"
-                    className={toolControlClass}
-                    icon={<span className="i-lucide-ellipsis w-16px h-16px" aria-hidden="true" />}
-                  >
-                    {!showToolTips && <span>更多</span>}
-                  </Button>
-                </Tooltip>
-              </Dropdown>
-            </Popover>
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center pl-3 border-l border-l-solid border-divider">
+        <div className="flex shrink-0 items-center">
           <Tooltip title="显示设置">
             <Button
               type="text"
               aria-label="显示设置"
               onClick={() => dispatch(openUserSettings())}
               className="h-36px! w-36px! px-0! rounded-control! layout-focus"
-              icon={<span className="i-lucide-settings-2 w-16px h-16px" aria-hidden="true" />}
+              icon={
+                <span className={`i-lucide-settings-2 ${toolIconSizeClass}`} aria-hidden="true" />
+              }
             />
           </Tooltip>
         </div>

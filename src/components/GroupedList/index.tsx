@@ -43,7 +43,8 @@ const dragMeasuring = {
 
 const ROW_HEIGHT = 42;
 const ROW_GAP = 10;
-// 列表底部留白；顶部间距放在搜索区内，滚动时保持固定。
+// 首行在滚动区域内预留 4px，容纳外扩焦点轮廓；其余顶部间距由搜索区提供。
+const LIST_PADDING_START = 4;
 const LIST_PADDING = 12;
 const getSearchText = (node: LeafNode) => `${node.title} ${node.data.desc ?? ''}`;
 const matchesSearch = createSearchMatcher(getSearchText);
@@ -195,7 +196,7 @@ export function GroupedList({
     getScrollElement: () => parentScrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     gap: ROW_GAP,
-    paddingStart: 0,
+    paddingStart: LIST_PADDING_START,
     paddingEnd: LIST_PADDING,
     overscan: 8,
   });
@@ -327,7 +328,7 @@ export function GroupedList({
               cancel: handleCancel,
             }}
           />
-          <div className="flex shrink-0 items-center gap-2 px-4 pb-3 bg-surface">
+          <div className="flex shrink-0 items-center gap-2 px-4 pb-2 bg-surface">
             <Space.Compact className="w-full">
               <Input
                 placeholder={`请输入${config.label}名称或描述`}
@@ -367,6 +368,7 @@ export function GroupedList({
                 }}
               >
                 <Tooltip
+                  mouseEnterDelay={0.3}
                   open={filterMenuOpen ? false : undefined}
                   title={`${config.filterLabel}：${config.options.find((option) => option.value === typeFilter)?.label}`}
                 >
@@ -509,9 +511,9 @@ function TreeDragPreview({
       {activeDragNode ? (
         <div
           aria-hidden="true"
-          className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-ui bg-tree-preview-bg text-tree-preview-text shadow-[0_2px_6px_var(--color-tree-preview-shadow)] text-[12px] pointer-events-none select-none"
+          className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-control bg-tree-preview-bg text-tree-preview-text shadow-[0_2px_6px_var(--color-tree-preview-shadow)] text-[12px] pointer-events-none select-none"
         >
-          <div className="tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)] px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-ui text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2 [overflow-wrap:anywhere] pointer-events-none">
+          <div className="tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)] px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-control text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2 [overflow-wrap:anywhere] pointer-events-none">
             {dropDescription}
           </div>
           <span className="tree-drag-preview-icon flex shrink-0 text-[var(--accent)] text-[14px]">
@@ -525,7 +527,7 @@ function TreeDragPreview({
             {activeDragNode.title || '未命名分组'}
           </span>
           {activeDragNode.type === 'branch' && (
-            <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-ui bg-tree-preview-count-bg text-tree-preview-count-text text-[10px] leading-4 whitespace-nowrap tabular-nums">
+            <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-control bg-tree-preview-count-bg text-tree-preview-count-text text-[10px] leading-4 whitespace-nowrap tabular-nums">
               {activeDragNode.children.length} 项
             </span>
           )}

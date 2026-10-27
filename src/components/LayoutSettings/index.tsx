@@ -284,9 +284,9 @@ function PreferenceSlider({
         {compact
           ? `标准布局已保存 ${value} px，切换后恢复`
           : setting === 'borderRadius'
-            ? '内容面板和列表节点的圆角，松开滑块或结束输入后保存'
+            ? '内容面板的圆角，松开滑块或结束输入后保存'
             : setting === 'controlBorderRadius'
-              ? '按钮、输入框等控件的圆角，松开滑块或结束输入后保存'
+              ? '按钮、输入框和列表节点等控件的圆角，松开滑块或结束输入后保存'
               : '模块间距，松开滑块或结束输入后保存'}
       </p>
       <div className="px-1">
@@ -392,7 +392,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
       <Tabs
         defaultActiveKey="appearance"
         tabBarGutter={0}
-        className="min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-ui [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
+        className="min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
         classNames={{
           header: 'shrink-0! mx-1! pt-3! pb-2! mb-1! before:border-0!',
           body: 'h-full! min-h-0!',

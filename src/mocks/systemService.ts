@@ -1,6 +1,13 @@
-/** 模拟系统服务：保留系统数据读写和接口错误，不模拟登录身份或成员关系。 */
-import type { CreateSystemInput, SystemInfo } from '@/types/systems.ts';
-import { mockSystems } from './systems.ts';
+/** 模拟系统目录与关系响应；访问始终独立走 accessSystem，不从目录关系授予权限。 */
+import type {
+  AllSystemInfo,
+  CreateSystemInput,
+  MySystemInfo,
+  SystemInfo,
+  SystemPage,
+  SystemPageParams,
+} from '@/types/systems.ts';
+import { mockSystems, mockSystemRelations } from './systems.ts';
 import { createMockParameters } from './parameters.ts';
 import { mockConfig } from './config.ts';
 import { readMock, writeMock } from './storage.ts';
@@ -12,7 +19,13 @@ const records = () =>
     'systems',
     mockSystems.map((item) => ({
       ...item,
-      appCount: item.appCount ? mockConfig.applicationCount : 0,
+      // 需求示例保留小规模清单；其余既有夹具继续使用全局压力测试规模。
+      appCount:
+        item.systemName === 'CACTEST1'
+          ? item.appCount
+          : item.appCount
+            ? mockConfig.applicationCount
+            : 0,
       paramTypeCount: item.paramTypeCount
         ? Math.min(item.paramTypeCount, createMockParameters().length)
         : 0,
@@ -31,9 +44,51 @@ const records = () =>
     approverYstId: item.approverYstId,
     approverCharge: item.approverCharge,
   }));
-/** 返回业务系统列表，不附加当前访问者资料。 */
-export function allSystems(): SystemInfo[] {
-  return records();
+const relations = () => readMock('system-relations', mockSystemRelations);
+/** 全部目录只附加明确的加入标记，不泄露个人编号和角色。 */
+export function allSystems(): AllSystemInfo[] {
+  const membership = relations();
+  return records().map((item) => ({
+    ...item,
+    userRelation: Object.prototype.hasOwnProperty.call(membership, item.systemName),
+  }));
+}
+
+/** 模拟后端先查询再分页；返回真实 total 和当前有效页，空结果固定为第一页。 */
+export function systemPage(params: SystemPageParams): SystemPage {
+  const keyword = params.keyword.trim().toLocaleLowerCase();
+  const filtered = allSystems().filter(
+    (item) =>
+      (params.userRelation === undefined || item.userRelation === params.userRelation) &&
+      [
+        item.systemName,
+        item.systemChineseName,
+        item.systemArchNo,
+        item.ownRoom,
+        item.ownGroup,
+        item.systemCharges,
+        item.approverCharge,
+      ].some((value) => value.toLocaleLowerCase().includes(keyword)),
+  );
+  const pageNum = Math.min(
+    params.pageNum,
+    Math.max(1, Math.ceil(filtered.length / params.pageSize)),
+  );
+  return {
+    records: filtered.slice((pageNum - 1) * params.pageSize, pageNum * params.pageSize),
+    total: filtered.length,
+    pageNum,
+    pageSize: params.pageSize,
+  };
+}
+/** 我的目录单独返回接口角色；旧 systems 存储里的遗留身份字段仍被剔除。 */
+export function mySystems(): MySystemInfo[] {
+  const membership = relations();
+  return records().flatMap((item) =>
+    Object.prototype.hasOwnProperty.call(membership, item.systemName)
+      ? [{ ...item, ...membership[item.systemName] }]
+      : [],
+  );
 }
 /** 按系统查找业务资料；403/503 直接模拟接口结果，后续鉴权由新的登录设计接入。 */
 export function accessSystem(name: string, fail: Fail): SystemInfo {
@@ -74,6 +129,8 @@ export function createSystem(input: CreateSystemInput, fail: Fail): SystemInfo {
     appCount: 0,
     paramTypeCount: 0,
   };
-  writeMock('systems', [...list, system]);
+  writeMock('systems', [system, ...list]);
+  // 模拟创建接口将新系统关联到我的目录；没有真实身份时不填造员工编号。
+  writeMock('system-relations', { ...relations(), [name]: { ystId: '', role: 'R' } });
   return system;
 }

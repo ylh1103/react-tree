@@ -62,7 +62,8 @@ export function SplitPaneFrame({
                 : 'workspace-titlebar-detached'
           }`}
         >
-          <div className="workspace-title-identity shrink! flex-[0_1_220px]!">{titleContent}</div>
+          {/* 标题按内容自然占宽，只限制上限，让短名称释放空间给业务工具栏。 */}
+          <div className="workspace-title-identity max-w-240px!">{titleContent}</div>
           {toolbar}
         </div>
         <div
