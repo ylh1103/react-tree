@@ -204,7 +204,7 @@ export function GroupedList({
   // 定位是“先展开、再滚动”两步：展开祖先节点触发 flat 重新计算是异步的（要等下一次渲染），
   // 所以这里用 ref 记一个“待定位”标记，在下面的 effect 里等 flat 更新后再去查找目标行的
   // 索引并滚动，避免用旧的 flat 数据算出错误的 index。
-  const pendingLocateRef = useRef<'reveal' | 'locate' | null>(null);
+  const pendingLocateRef = useRef<'restore' | 'reveal' | 'locate' | null>(null);
   // 定位高亮独立于 flat 更新，连续定位重置延迟；卸载时由 ahooks 取消。
   const { run: scheduleClearHighlight, cancel: cancelClearHighlight } = useDebounceFn(
     () => setHighlightedKey(null),
@@ -214,14 +214,21 @@ export function GroupedList({
     listId: GroupedListId;
     key: string | null | undefined;
     requested: boolean;
+    /** 首次挂载或切换清单时恢复 URL 选择，数据就绪后居中；同清单内切换选择只确保可见。 */
+    restore: boolean;
   } | null>(null);
 
   useEffect(() => {
     let selection = selectionRevealRef.current;
     if (selection?.listId !== listId || selection.key !== controlledSelectedKey) {
-      selection = { listId, key: controlledSelectedKey, requested: false };
+      selection = {
+        listId,
+        key: controlledSelectedKey,
+        requested: false,
+        restore: selection === null || selection.listId !== listId,
+      };
       selectionRevealRef.current = selection;
-      if (pendingLocateRef.current === 'reveal') pendingLocateRef.current = null;
+      if (pendingLocateRef.current !== 'locate') pendingLocateRef.current = null;
     }
     // 树索引在排序、分组编辑后会变化，但同一次选中只请求一次自动定位。
     // 数据尚未就绪时保留待请求状态，首次加载完成后仍能展开并定位。
@@ -229,8 +236,8 @@ export function GroupedList({
     if (!controlledSelectedKey || !ready || !treeIndex.nodeByKey.has(controlledSelectedKey)) return;
     selection.requested = true;
     expandPath(treeIndex.ancestors(controlledSelectedKey));
-    // URL 选中同步只展开、滚动，不触发主动定位的临时高亮。
-    pendingLocateRef.current = 'reveal';
+    // 刷新页面恢复 URL 选择时居中；后续选中仅确保可见，两者都不触发主动定位的临时高亮。
+    pendingLocateRef.current = selection.restore ? 'restore' : 'reveal';
   }, [listId, controlledSelectedKey, ready, treeIndex, expandPath]);
 
   const handleLocate = () => {
@@ -252,8 +259,16 @@ export function GroupedList({
     const idx = flatIndex.rowByKey.get(selectedKey);
     if (idx === undefined) return;
     const highlight = pendingLocateRef.current === 'locate';
+    const center = highlight || pendingLocateRef.current === 'restore';
     pendingLocateRef.current = null;
-    virtualizer.scrollToIndex(idx, { align: 'center' });
+    // 普通选中只在视口外时按最近边缘显示；已可见时不发滚动命令，避免点击打断原生滚动。
+    // 刷新恢复和工具栏主动定位都居中，但只有主动定位显示临时高亮。
+    if (
+      center ||
+      virtualizer.getOffsetForIndex(idx, 'auto')?.[0] !== parentScrollRef.current?.scrollTop
+    ) {
+      virtualizer.scrollToIndex(idx, { align: center ? 'center' : 'auto' });
+    }
     setHighlightedKey(highlight ? selectedKey : null);
     cancelClearHighlight();
     if (highlight) scheduleClearHighlight();

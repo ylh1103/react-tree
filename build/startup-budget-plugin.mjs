@@ -7,7 +7,7 @@ export const startupBudget = { javascriptGzip: 300_000, cssGzip: 20_000, htmlGzi
 
 const forbiddenInitialModules = [
   '/src/components/SplitPane/index.tsx',
-  '/src/components/CollectionWorkspace/',
+  '/src/components/CollectionSkeleton/',
   '/src/components/LayoutSettings/',
   '/src/layouts/UserSettingsDrawer/index.tsx',
   '/src/mocks/',

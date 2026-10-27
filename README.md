@@ -19,6 +19,8 @@ pnpm format:check
 
 本期保留系统列表、创建系统、应用分组列表和数据库类型清单。应用参数、搜索、检查、异常项、比对等入口保留；发布、审批及版本管理暂不实现。
 
+项目仅支持 PC，根应用统一设置 1280px 最小宽度；窗口不足该宽度时保留桌面布局，通过横向滚动查看，不提供移动端布局或窄屏列表抽屉。显示偏好中的“紧凑布局”仅调整桌面的间距与面板样式，不代表移动端模式。
+
 原有登录与用户资料代码已删除，等待后续重新设计。应用不读取会话或 Cookie，也不构造临时用户。我的系统仅展示接口明确返回的系统角色，不将其恢复成全局身份或权限模型。系统接口仍传播 403、404 和网络错误，页面不以负责人等业务资料推导访问资格。
 
 开发环境的“参数项”页面保留原有 Loading 效果图库，保留的页面数据加载和平面方案在同一网格中完整展示，不按 Tab 或分段控件筛选；生产环境仍显示参数项占位工作区。演示代码与组件专用动画保留在原有目录中。
@@ -59,7 +61,7 @@ HTML 包含所有内置图标，头部脚本读取 `parameter-management:bootstr
 
 轻量路由骨架集中在 `src/components/RouteSkeleton/`：`index.tsx` 的 `RouteSkeleton` 提供所有页面通用的内容占位，内部 `HeaderSkeleton` 和 `NavigationSkeleton` 负责首次等待的外壳占位。`src/router/skeletons.tsx` 只保留根回退的配置等待、布局组装和启动交接。页面路由直接声明 `HydrateFallback: RouteSkeleton`，导航加载也从目标路由的 `HydrateFallback` 读取组件，不在 `handle` 中重复登记骨架。不再静态登记业务骨架或清单分栏参数，也不读取分栏尺寸缓存。
 
-业务数据骨架随页面模块加载：系统卡片骨架放在 `pages/SystemsHome/components/SystemsHomeSkeleton.tsx`；应用和数据库复用 `components/CollectionWorkspace/components/CollectionSkeleton.tsx`，由各自页面传入标题、尺寸缓存键等参数。页面仅在查询首次无数据（`isPending`）时展示业务骨架，已有数据的后台刷新保留正文和交互状态，失败仍保留错误与重试入口。概览页直接消费已授权的系统上下文，没有独立数据等待，因此无需专用骨架。
+业务数据骨架随页面模块加载：系统卡片骨架放在 `pages/SystemsHome/components/SystemsHomeSkeleton.tsx`；应用和数据库复用 `components/CollectionSkeleton/index.tsx`，由各自页面传入标题、尺寸缓存键等参数。页面仅在查询首次无数据（`isPending`）时展示业务骨架，已有数据的后台刷新保留正文和交互状态，失败仍保留错误与重试入口。概览页直接消费已授权的系统上下文，没有独立数据等待，因此无需专用骨架。
 
 现有 loader 仍等待必要授权，并按原缓存策略预取数据；冷启动数据已经准备好时，页面可以直接显示正文，不必经过业务骨架。分栏业务骨架复用 `SplitPane` 的轻量展示层和只读尺寸解析，不注册拖拽、快捷键、尺寸观察或偏好写入；这些依赖均不会由路由骨架引入。骨架布局样式全部沿用 UnoCSS。
 
@@ -67,7 +69,7 @@ HTML 包含所有内置图标，头部脚本读取 `parameter-management:bootstr
 
 每次生产构建通过 `build/startup-budget-plugin.mjs` 检查真实入口的静态依赖闭包，包含共享 chunk 并去重，不计入动态页面。预算为每个文件分别 gzip 后求和：静态 JS 300 KB、主 CSS 20 KB、HTML 6 KB（KB 按 1000 字节）；超预算时构建失败。完整报告输出到 `dist/startup-report.json`，这些数字不代表浏览器实测耗时，也不包含目标页面及启动请求触发的动态模块。
 
-构建还禁止设置表单、完整设置抽屉、交互分栏、集合工作区及其业务骨架、业务页面及 Mock 数据回流入口静态依赖；错误与状态页、唯一 Mock adapter 和轻量配置保留同步接入。调整预算前先检查依赖报告，不通过手工拆包把同步依赖移出统计。新增业务需同时验证首页、业务深链接和首次打开面板的加载行为。
+构建还禁止设置表单、完整设置抽屉、交互分栏 `SplitPane`、业务分栏骨架 `CollectionSkeleton`、业务页面及 Mock 数据回流入口静态依赖；错误与状态页、唯一 Mock adapter 和轻量配置保留同步接入。调整预算前先检查依赖报告，不通过手工拆包把同步依赖移出统计。新增业务需同时验证首页、业务深链接和首次打开面板的加载行为。
 
 首次初始化、重试和后台同步使用 `GET /api/user-settings`，保存使用 `PUT`，不传递个人身份参数。保存前读取完整 `userSetting` 文档，再合并平台字段，保留编辑器设置及未知字段；非法 JSON 禁止覆盖。
 
@@ -214,6 +216,16 @@ GroupedList 的 UI、Hooks 和树模型在 `src/components/GroupedList`，页面
 应用侧栏保留搜索、类型筛选、分组编辑、拖拽、选中定位和虚拟滚动，叶子使用 appName；右侧读取相同合并清单，分组不作为应用。数据库只读类型清单，不接旧参数分组或删除。
 
 分组读写与刷新按系统和清单共用查询键及写入锁。写入期间暂停清单刷新，保存完成统一失效；显式刷新调用 queries/groupedList.ts 的 refreshGroupedList，而不是另建 QueryClient。清单失败有重试，最后订阅卸载时取消读取。
+
+### 参数工作区职责
+
+应用页与数据库页直接使用 `src/components/SplitPane/index.tsx` 组装 PC 分栏。`SplitPane` 只负责布局、侧栏收起、拖拽调整、键盘操作与尺寸记忆，不持有业务查询、环境选择或访问校验。
+
+- `src/pages/SystemApplications/index.tsx`：订阅当前系统的合并应用清单，根据 URL 的 `appName` 选择叶子，并持有按系统与应用绑定的环境选择。私有 `ApplicationList` 提供应用侧栏，`ApplicationParametersWorkspace.tsx` 提供空状态、工具栏和参数面板。
+- `src/pages/DatabaseParameters/index.tsx`：查询数据库类型清单，根据 URL 的 `paramTypeName` 选择类型并处理请求反馈。私有 `components/ParameterTypeList.tsx` 负责搜索与导航，`components/ParameterTypeDetails.tsx` 展示类型详情与参数内容待接入提示。
+- `src/components/CollectionSkeleton/index.tsx`：两个页面共用的首次数据等待骨架，只读各自已有的分栏尺寸缓存，保持与 PC 正文一致的分栏结构。
+
+页面首次无数据时展示骨架；已有缓存的刷新保留工作区。URL 指定目标尚未在缓存中找到时，先等待刷新确认，失败保留错误与重试入口，成功后仍未找到才提示“不存在或已移除”。应用清单错误由应用侧栏展示，数据库清单错误由数据库页展示；业务清单组件不单独判断 403，既有系统访问校验由路由 loader 与 `SystemLayout` 负责。
 
 ## 样式、注释与验收
 

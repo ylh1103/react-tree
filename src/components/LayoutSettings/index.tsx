@@ -21,6 +21,7 @@ import type {
 import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '@/types/preferences';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
+import { OverlayScroll } from '@/components/OverlayScroll';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
 import { applicationRouteConfig as navigationItems } from '@/router/application';
 
@@ -394,9 +395,10 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
         tabBarGutter={0}
         className="min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
         classNames={{
-          header: 'shrink-0! mx-1! pt-3! pb-2! mb-1! before:border-0!',
+          header: 'shrink-0! mx-6! pt-3! pb-2! mb-1! before:border-0!',
           body: 'h-full! min-h-0!',
-          content: 'h-full! overflow-y-auto! overscroll-contain px-1 [scrollbar-width:thin]',
+          // 滚动容器铺满抽屉，内容自身两侧留白 24px；右侧 12px 覆盖条因此落在留白内，不遮挡控件。
+          content: 'h-full! min-h-0! overflow-hidden!',
           indicator: 'hidden!',
           item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-text-secondary [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
         }}
@@ -410,97 +412,99 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
               </span>
             ),
             children: (
-              <section className="flex flex-col gap-3 pb-4" aria-labelledby={themeLabelId}>
-                <h3 id={themeLabelId} className="m-0 text-14px font-600 leading-5 text-text">
-                  主题模式
-                </h3>
-                <Radio.Group
-                  name={themeLabelId}
-                  aria-labelledby={themeLabelId}
-                  value={themeMode}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    const mode = event.target.value;
-                    if (mode === 'light' || mode === 'dark' || mode === 'system')
-                      onSave({ themeMode: mode });
-                  }}
-                  className="grid! w-full! grid-cols-2 gap-3"
-                >
-                  {themeOptions.map(({ value: mode, label, icon, description }) => (
-                    <SettingsOptionCard
-                      key={mode}
-                      value={mode}
-                      aria-label={label}
-                      className={mode === 'system' ? 'col-span-2 text-left!' : ''}
-                    >
-                      {mode === 'system' ? (
-                        // 列间距含上排网格的 12px 与卡片两侧内边距 20px，使三张缩略图精确同宽。
-                        <span className="grid w-full grid-cols-2 items-center gap-32px">
-                          <SystemThemePreview layoutMode={layoutMode} />
-                          <span className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span className="flex items-center gap-2 text-14px font-500 leading-5">
+              <OverlayScroll direction="vertical" label="外观设置" className="px-6">
+                <section className="flex flex-col gap-3 pb-4" aria-labelledby={themeLabelId}>
+                  <h3 id={themeLabelId} className="m-0 text-14px font-600 leading-5 text-text">
+                    主题模式
+                  </h3>
+                  <Radio.Group
+                    name={themeLabelId}
+                    aria-labelledby={themeLabelId}
+                    value={themeMode}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      const mode = event.target.value;
+                      if (mode === 'light' || mode === 'dark' || mode === 'system')
+                        onSave({ themeMode: mode });
+                    }}
+                    className="grid! w-full! grid-cols-2 gap-3"
+                  >
+                    {themeOptions.map(({ value: mode, label, icon, description }) => (
+                      <SettingsOptionCard
+                        key={mode}
+                        value={mode}
+                        aria-label={label}
+                        className={mode === 'system' ? 'col-span-2 text-left!' : ''}
+                      >
+                        {mode === 'system' ? (
+                          // 列间距含上排网格的 12px 与卡片两侧内边距 20px，使三张缩略图精确同宽。
+                          <span className="grid w-full grid-cols-2 items-center gap-32px">
+                            <SystemThemePreview layoutMode={layoutMode} />
+                            <span className="flex min-w-0 flex-1 flex-col gap-1">
+                              <span className="flex items-center gap-2 text-14px font-500 leading-5">
+                                {label}
+                                {mode === defaultUserSettings.themeMode && <SettingsDefaultBadge />}
+                              </span>
+                              <span className="text-12px leading-4 text-text-muted">
+                                {description}
+                              </span>
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="flex w-full min-w-0 flex-col gap-2">
+                            <SettingsPreview layoutMode={layoutMode} themeMode={mode} />
+                            <span className="flex items-center justify-center gap-1.5 text-14px font-500 leading-5">
+                              <span aria-hidden="true" className={`${icon} text-16px`} />
                               {label}
-                              {mode === defaultUserSettings.themeMode && <SettingsDefaultBadge />}
-                            </span>
-                            <span className="text-12px leading-4 text-text-muted">
-                              {description}
                             </span>
                           </span>
-                        </span>
-                      ) : (
+                        )}
+                      </SettingsOptionCard>
+                    ))}
+                  </Radio.Group>
+                  <h3
+                    id={navigationThemeLabelId}
+                    className="m-0 text-14px font-600 leading-5 text-text mt-3!"
+                  >
+                    导航栏配色
+                  </h3>
+                  <Radio.Group
+                    name={navigationThemeLabelId}
+                    aria-labelledby={navigationThemeLabelId}
+                    value={navigationTheme}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === 'contrast' || value === 'theme') {
+                        onSave({ navigationTheme: value });
+                      }
+                    }}
+                    className="grid! w-full! grid-cols-2 gap-3"
+                  >
+                    {(['contrast', 'theme'] as const).map((value) => (
+                      <SettingsOptionCard key={value} value={value}>
                         <span className="flex w-full min-w-0 flex-col gap-2">
-                          <SettingsPreview layoutMode={layoutMode} themeMode={mode} />
-                          <span className="flex items-center justify-center gap-1.5 text-14px font-500 leading-5">
-                            <span aria-hidden="true" className={`${icon} text-16px`} />
-                            {label}
+                          <NavigationColorPreview
+                            mode={value}
+                            themeMode={resolvedTheme}
+                            iconOnly={navigationIconOnly}
+                          />
+                          <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
+                            {value === 'contrast' ? '独立配色' : '跟随主题'}
+                            {value === defaultUserSettings.navigationTheme && (
+                              <SettingsDefaultBadge />
+                            )}
+                          </span>
+                          <span className="text-12px leading-18px text-text-muted">
+                            {value === 'contrast' ? '保留独立底色，突出导航' : '与其他模块背景同步'}
                           </span>
                         </span>
-                      )}
-                    </SettingsOptionCard>
-                  ))}
-                </Radio.Group>
-                <h3
-                  id={navigationThemeLabelId}
-                  className="m-0 text-14px font-600 leading-5 text-text mt-3!"
-                >
-                  导航栏配色
-                </h3>
-                <Radio.Group
-                  name={navigationThemeLabelId}
-                  aria-labelledby={navigationThemeLabelId}
-                  value={navigationTheme}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    if (value === 'contrast' || value === 'theme') {
-                      onSave({ navigationTheme: value });
-                    }
-                  }}
-                  className="grid! w-full! grid-cols-2 gap-3"
-                >
-                  {(['contrast', 'theme'] as const).map((value) => (
-                    <SettingsOptionCard key={value} value={value}>
-                      <span className="flex w-full min-w-0 flex-col gap-2">
-                        <NavigationColorPreview
-                          mode={value}
-                          themeMode={resolvedTheme}
-                          iconOnly={navigationIconOnly}
-                        />
-                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
-                          {value === 'contrast' ? '独立配色' : '跟随主题'}
-                          {value === defaultUserSettings.navigationTheme && (
-                            <SettingsDefaultBadge />
-                          )}
-                        </span>
-                        <span className="text-12px leading-18px text-text-muted">
-                          {value === 'contrast' ? '保留独立底色，突出导航' : '与其他模块背景同步'}
-                        </span>
-                      </span>
-                    </SettingsOptionCard>
-                  ))}
-                </Radio.Group>
-                <LoadingStyleSetting disabled={disabled} onSave={onSave} />
-              </section>
+                      </SettingsOptionCard>
+                    ))}
+                  </Radio.Group>
+                  <LoadingStyleSetting disabled={disabled} onSave={onSave} />
+                </section>
+              </OverlayScroll>
             ),
           },
           {
@@ -512,96 +516,101 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
               </span>
             ),
             children: (
-              <section className="flex flex-col gap-3 pb-4" aria-labelledby={labelId}>
-                <h3 id={labelId} className="m-0 text-14px font-600 leading-5 text-text">
-                  布局模式
-                </h3>
-                <Radio.Group
-                  name={labelId}
-                  aria-labelledby={labelId}
-                  value={layoutMode}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    onSave({
-                      layoutMode: event.target.value === 'compact' ? 'compact' : 'default',
-                    });
-                  }}
-                  className="grid! w-full! grid-cols-2 gap-3"
-                >
-                  {(['default', 'compact'] as const).map((mode) => (
-                    <SettingsOptionCard
-                      key={mode}
-                      value={mode}
-                      aria-label={mode === 'default' ? '标准布局' : '紧凑布局'}
-                    >
-                      <span className="flex w-full min-w-0 flex-col gap-2">
-                        <SettingsPreview layoutMode={mode} themeMode={resolvedTheme} />
-                        <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
-                          {mode === 'default' ? '标准布局' : '紧凑布局'}
-                          {mode === defaultUserSettings.layoutMode && <SettingsDefaultBadge />}
+              <OverlayScroll direction="vertical" label="布局设置" className="px-6">
+                <section className="flex flex-col gap-3 pb-4" aria-labelledby={labelId}>
+                  <h3 id={labelId} className="m-0 text-14px font-600 leading-5 text-text">
+                    布局模式
+                  </h3>
+                  <Radio.Group
+                    name={labelId}
+                    aria-labelledby={labelId}
+                    value={layoutMode}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      onSave({
+                        layoutMode: event.target.value === 'compact' ? 'compact' : 'default',
+                      });
+                    }}
+                    className="grid! w-full! grid-cols-2 gap-3"
+                  >
+                    {(['default', 'compact'] as const).map((mode) => (
+                      <SettingsOptionCard
+                        key={mode}
+                        value={mode}
+                        aria-label={mode === 'default' ? '标准布局' : '紧凑布局'}
+                      >
+                        <span className="flex w-full min-w-0 flex-col gap-2">
+                          <SettingsPreview layoutMode={mode} themeMode={resolvedTheme} />
+                          <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
+                            {mode === 'default' ? '标准布局' : '紧凑布局'}
+                            {mode === defaultUserSettings.layoutMode && <SettingsDefaultBadge />}
+                          </span>
+                          <span className="text-12px leading-18px text-text-muted">
+                            {mode === 'default'
+                              ? '模块留有间距，层次分明'
+                              : '模块无间距，边框线分隔'}
+                          </span>
                         </span>
-                        <span className="text-12px leading-18px text-text-muted">
-                          {mode === 'default' ? '模块留有间距，层次分明' : '模块无间距，边框线分隔'}
-                        </span>
-                      </span>
-                    </SettingsOptionCard>
-                  ))}
-                </Radio.Group>
-                <div className="mt-2">
-                  <h3 className="m-0 text-14px font-600 leading-5 text-text">间距与圆角</h3>
-                  <p className="m-0 mt-1 text-12px leading-5 text-text-muted">
-                    松开滑块或结束输入后自动保存。
+                      </SettingsOptionCard>
+                    ))}
+                  </Radio.Group>
+                  <div className="mt-2">
+                    <h3 className="m-0 text-14px font-600 leading-5 text-text">间距与圆角</h3>
+                    <p className="m-0 mt-1 text-12px leading-5 text-text-muted">
+                      松开滑块或结束输入后自动保存。
+                    </p>
+                  </div>
+                  <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
+                    <PreferenceSlider
+                      setting="layoutGap"
+                      id={gapInputId}
+                      value={layoutGap}
+                      compact={layoutMode === 'compact'}
+                      disabled={disabled || layoutMode === 'compact'}
+                      onSave={onSave}
+                    />
+                    <PreferenceSlider
+                      setting="borderRadius"
+                      id={radiusLabelId}
+                      value={borderRadius}
+                      disabled={disabled}
+                      onSave={onSave}
+                    />
+                    <PreferenceSlider
+                      setting="controlBorderRadius"
+                      id={controlRadiusLabelId}
+                      value={controlBorderRadius}
+                      disabled={disabled}
+                      onSave={onSave}
+                    />{' '}
+                  </div>
+                  <h3 className="m-0 text-14px font-600 leading-5 text-text mt-1!">菜单显示</h3>
+                  <p className="m-0 text-12px leading-5 text-text-muted">
+                    默认仅显示图标，悬停可查看名称。
                   </p>
-                </div>
-                <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
-                  <PreferenceSlider
-                    setting="layoutGap"
-                    id={gapInputId}
-                    value={layoutGap}
-                    compact={layoutMode === 'compact'}
-                    disabled={disabled || layoutMode === 'compact'}
-                    onSave={onSave}
-                  />
-                  <PreferenceSlider
-                    setting="borderRadius"
-                    id={radiusLabelId}
-                    value={borderRadius}
+                  <MenuDisplaySetting
+                    label="导航栏"
+                    icon="i-lucide-panel-left"
+                    value={navigationIconOnly}
                     disabled={disabled}
-                    onSave={onSave}
+                    onChange={(checked) => onSave({ navigationIconOnly: checked })}
                   />
-                  <PreferenceSlider
-                    setting="controlBorderRadius"
-                    id={controlRadiusLabelId}
-                    value={controlBorderRadius}
+                  <MenuDisplaySetting
+                    label="头部工具栏"
+                    icon="i-lucide-panel-top"
+                    value={headerToolsIconOnly}
                     disabled={disabled}
-                    onSave={onSave}
-                  />{' '}
-                </div>
-                <h3 className="m-0 text-14px font-600 leading-5 text-text mt-1!">菜单显示</h3>
-                <p className="m-0 text-12px leading-5 text-text-muted">
-                  默认仅显示图标，悬停可查看名称。
-                </p>
-                <MenuDisplaySetting
-                  label="导航栏"
-                  icon="i-lucide-panel-left"
-                  value={navigationIconOnly}
-                  disabled={disabled}
-                  onChange={(checked) => onSave({ navigationIconOnly: checked })}
-                />
-                <MenuDisplaySetting
-                  label="头部工具栏"
-                  icon="i-lucide-panel-top"
-                  value={headerToolsIconOnly}
-                  disabled={disabled}
-                  onChange={(checked) => onSave({ headerToolsIconOnly: checked })}
-                />
-              </section>
+                    onChange={(checked) => onSave({ headerToolsIconOnly: checked })}
+                  />
+                </section>
+              </OverlayScroll>
             ),
           },
         ]}
       />
       {status === 'load-error' && (
         <Alert
+          className="mx-6"
           type="error"
           showIcon
           title="用户设置读取失败，已使用默认配置"

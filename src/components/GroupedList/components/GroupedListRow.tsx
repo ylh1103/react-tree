@@ -80,6 +80,14 @@ export const GroupedListRow = memo(function GroupedListRow({
   const [hasContentFocus, setHasContentFocus] = useState(false);
   const leafKind = node.type === 'leaf' ? node.data[config.typeField] : undefined;
   const leafColor = leafKind === undefined ? undefined : config.types[leafKind]?.color;
+  const nameRef = useRef<HTMLSpanElement>(null);
+  const descriptionRef = useRef<HTMLSpanElement>(null);
+  const description = node.type === 'leaf' ? (node.data.desc ?? '') : '';
+  const isOverflowing = useOverflow(
+    [nameRef, descriptionRef],
+    [node.title, searchQuery, description, isRenaming],
+  );
+  const showTooltip = isOverflowing && !isDragActive && !isRenaming && !isMenuOpen;
 
   const {
     setNodeRef: setDragRef,
@@ -146,7 +154,12 @@ export const GroupedListRow = memo(function GroupedListRow({
           setHasKeyboardFocus(false);
           setHasContentFocus(false);
         }}
-        onClick={handleRowClick}
+        onClick={(event) => {
+          // Portal 弹层在 DOM 中不属于节点，连提示容器的内边距点击也不能触发行操作。
+          if (event.target instanceof Node && event.currentTarget.contains(event.target)) {
+            handleRowClick();
+          }
+        }}
         role={isEditing ? undefined : 'button'}
         tabIndex={isEditing ? undefined : 0}
         aria-expanded={isBranch ? isExpanded : undefined}
@@ -207,114 +220,157 @@ export const GroupedListRow = memo(function GroupedListRow({
         )}
         <span aria-hidden="true" className="w-4 min-w-4 shrink-0" />
 
-        <div
-          className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
-          data-has-actions={!isRenaming || undefined}
-          data-menu-open={isMenuOpen || undefined}
-          data-has-badge={
-            (!isRenaming && leafKind !== undefined && leafKind === config.badgeType) || undefined
-          }
-          data-content-focus={hasContentFocus || undefined}
-          data-drop-inside={showInside || undefined}
-          data-locate-highlighted={isHighlighted || undefined}
-        >
-          {isRenaming ? (
-            <RenameInput
-              key={JSON.stringify([node.key, node.title])}
-              initialTitle={node.title}
-              onCommit={(title) => onCommitRename(node.key, title)}
-              onCancel={onCancelRename}
-            />
-          ) : (
-            <span
-              className={`tree-node-content flex-1 whitespace-nowrap text-ellipsis text-sm min-w-0 ${isBranch ? 'overflow-hidden' : 'overflow-visible'}`}
-            >
-              {node.type === 'branch' ? (
-                <GroupContent node={node} expanded={isExpanded} isDragActive={isDragActive} />
-              ) : (
-                <GroupedLeaf
-                  node={node}
-                  config={config}
-                  searchQuery={searchQuery}
-                  isDragActive={isDragActive}
-                  onSettings={onSettings}
-                />
-              )}
-            </span>
-          )}
-
-          {!isRenaming && (
-            <div
-              className="tree-node-actions flex items-center shrink-0 cursor-default"
-              data-menu-open={isMenuOpen || undefined}
-              onPointerDown={(event) => event.stopPropagation()}
-              onKeyDown={(event) => event.stopPropagation()}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <Dropdown
-                trigger={['click']}
-                onOpenChange={setIsMenuOpen}
-                placement="bottomRight"
-                disabled={isDragActive}
-                menu={{
-                  items: [
-                    {
-                      key: 'move',
-                      label: '快速移动',
-                      icon: <span aria-hidden="true" className="i-lucide-folder-input" />,
-                    },
-                    ...(isBranch
-                      ? [
-                          {
-                            key: 'rename',
-                            label: '重命名',
-                            icon: <span aria-hidden="true" className="i-lucide-pencil" />,
-                          },
-                          {
-                            key: 'delete',
-                            label: '删除分组',
-                            danger: true,
-                            icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
-                          },
-                        ]
-                      : (menuItems ?? []).map((item) => ({
-                          key: `custom:${item.key}`,
-                          label: item.label,
-                          icon: item.icon,
-                          danger: item.danger,
-                          disabled: isEditing || item.disabled,
-                        }))),
-                  ],
-                  onClick: ({ key, domEvent }) => {
-                    domEvent.stopPropagation();
-                    if (key === 'move') {
-                      onQuickMove(node.key);
-                      return;
-                    }
-                    if (node.type === 'leaf' && menuItems !== undefined) {
-                      const item = menuItems.find((entry) => `custom:${entry.key}` === key);
-                      if (item && !item.disabled && !isEditing && !isDragActive) {
-                        onMenuAction(item.onClick, node);
-                      }
-                      return;
-                    }
-                    if (isBranch && key === 'rename') onStartRename(node.key);
-                    if (isBranch && key === 'delete') onDelete(node.key);
-                  },
-                }}
+        {/* 使用完整卡片作为定位锚点，避免提示从文字区域右边缘开始而覆盖节点；边缘处允许翻转但不横向挤回卡片。 */}
+        <Tooltip
+          trigger={showTooltip ? ['hover', 'focus'] : []}
+          placement="rightTop"
+          // 外层透明区域不拦截滚轮，实际内容恢复命中，允许移入后保持提示并选择文字。
+          classNames={{
+            root: 'pointer-events-none!',
+            container: 'pointer-events-auto! select-text',
+          }}
+          open={showTooltip ? undefined : false}
+          mouseEnterDelay={0.3}
+          destroyOnHidden
+          title={
+            isOverflowing ? (
+              <div
+                className="max-w-[min(320px,calc(100vw-48px))] whitespace-normal [overflow-wrap:anywhere] leading-[1.6]"
+                // Portal 中的事件仍沿 React 树冒泡；只隔离传播，不阻止默认的选字、复制和右键操作。
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+                onDoubleClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
               >
-                <Button
-                  type="text"
-                  size="small"
-                  aria-label={`更多操作 ${node.title}`}
-                  aria-haspopup="menu"
+                <div className="font-600">
+                  <Highlight text={node.title} query={searchQuery} />
+                </div>
+                {description && (
+                  <div className="mt-1 text-[12px]">
+                    <Highlight text={description} query={searchQuery} />
+                  </div>
+                )}
+              </div>
+            ) : null
+          }
+        >
+          <div
+            className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
+            data-has-actions={!isRenaming || undefined}
+            data-menu-open={isMenuOpen || undefined}
+            data-has-badge={
+              (!isRenaming && leafKind !== undefined && leafKind === config.badgeType) || undefined
+            }
+            data-content-focus={hasContentFocus || undefined}
+            data-drop-inside={showInside || undefined}
+            data-locate-highlighted={isHighlighted || undefined}
+          >
+            {isRenaming ? (
+              <RenameInput
+                key={JSON.stringify([node.key, node.title])}
+                initialTitle={node.title}
+                onCommit={(title) => onCommitRename(node.key, title)}
+                onCancel={onCancelRename}
+              />
+            ) : (
+              <span
+                className={`tree-node-content flex-1 whitespace-nowrap text-ellipsis text-sm min-w-0 ${isBranch ? 'overflow-hidden' : 'overflow-visible'}`}
+              >
+                {node.type === 'branch' ? (
+                  <GroupContent
+                    node={node}
+                    expanded={isExpanded}
+                    nameRef={nameRef}
+                    showTooltip={showTooltip}
+                  />
+                ) : (
+                  <GroupedLeaf
+                    node={node}
+                    config={config}
+                    searchQuery={searchQuery}
+                    isDragActive={isDragActive}
+                    onSettings={onSettings}
+                    nameRef={nameRef}
+                    descriptionRef={descriptionRef}
+                    showTooltip={showTooltip}
+                  />
+                )}
+              </span>
+            )}
+
+            {!isRenaming && (
+              <div
+                className="tree-node-actions flex items-center shrink-0 cursor-default"
+                data-menu-open={isMenuOpen || undefined}
+                onPointerDown={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Dropdown
+                  trigger={['click']}
+                  onOpenChange={setIsMenuOpen}
+                  placement="bottomRight"
                   disabled={isDragActive}
-                  icon={<span aria-hidden="true" className="i-lucide-ellipsis" />}
-                />
-              </Dropdown>
-            </div>
-          )}
-        </div>
+                  menu={{
+                    items: [
+                      {
+                        key: 'move',
+                        label: '快速移动',
+                        icon: <span aria-hidden="true" className="i-lucide-folder-input" />,
+                      },
+                      ...(isBranch
+                        ? [
+                            {
+                              key: 'rename',
+                              label: '重命名',
+                              icon: <span aria-hidden="true" className="i-lucide-pencil" />,
+                            },
+                            {
+                              key: 'delete',
+                              label: '删除分组',
+                              danger: true,
+                              icon: <span aria-hidden="true" className="i-lucide-trash-2" />,
+                            },
+                          ]
+                        : (menuItems ?? []).map((item) => ({
+                            key: `custom:${item.key}`,
+                            label: item.label,
+                            icon: item.icon,
+                            danger: item.danger,
+                            disabled: isEditing || item.disabled,
+                          }))),
+                    ],
+                    onClick: ({ key, domEvent }) => {
+                      domEvent.stopPropagation();
+                      if (key === 'move') {
+                        onQuickMove(node.key);
+                        return;
+                      }
+                      if (node.type === 'leaf' && menuItems !== undefined) {
+                        const item = menuItems.find((entry) => `custom:${entry.key}` === key);
+                        if (item && !item.disabled && !isEditing && !isDragActive) {
+                          onMenuAction(item.onClick, node);
+                        }
+                        return;
+                      }
+                      if (isBranch && key === 'rename') onStartRename(node.key);
+                      if (isBranch && key === 'delete') onDelete(node.key);
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    aria-label={`更多操作 ${node.title}`}
+                    aria-haspopup="menu"
+                    disabled={isDragActive}
+                    icon={<span aria-hidden="true" className="i-lucide-ellipsis" />}
+                  />
+                </Dropdown>
+              </div>
+            )}
+          </div>
+        </Tooltip>
       </div>
     </div>
   );
@@ -391,19 +447,19 @@ const GroupedLeaf = memo(function GroupedLeaf({
   isDragActive,
   config,
   onSettings,
+  nameRef,
+  descriptionRef,
+  showTooltip,
 }: {
   config: GroupedListConfig;
   onSettings?: (node: LeafNode) => void;
   node: LeafNode;
   searchQuery: string;
   isDragActive: boolean;
+  nameRef: RefObject<HTMLSpanElement | null>;
+  descriptionRef: RefObject<HTMLSpanElement | null>;
+  showTooltip: boolean;
 }) {
-  const nameRef = useRef<HTMLSpanElement>(null);
-  const descriptionRef = useRef<HTMLSpanElement>(null);
-  const isOverflowing = useOverflow(
-    [nameRef, descriptionRef],
-    [node.title, searchQuery, node.data.desc],
-  );
   const data = node.data;
   const description = data.desc ?? '';
   const kind = data[config.typeField];
@@ -412,127 +468,87 @@ const GroupedLeaf = memo(function GroupedLeaf({
   const typeColor = metadata?.color;
   const typeShortLabel = metadata?.shortLabel ?? '?';
 
-  const showTooltip = isOverflowing && !isDragActive;
   return (
-    <Tooltip
-      trigger={showTooltip ? ['hover', 'focus'] : []}
-      placement="right"
-      open={showTooltip ? undefined : false}
-      mouseEnterDelay={0.3}
-      destroyOnHidden
-      title={
-        isOverflowing ? (
-          <div className="max-w-[min(320px,calc(100vw-48px))] whitespace-normal [overflow-wrap:anywhere] leading-[1.6]">
-            <div className="font-600">
-              <Highlight text={node.title} query={searchQuery} />
-            </div>
-            {description && (
-              <div className="mt-1 text-[12px]">
-                <Highlight text={description} query={searchQuery} />
-              </div>
-            )}
-          </div>
-        ) : null
-      }
+    <span
+      className="application-content flex items-center gap-2.25 min-w-0 w-full"
+      data-leaf-type-color={typeColor}
+      tabIndex={showTooltip ? 0 : undefined}
     >
-      <span
-        className="application-content flex items-center gap-2.25 min-w-0 w-full"
-        data-leaf-type-color={typeColor}
-        tabIndex={showTooltip ? 0 : undefined}
-      >
-        <Button
-          type="text"
-          size="small"
-          className="application-settings-button"
-          aria-label={`设置 ${node.title}`}
-          title="设置"
-          disabled={isDragActive || !onSettings}
-          onPointerDown={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
-            onSettings?.(node);
-          }}
-          icon={
-            <span
-              aria-hidden="true"
-              className="i-lucide-settings shrink-0 text-[var(--accent)] text-[18px]"
-            />
-          }
-        />
-        <span className="flex-1 min-w-0 flex flex-col gap-0">
-          <span className="flex items-center min-w-0">
-            <span
-              ref={nameRef}
-              className="min-w-0 text-[13px] font-[550] leading-[18px] overflow-hidden text-ellipsis"
-            >
-              <Highlight text={node.title} query={searchQuery} />
-            </span>
-            {kind === config.badgeType && (
-              <span
-                className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--control-radius)_0_var(--control-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
-                data-color={typeColor}
-                title={typeLabel}
-                role="img"
-                aria-label={typeLabel}
-              >
-                {typeShortLabel}
-              </span>
-            )}
-          </span>
+      <Button
+        type="text"
+        size="small"
+        className="application-settings-button"
+        aria-label={`设置 ${node.title}`}
+        title="设置"
+        disabled={isDragActive || !onSettings}
+        onPointerDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSettings?.(node);
+        }}
+        icon={
           <span
-            ref={descriptionRef}
-            className="text-text-muted text-[11px] leading-4 overflow-hidden text-ellipsis"
+            aria-hidden="true"
+            className="i-lucide-settings shrink-0 text-[var(--accent)] text-[18px]"
+          />
+        }
+      />
+      <span className="flex-1 min-w-0 flex flex-col gap-0">
+        <span className="flex items-center min-w-0">
+          <span
+            ref={nameRef}
+            className="min-w-0 text-[13px] font-[550] leading-[18px] overflow-hidden text-ellipsis"
           >
-            <Highlight text={description} query={searchQuery} />
+            <Highlight text={node.title} query={searchQuery} />
           </span>
+          {kind === config.badgeType && (
+            <span
+              className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--control-radius)_0_var(--control-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
+              data-color={typeColor}
+              title={typeLabel}
+              role="img"
+              aria-label={typeLabel}
+            >
+              {typeShortLabel}
+            </span>
+          )}
+        </span>
+        <span
+          ref={descriptionRef}
+          className="text-text-muted text-[11px] leading-4 overflow-hidden text-ellipsis"
+        >
+          <Highlight text={description} query={searchQuery} />
         </span>
       </span>
-    </Tooltip>
+    </span>
   );
 });
 
 const GroupContent = memo(function GroupContent({
   node,
   expanded,
-  isDragActive,
+  nameRef,
+  showTooltip,
 }: {
   node: BranchNode;
   expanded: boolean;
-  isDragActive: boolean;
+  nameRef: RefObject<HTMLSpanElement | null>;
+  showTooltip: boolean;
 }) {
-  const nameRef = useRef<HTMLSpanElement>(null);
-  const isOverflowing = useOverflow([nameRef], [node.title]);
-
-  const showTooltip = isOverflowing && !isDragActive;
   return (
     <span className="flex items-center gap-2.25 min-w-0 w-full">
       <span
         aria-hidden="true"
         className={`shrink-0 text-tree-folder text-[16px] ${expanded ? 'i-lucide-folder-open' : 'i-lucide-folder'}`}
       />
-      <Tooltip
-        trigger={showTooltip ? ['hover', 'focus'] : []}
-        placement="right"
-        open={showTooltip ? undefined : false}
-        mouseEnterDelay={0.3}
-        destroyOnHidden
-        title={
-          isOverflowing ? (
-            <div className="max-w-[min(320px,calc(100vw-48px))] whitespace-normal [overflow-wrap:anywhere] leading-[1.6]">
-              {node.title}
-            </div>
-          ) : null
-        }
+      <span
+        ref={nameRef}
+        className="group-name min-w-0 overflow-hidden text-ellipsis text-[13px] font-500"
+        tabIndex={showTooltip ? 0 : undefined}
       >
-        <span
-          ref={nameRef}
-          className="group-name min-w-0 overflow-hidden text-ellipsis text-[13px] font-500"
-          tabIndex={showTooltip ? 0 : undefined}
-        >
-          {node.title}
-        </span>
-      </Tooltip>
+        {node.title}
+      </span>
       <span className="group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-control px-1.5 text-[11px] leading-[19px] tabular-nums">
         {node.children.length}
       </span>

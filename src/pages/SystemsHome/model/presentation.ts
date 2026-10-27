@@ -25,5 +25,5 @@ export function organizationName(value: string | undefined) {
   return (separator < 0 ? value : value.slice(separator + 1)).trim() || '暂未配置';
 }
 
-/** 1280px 视口内：1232px 内容 = 4 × 296px 卡片 + 3 × 16px 间距；宽屏仍保持四列。 */
-export const systemCardGrid = 'grid grid-cols-2 desktop:grid-cols-4 gap-4';
+/** 手机使用单列避免入口拥挤；中屏两列，1280px 起四列，骨架与正文共用相同布局。 */
+export const systemCardGrid = 'grid grid-cols-2 max-[640px]:grid-cols-1 desktop:grid-cols-4 gap-4';

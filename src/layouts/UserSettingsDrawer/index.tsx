@@ -64,7 +64,8 @@ export function UserSettingsDrawer() {
       classNames={{
         wrapper: 'user-settings-panel max-w-full!',
         section: 'user-settings-surface',
-        body: 'flex! min-h-0! flex-col! overflow-hidden! px-5! pt-0! pb-0!',
+        // 内容留白由设置面板内部维护，让覆盖式滚动条使用抽屉右侧留白，不压住表单。
+        body: 'flex! min-h-0! flex-col! overflow-hidden! px-0! pt-0! pb-0!',
         footer: 'px-6! py-3!',
       }}
       footer={

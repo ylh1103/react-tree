@@ -38,8 +38,8 @@ before(async () => {
 after(() => vite?.close());
 
 /** 使用真实页面和独立缓存控制 pending/fetching/error，不运行 loader 或业务接口。 */
-function setup(t, { Page, path, routePath, key, data, platform = 'application' }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function setup(t, { Page, path, routePath, key, data, platform = 'application', staleTime = 0 }) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime } } });
   if (data !== undefined) {
     client.setQueryData(key, data);
   }
@@ -124,6 +124,7 @@ test('业务页面无数据时使用自身骨架，有缓存的刷新及刷新�
       let reject;
       const refresh = fixture.client.query({
         queryKey: config.key,
+        staleTime: 0,
         queryFn: () =>
           new Promise((_, no) => {
             reject = no;
@@ -158,6 +159,77 @@ test('首次数据请求失败后展示错误与重试，不停留在业务骨�
       assert.match(html, /模拟首次加载失败/);
       assert.match(html, /重\s*试/);
       assert.doesNotMatch(html, /ant-skeleton/);
+    });
+  }
+});
+
+test('PC 分栏中 URL 选择只匹配业务项，分组不能作为应用详情', async (t) => {
+  for (const [config, data, selectedName, detail] of [
+    [
+      cases()[1],
+      [{ key: '分组', children: [{ key: '应用A', desc: '应用说明' }] }],
+      '应用A',
+      '开发环境',
+    ],
+    [
+      cases()[2],
+      [{ paramTypeName: '连接配置', description: '数据库连接说明' }],
+      '连接配置',
+      '数据库连接说明',
+    ],
+  ]) {
+    await t.test(config.path, (t) => {
+      const html = setup(t, {
+        ...config,
+        data,
+        staleTime: Infinity,
+        path: config.path + '/' + encodeURIComponent(selectedName),
+      }).render();
+      assert.match(html, /data-split-pane/);
+      assert.ok(html.includes(detail), '选中项应展示所属页面的详情');
+      assert.doesNotMatch(html, /不存在或已移除/);
+      const missing = setup(t, {
+        ...config,
+        data,
+        staleTime: Infinity,
+        path: config.path + '/' + encodeURIComponent('分组'),
+      }).render();
+      assert.match(missing, /「分组」不存在或已移除/);
+      assert.match(missing, /返回.*首页/);
+    });
+  }
+});
+
+test('目标不在缓存时等待刷新确认，失败展示重试而不是误报删除', async (t) => {
+  for (const config of [cases()[1], cases()[2]]) {
+    await t.test(config.path, async (t) => {
+      // 显式控制刷新，避免 SSR 的新订阅把刚确认的成功清单立即标为再次获取中。
+      const fixture = setup(t, {
+        ...config,
+        path: config.path + '/unknown',
+        data: [],
+        staleTime: Infinity,
+      });
+      let reject;
+      const refresh = fixture.client.query({
+        queryKey: config.key,
+        staleTime: 0,
+        queryFn: () =>
+          new Promise((_, no) => {
+            reject = no;
+          }),
+      });
+      const waiting = fixture.render();
+      assert.match(waiting, /aria-label="正在加载(?:应用|参数类型)"/);
+      assert.doesNotMatch(waiting, /不存在或已移除/);
+      reject(new Error('目标校验刷新失败'));
+      await assert.rejects(refresh, /目标校验刷新失败/);
+      const failed = fixture.render();
+      assert.match(failed, /目标校验刷新失败/);
+      assert.match(failed, /重\s*试/);
+      assert.doesNotMatch(failed, /不存在或已移除/);
+      fixture.client.setQueryData(config.key, []);
+      assert.match(fixture.render(), /「unknown」不存在或已移除/);
     });
   }
 });

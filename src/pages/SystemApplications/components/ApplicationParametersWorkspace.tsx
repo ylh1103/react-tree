@@ -1,3 +1,4 @@
+/** 应用参数页私有的空状态、环境工具栏和参数面板；环境选择由页面统一持有。 */
 import { App as AntdApp, Button, Checkbox, Empty, Popover, Switch, Tooltip } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import {
@@ -7,7 +8,7 @@ import {
   type ToolbarLayout,
 } from './toolbarLayout';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
-import { OverlayHorizontalScroll } from '@/components/OverlayHorizontalScroll';
+import { OverlayScroll } from '@/components/OverlayScroll';
 
 // 布局预览数据；后续由应用关联的环境接口提供。
 const previewEnvironments = [
@@ -25,14 +26,10 @@ interface EnvironmentSelectionProps {
 
 export function ApplicationParametersEmptyState({
   applicationCount,
-  compact,
-  onOpenList,
   onRefresh,
   refreshing,
 }: {
   applicationCount: number;
-  compact: boolean;
-  onOpenList: () => void;
   onRefresh: () => void;
   refreshing: boolean;
 }) {
@@ -59,23 +56,13 @@ export function ApplicationParametersEmptyState({
             </h3>
             <p className="m-0 mt-3 text-14px leading-24px text-text-secondary">
               {hasApplications
-                ? compact
-                  ? '打开应用列表，选择一个应用后查看各环境的参数配置。'
-                  : '从左侧应用列表中选择一个应用，查看各环境的参数配置。'
+                ? '从左侧应用列表中选择一个应用，查看各环境的参数配置。'
                 : '应用接入后，可在此查看参数配置。刷新列表可获取最新应用。'}
             </p>
           </div>
         }
       >
-        {compact ? (
-          <Button
-            type="primary"
-            onClick={onOpenList}
-            icon={<span className="i-lucide-panel-left-open h-14px w-14px" aria-hidden="true" />}
-          >
-            打开应用列表
-          </Button>
-        ) : !hasApplications ? (
+        {!hasApplications ? (
           <Button
             onClick={onRefresh}
             loading={refreshing}
@@ -413,7 +400,7 @@ export function ApplicationParametersWorkspace({
   );
   return (
     <div className="flex min-w-0 min-h-full flex-col">
-      <OverlayHorizontalScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
+      <OverlayScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
         {environments.length ? (
           <div className="grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(500px,1fr)] gap-layout">
             {environments.map((environment) => (
@@ -440,7 +427,7 @@ export function ApplicationParametersWorkspace({
             </Empty>
           </div>
         )}
-      </OverlayHorizontalScroll>
+      </OverlayScroll>
     </div>
   );
 }
