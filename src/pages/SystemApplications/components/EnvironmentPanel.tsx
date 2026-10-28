@@ -1,6 +1,16 @@
-/** 环境参数只读面板：展示配置、快照及审批信息，操作入口启用并提示接口待接入。 */
+/** 环境参数只读面板：用 Monaco 展示 YAML 配置，保留快照、审批信息及待接入的操作入口。 */
 import { App, Badge, Button, Empty, Popover, Space, Tooltip, type TooltipProps } from 'antd';
+import { MonacoEditor, type MonacoEditorProps } from '@/components/MonacoEditor';
 import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
+
+// 与原只读面板的字号、行高保持一致；稳定选项避免元信息刷新时重复更新编辑器配置。
+const configEditorOptions: NonNullable<MonacoEditorProps['options']> = {
+  readOnly: true,
+  domReadOnly: true,
+  fontSize: 12,
+  lineHeight: 22,
+  padding: { top: 12, bottom: 12 },
+};
 
 // 默认 shift 阈值为箭头预留距离，即使关闭箭头，半露出的按钮仍可能把浮层推到视口外。
 // 使用布尔 shift 优先保持浮层完整可见，避免 body 被撑宽；保留原有翻转及滚动重定位。
@@ -165,23 +175,21 @@ export function EnvironmentPanel({
       </header>
       {config.trim() ? (
         <div
-          className="flex flex-1 min-h-280px min-w-0 overflow-auto bg-canvas py-3"
+          className="relative flex-1 min-h-280px min-w-0 overflow-hidden"
           role="region"
           aria-label={`${env.envTag} 配置内容（只读）`}
-          tabIndex={0}
         >
-          <pre
-            aria-hidden="true"
-            className="m-0 shrink-0 select-none border-r border-r-solid border-divider px-3 text-right font-mono text-12px leading-22px text-text-muted"
-          >
-            {config
-              .split('\n')
-              .map((_, i) => i + 1)
-              .join('\n')}
-          </pre>
-          <pre className="m-0 px-4 font-mono text-12px leading-22px text-text">
-            <code>{config}</code>
-          </pre>
+          {/* 绝对定位填满分栏分配的高度，避免编辑器自身尺寸反向撑大父容器。 */}
+          <div className="absolute inset-0">
+            <MonacoEditor
+              height="100%"
+              language="yaml"
+              // 系统、应用和环境共同隔离模型，切换或刷新时不复用其他配置的内容及撤销历史。
+              path={`parameter://application/${encodeURIComponent(env.systemName)}/${encodeURIComponent(env.appName)}/${encodeURIComponent(env.envTag)}/config.yaml`}
+              value={config}
+              options={configEditorOptions}
+            />
+          </div>
         </div>
       ) : (
         <div className="grid flex-1 min-h-280px place-items-center p-6">
