@@ -28,7 +28,10 @@ export function ParameterTypeList({
   return (
     <div>
       <div
-        className={`flex items-center justify-between gap-2 p-4 border-b border-b-solid ${layoutMode === 'compact' ? 'border-divider' : 'border-border-subtle'}`}
+        className={`
+          flex items-center justify-between gap-2 p-4 border-b border-b-solid
+          ${layoutMode === 'compact' ? 'border-divider' : 'border-border-subtle'}
+        `}
       >
         <h2 className="workspace-page__title">参数类型</h2>
         <Tag className="m-0!">{items.length}</Tag>
@@ -55,7 +58,10 @@ export function ParameterTypeList({
       </div>
       {visible.length ? (
         <Menu
-          className="bg-transparent! border-e-0! [&_.ant-menu-item]:h-auto! [&_.ant-menu-item]:min-h-40px [&_.ant-menu-title-content]:whitespace-normal!"
+          className={`
+            bg-transparent! border-e-0! [&_.ant-menu-item]:h-auto! [&_.ant-menu-item]:min-h-40px
+            [&_.ant-menu-title-content]:whitespace-normal!
+          `}
           selectedKeys={selectedName ? [selectedName] : []}
           items={visible.map((item) => ({
             key: item.paramTypeName,

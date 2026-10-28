@@ -126,7 +126,11 @@ export function LoadingIndicator({
             height="82"
             rx="7"
             fill={color}
-            className={`[animation:loading-wave_1.1s_ease-in-out_infinite] [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${delays[index]}`}
+            className={`
+              [animation:loading-wave_1.1s_ease-in-out_infinite] [transform-box:fill-box]
+              [transform-origin:center] motion-reduce:animate-none
+              ${delays[index]}
+            `}
           />
         ))}
       {styleId === 'data-matrix' &&
@@ -137,7 +141,11 @@ export function LoadingIndicator({
             cy={58 + Math.floor(index / 3) * 42}
             r="13"
             fill={colors[(index % 3) * 2]}
-            className={`[animation:loading-dot_1.4s_ease-in-out_infinite] [transform-box:fill-box] [transform-origin:center] motion-reduce:animate-none ${dotDelays[index]}`}
+            className={`
+              [animation:loading-dot_1.4s_ease-in-out_infinite] [transform-box:fill-box]
+              [transform-origin:center] motion-reduce:animate-none
+              ${dotDelays[index]}
+            `}
           />
         ))}
     </svg>

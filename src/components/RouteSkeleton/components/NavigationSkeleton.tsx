@@ -19,7 +19,12 @@ export function NavigationSkeleton({
         {items.map((item) => (
           <div
             key={item.path}
-            className={`flex shrink-0 flex-col items-center justify-center gap-0.5 ${iconOnly ? 'min-h-44px' : 'min-h-60px'} py-1 ${item.bottom ? 'mt-auto' : ''}`}
+            className={`
+              flex shrink-0 flex-col items-center justify-center gap-0.5
+              ${iconOnly ? 'min-h-44px' : 'min-h-60px'}
+              py-1
+              ${item.bottom ? 'mt-auto' : ''}
+            `}
             aria-hidden="true"
           >
             <Skeleton.Avatar

@@ -50,7 +50,10 @@ export function SplitPaneFrame({
       </aside>
       {separator}
       <section
-        className={`flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden ${integratedHeader ? (compact ? 'bg-surface rounded-0' : 'workspace-panel') : `gap-layout ${compact ? 'bg-surface rounded-0' : 'bg-canvas'}`}`}
+        className={`
+          flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden
+          ${integratedHeader ? (compact ? 'bg-surface rounded-0' : 'workspace-panel') : `gap-layout ${compact ? 'bg-surface rounded-0' : 'bg-canvas'}`}
+        `}
         aria-label="页面内容"
       >
         <div

@@ -14,7 +14,12 @@ export default function PlaceholderWorkspace({
     <div
       className={`flex flex-1 flex-col items-center justify-center p-8 text-center ${splitPane ? 'min-h-full' : 'min-h-0'}`}
     >
-      <div className="grid place-items-center w-56px h-56px mb-4.5 border border-solid border-border rounded-ui text-accent bg-sidebar text-24px">
+      <div
+        className={`
+          grid place-items-center w-56px h-56px mb-4.5 border border-solid border-border rounded-ui
+          text-accent bg-sidebar text-24px
+        `}
+      >
         <LayoutOutlined aria-hidden="true" />
       </div>
       <h3 className="m-0 mb-2 text-text-secondary text-15px font-500">{title}工作区</h3>

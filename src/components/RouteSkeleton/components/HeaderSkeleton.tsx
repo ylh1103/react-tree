@@ -5,7 +5,10 @@ export function HeaderSkeleton() {
   const inputClass = '[&_.ant-skeleton-input]:min-w-0! [&_.ant-skeleton-input]:w-full!';
   return (
     <header
-      className="shrink-0 min-w-0 bg-header border-b border-b-solid border-divider motion-reduce:[&_.ant-skeleton-active_*]:animate-none!"
+      className={`
+        shrink-0 min-w-0 bg-header border-b border-b-solid border-divider
+        motion-reduce:[&_.ant-skeleton-active_*]:animate-none!
+      `}
       aria-label="页头加载中"
       aria-busy
     >

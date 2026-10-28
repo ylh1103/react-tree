@@ -41,7 +41,12 @@ export function AppNavigation() {
                 {({ isActive, isPending }) => (
                   <>
                     <span
-                      className={`flex items-center justify-center w-36px h-36px shrink-0 rounded-control transition-colors duration-140 motion-reduce:transition-none ${isActive ? 'bg-nav-active text-nav-active-text group-hover:bg-nav-active-hover group-active:bg-nav-active-hover' : 'group-hover:bg-nav-hover group-active:bg-nav-pressed'} ${isPending ? 'ring-1 ring-inset ring-nav-emphasis' : ''}`}
+                      className={`
+                        flex items-center justify-center w-36px h-36px shrink-0 rounded-control
+                        transition-colors duration-140 motion-reduce:transition-none
+                        ${isActive ? 'bg-nav-active text-nav-active-text group-hover:bg-nav-active-hover group-active:bg-nav-active-hover' : 'group-hover:bg-nav-hover group-active:bg-nav-pressed'}
+                        ${isPending ? 'ring-1 ring-inset ring-nav-emphasis' : ''}
+                      `}
                     >
                       <span
                         className={`${isPending ? 'i-lucide-loader-circle animate-spin motion-reduce:animate-none' : icon} ${iconSizeClass} shrink-0`}

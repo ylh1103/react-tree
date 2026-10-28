@@ -66,7 +66,12 @@ export function OverlayScroll({
         aria-label={label}
         tabIndex={0}
         onScroll={syncScroll}
-        className={`flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${vertical ? 'overflow-y-auto overflow-x-hidden' : 'flex overflow-x-auto'} ${className}`}
+        className={`
+          flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none]
+          [&::-webkit-scrollbar]:hidden
+          ${vertical ? 'overflow-y-auto overflow-x-hidden' : 'flex overflow-x-auto'}
+          ${className}
+        `}
       >
         <div ref={contentRef} className={vertical ? 'flow-root min-w-0' : 'flex flex-1 min-w-0'}>
           {children}
@@ -79,7 +84,15 @@ export function OverlayScroll({
         tabIndex={0}
         hidden={size.content <= size.viewport}
         onScroll={syncScroll}
-        className={`tree-scrollbar layout-focus absolute z-1 overscroll-contain opacity-0 pointer-events-none group-hover/overlay-scroll:opacity-100 group-hover/overlay-scroll:pointer-events-auto group-focus-within/overlay-scroll:opacity-100 group-focus-within/overlay-scroll:pointer-events-auto transition-opacity duration-150 motion-reduce:transition-none [scrollbar-gutter:auto]! [scrollbar-color:var(--color-border)_transparent]! [&::-webkit-scrollbar-thumb]:bg-border! ${vertical ? 'inset-y-0 right-0 w-12px overflow-y-auto overflow-x-hidden' : 'inset-x-0 bottom-0 h-12px overflow-x-auto overflow-y-hidden'}`}
+        className={`
+          tree-scrollbar layout-focus absolute z-1 overscroll-contain opacity-0 pointer-events-none
+          group-hover/overlay-scroll:opacity-100 group-hover/overlay-scroll:pointer-events-auto
+          group-focus-within/overlay-scroll:opacity-100
+          group-focus-within/overlay-scroll:pointer-events-auto transition-opacity duration-150
+          motion-reduce:transition-none [scrollbar-gutter:auto]!
+          [scrollbar-color:var(--color-border)_transparent]! [&::-webkit-scrollbar-thumb]:bg-border!
+          ${vertical ? 'inset-y-0 right-0 w-12px overflow-y-auto overflow-x-hidden' : 'inset-x-0 bottom-0 h-12px overflow-x-auto overflow-y-hidden'}
+        `}
       >
         <div
           className={vertical ? 'w-1px' : 'h-1px'}

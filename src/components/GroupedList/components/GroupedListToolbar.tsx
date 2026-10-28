@@ -74,7 +74,10 @@ export function GroupedListToolbar({
       <div className="shrink-0 min-w-0 [container-type:inline-size]">
         <header
           ref={headerRef}
-          className={`${layoutMode === 'compact' ? 'workspace-titlebar mb-3' : 'workspace-titlebar-layout workspace-titlebar-frame-edge'} workspace-collection-titlebar`}
+          className={`
+            ${layoutMode === 'compact' ? 'workspace-titlebar mb-3' : 'workspace-titlebar-layout workspace-titlebar-frame-edge'}
+            workspace-collection-titlebar
+          `}
         >
           <div ref={headingRef} className="shrink-0">
             <GroupedListHeading context={context} config={config} />
@@ -260,7 +263,10 @@ function GroupedListHeading({
                       </td>
                     )}
                     <td
-                      className={`rounded-r-control px-2 py-2 text-right font-600 tabular-nums ${isFiltered ? 'text-text-secondary' : 'text-16px text-accent-text'}`}
+                      className={`
+                        rounded-r-control px-2 py-2 text-right font-600 tabular-nums
+                        ${isFiltered ? 'text-text-secondary' : 'text-16px text-accent-text'}
+                      `}
                     >
                       {totalLeafCount.toLocaleString()}
                     </td>
@@ -284,7 +290,12 @@ function GroupedListHeading({
               </table>
             </div>
             {isFiltered && (
-              <p className="m-0 border-t border-t-solid border-divider bg-sidebar px-4 py-2.5 text-11px leading-4 text-text-muted whitespace-normal">
+              <p
+                className={`
+                  m-0 border-t border-t-solid border-divider bg-sidebar px-4 py-2.5 text-11px
+                  leading-4 text-text-muted whitespace-normal
+                `}
+              >
                 匹配数量随搜索和类型筛选实时更新
               </p>
             )}
@@ -295,7 +306,10 @@ function GroupedListHeading({
           type="text"
           size="small"
           aria-label={`查看${config.label}数量统计，${countDescription}`}
-          className="h-24px! min-w-6 px-1.5! gap-1! rounded-control! bg-hover! hover:bg-accent-bg-hover! text-12px! leading-5! font-600! tabular-nums layout-focus"
+          className={`
+            h-24px! min-w-6 px-1.5! gap-1! rounded-control! bg-hover! hover:bg-accent-bg-hover!
+            text-12px! leading-5! font-600! tabular-nums layout-focus
+          `}
         >
           <span role="status" aria-atomic="true" aria-label={countDescription}>
             <span className="text-accent-text">

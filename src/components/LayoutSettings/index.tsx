@@ -76,7 +76,11 @@ function SettingsPreview({
           '--ui-radius': `${radius}px`,
         } as CSSProperties
       }
-      className={`relative block h-80px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border bg-canvas ${className}`}
+      className={`
+        relative block h-80px w-full shrink-0 overflow-hidden rounded-ui border border-solid
+        border-border bg-canvas
+        ${className}
+      `}
     >
       <span className="flex h-17px items-center gap-1 border-b border-b-solid border-divider bg-header px-2">
         <span className="h-5px w-5px rounded-full bg-accent" />
@@ -91,14 +95,20 @@ function SettingsPreview({
           <span className="h-1 w-2 rounded-1px bg-nav-text opacity-50" />
         </span>
         <span
-          className={`w-8 shrink-0 border border-solid border-divider bg-sidebar p-1.5 ${compact ? 'border-y-0 border-l-0' : 'rounded-[calc(var(--ui-radius)/2)]'}`}
+          className={`
+            w-8 shrink-0 border border-solid border-divider bg-sidebar p-1.5
+            ${compact ? 'border-y-0 border-l-0' : 'rounded-[calc(var(--ui-radius)/2)]'}
+          `}
         >
           <span className="mb-1.5 block h-1 w-full rounded-1px bg-accent opacity-60" />
           <span className="mb-1.5 block h-1 w-full rounded-1px bg-text-muted opacity-25" />
           <span className="block h-1 w-3/4 rounded-1px bg-text-muted opacity-25" />
         </span>
         <span
-          className={`min-w-0 flex-1 border border-solid border-divider bg-surface p-2 ${compact ? 'border-0' : 'rounded-[calc(var(--ui-radius)/2)]'}`}
+          className={`
+            min-w-0 flex-1 border border-solid border-divider bg-surface p-2
+            ${compact ? 'border-0' : 'rounded-[calc(var(--ui-radius)/2)]'}
+          `}
         >
           <span className="mb-2 block h-1 w-2/3 rounded-1px bg-text-muted opacity-60" />
           <span className="mb-1.5 block h-1 w-full rounded-1px bg-text-muted opacity-20" />
@@ -159,10 +169,17 @@ function NavigationColorPreview({
         {navigationPreviewItems.map(({ path, label, icon }, index) => (
           <span
             key={path}
-            className={`flex w-full shrink-0 flex-col items-center justify-center gap-0.5 ${iconOnly ? 'min-h-36px' : 'min-h-46px'} ${index === 0 ? 'font-600 text-nav-emphasis' : 'text-nav-text'}`}
+            className={`
+              flex w-full shrink-0 flex-col items-center justify-center gap-0.5
+              ${iconOnly ? 'min-h-36px' : 'min-h-46px'}
+              ${index === 0 ? 'font-600 text-nav-emphasis' : 'text-nav-text'}
+            `}
           >
             <span
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-control ${index === 0 ? 'bg-nav-active text-nav-active-text' : ''}`}
+              className={`
+                flex h-7 w-7 shrink-0 items-center justify-center rounded-control
+                ${index === 0 ? 'bg-nav-active text-nav-active-text' : ''}
+              `}
             >
               <span
                 className={`${icon} shrink-0 ${iconOnly ? 'h-22px w-22px' : 'h-20px w-20px'}`}
@@ -275,7 +292,11 @@ function PreferenceSlider({
           onPressEnter={(event) => {
             if (event.target instanceof HTMLInputElement) event.target.blur();
           }}
-          className={`w-84px! ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'} [&_input]:font-600 [&_input]:tabular-nums`}
+          className={`
+            w-84px!
+            ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'}
+            [&_input]:font-600 [&_input]:tabular-nums
+          `}
         />
       </div>
       <p
@@ -316,7 +337,13 @@ function PreferenceSlider({
                     '[&::after]:shadow-[0_0_0_2px_var(--color-accent)]! hover:[&::after]:shadow-[0_0_0_3px_var(--color-accent)]! focus-visible:[&::after]:shadow-[0_0_0_4px_var(--color-accent)]!',
                 }
           }
-          className={`mx-0! mt-3! mb-5! [&_.ant-slider-mark-text]:text-12px [&_.ant-slider-mark-text]:tabular-nums [&_.ant-slider-dot]:w-2px! [&_.ant-slider-dot]:h-6px! [&_.ant-slider-dot]:top-3px! [&_.ant-slider-dot]:rounded-1px! [&_.ant-slider-dot]:border-0! [&_.ant-slider-dot]:bg-border! ${disabled ? '' : '[&_.ant-slider-dot-active]:bg-accent!'}`}
+          className={`
+            mx-0! mt-3! mb-5! [&_.ant-slider-mark-text]:text-12px
+            [&_.ant-slider-mark-text]:tabular-nums [&_.ant-slider-dot]:w-2px!
+            [&_.ant-slider-dot]:h-6px! [&_.ant-slider-dot]:top-3px! [&_.ant-slider-dot]:rounded-1px!
+            [&_.ant-slider-dot]:border-0! [&_.ant-slider-dot]:bg-border!
+            ${disabled ? '' : '[&_.ant-slider-dot-active]:bg-accent!'}
+          `}
         />
       </div>
     </div>
@@ -387,13 +414,21 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
   const disabled = loading || status === 'load-error';
   return (
     <div
-      className="flex h-full min-h-0 flex-col gap-3 [--color-text-muted:var(--color-text-secondary)] [--color-accent-text:var(--color-settings-accent-text)]"
+      className={`
+        flex h-full min-h-0 flex-col gap-3 [--color-text-muted:var(--color-text-secondary)]
+        [--color-accent-text:var(--color-settings-accent-text)]
+      `}
       aria-busy={loading || saving}
     >
       <Tabs
         defaultActiveKey="appearance"
         tabBarGutter={0}
-        className="min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1 [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-sidebar [&_.ant-tabs-nav-list]:p-1"
+        className={`
+          min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden
+          [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1
+          [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-sidebar
+          [&_.ant-tabs-nav-list]:p-1
+        `}
         classNames={{
           header: 'shrink-0! mx-6! pt-3! pb-2! mb-1! before:border-0!',
           body: 'h-full! min-h-0!',

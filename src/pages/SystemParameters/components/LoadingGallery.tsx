@@ -81,7 +81,10 @@ export default function LoadingGallery() {
           <article
             key={item.id}
             data-testid={`loading-${item.id}`}
-            className={`min-w-0 flex flex-col rounded-ui overflow-hidden border border-solid ${active.id === item.id ? 'border-accent' : 'border-border-subtle'}`}
+            className={`
+              min-w-0 flex flex-col rounded-ui overflow-hidden border border-solid
+              ${active.id === item.id ? 'border-accent' : 'border-border-subtle'}
+            `}
           >
             <div
               className="h-136px relative flex items-center justify-center bg-sidebar"

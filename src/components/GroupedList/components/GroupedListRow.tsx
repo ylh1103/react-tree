@@ -183,7 +183,6 @@ export const GroupedListRow = memo(function GroupedListRow({
         className={[
           'tree-row flex items-center h-full cursor-pointer select-none relative [padding-right:calc(16px-(100cqw-100%))]',
           isSelected ? 'tree-row-selected' : '',
-
           isEditing ? 'tree-row-editing cursor-grab!' : '',
         ].join(' ')}
         style={{ paddingLeft: depth * INDENT }}
@@ -206,7 +205,10 @@ export const GroupedListRow = memo(function GroupedListRow({
           <Button
             type="text"
             size="small"
-            className="tree-switcher-button absolute! z-2 w-8! min-w-8! h-8! p-0! text-tree-switcher! bg-transparent! hover:text-[var(--accent)]! focus-visible:outline-offset-[-2px]!"
+            className={`
+              tree-switcher-button absolute! z-2 w-8! min-w-8! h-8! p-0! text-tree-switcher!
+              bg-transparent! hover:text-[var(--accent)]! focus-visible:outline-offset-[-2px]!
+            `}
             style={{ left: depth * INDENT }}
             aria-label={`${isExpanded ? '收起' : '展开'} ${node.title}`}
             aria-expanded={isExpanded}
@@ -220,7 +222,11 @@ export const GroupedListRow = memo(function GroupedListRow({
             icon={
               <span
                 aria-hidden="true"
-                className={`i-lucide-chevron-right w-4 h-4 -translate-x-2 transition-transform duration-150 motion-reduce:transition-none ${isExpanded ? 'rotate-90' : ''}`}
+                className={`
+                  i-lucide-chevron-right w-4 h-4 -translate-x-2 transition-transform duration-150
+                  motion-reduce:transition-none
+                  ${isExpanded ? 'rotate-90' : ''}
+                `}
               />
             }
           />
@@ -262,7 +268,14 @@ export const GroupedListRow = memo(function GroupedListRow({
           }
         >
           <div
-            className={`tree-node-card relative flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
+            className={`
+              tree-node-card relative flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border
+              border-solid border-border rounded-control bg-surface
+              [transition-property:background,border-color,box-shadow] duration-150
+              motion-reduce:transition-none py-1
+              ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'}
+              ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}
+            `}
             data-has-actions={!isRenaming || undefined}
             data-menu-open={isMenuOpen || undefined}
             data-has-badge={
@@ -292,7 +305,10 @@ export const GroupedListRow = memo(function GroupedListRow({
               />
             ) : (
               <span
-                className={`tree-node-content flex-1 whitespace-nowrap text-ellipsis text-sm min-w-0 ${isBranch ? 'overflow-hidden' : 'overflow-visible'}`}
+                className={`
+                  tree-node-content flex-1 whitespace-nowrap text-ellipsis text-sm min-w-0
+                  ${isBranch ? 'overflow-hidden' : 'overflow-visible'}
+                `}
               >
                 {node.type === 'branch' ? (
                   <GroupContent
@@ -522,7 +538,12 @@ const GroupedLeaf = memo(function GroupedLeaf({
           </span>
           {kind === config.badgeType && (
             <span
-              className="leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center w-5 h-4.5 [border-radius:0_var(--control-radius)_0_var(--control-radius)] p-0 text-[11px] font-600 leading-none text-[var(--leaf-type-text)] bg-[var(--leaf-type-bg)] cursor-help"
+              className={`
+                leaf-type-badge absolute top-0 right-0 z-1 inline-flex items-center justify-center
+                w-5 h-4.5 [border-radius:0_var(--control-radius)_0_var(--control-radius)] p-0
+                text-[11px] font-600 leading-none text-[var(--leaf-type-text)]
+                bg-[var(--leaf-type-bg)] cursor-help
+              `}
               data-color={typeColor}
               title={typeLabel}
               role="img"
@@ -567,7 +588,12 @@ const GroupContent = memo(function GroupContent({
       >
         {node.title}
       </span>
-      <span className="group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-control px-1.5 text-[11px] leading-[19px] tabular-nums">
+      <span
+        className={`
+          group-count ml-auto shrink-0 text-tree-count-text bg-tree-count-bg rounded-control px-1.5
+          text-[11px] leading-[19px] tabular-nums
+        `}
+      >
         {node.children.length}
       </span>
     </span>

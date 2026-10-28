@@ -301,7 +301,11 @@ export function GroupedList({
 
   return (
     <section
-      className={`grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface overflow-hidden [container-type:inline-size] ${embedded ? 'w-full' : 'w-[290px] border border-solid border-tree-panel-border rounded-ui'}`}
+      className={`
+        grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface
+        overflow-hidden [container-type:inline-size]
+        ${embedded ? 'w-full' : 'w-[290px] border border-solid border-tree-panel-border rounded-ui'}
+      `}
       aria-busy={disabled || loading}
     >
       {error && (
@@ -531,9 +535,22 @@ function TreeDragPreview({
       {activeDragNode ? (
         <div
           aria-hidden="true"
-          className="tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)] h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-control bg-tree-preview-bg text-tree-preview-text shadow-[0_2px_6px_var(--color-tree-preview-shadow)] text-[12px] pointer-events-none select-none"
+          className={`
+            tree-drag-preview relative flex items-center gap-1.75 w-52 max-w-[calc(100vw-24px)]
+            h-7.5 px-2.25 py-0 border border-solid border-[var(--accent-border)] rounded-control
+            bg-tree-preview-bg text-tree-preview-text
+            shadow-[0_2px_6px_var(--color-tree-preview-shadow)] text-[12px] pointer-events-none
+            select-none
+          `}
         >
-          <div className="tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)] px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-control text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2 [overflow-wrap:anywhere] pointer-events-none">
+          <div
+            className={`
+              tree-drag-hint absolute bottom-[calc(100%+5px)] left-0 w-52 max-w-[calc(100vw-24px)]
+              px-2 py-1.25 border border-solid border-[var(--accent-border)] rounded-control
+              text-[var(--accent-text)] bg-[var(--accent-bg)] text-[11px] leading-[17px] line-clamp-2
+              [overflow-wrap:anywhere] pointer-events-none
+            `}
+          >
             {dropDescription}
           </div>
           <span className="tree-drag-preview-icon flex shrink-0 text-[var(--accent)] text-[14px]">
@@ -547,7 +564,13 @@ function TreeDragPreview({
             {activeDragNode.title || '未命名分组'}
           </span>
           {activeDragNode.type === 'branch' && (
-            <span className="tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-control bg-tree-preview-count-bg text-tree-preview-count-text text-[10px] leading-4 whitespace-nowrap tabular-nums">
+            <span
+              className={`
+                tree-drag-preview-count shrink-0 px-1.25 py-0.25 rounded-control
+                bg-tree-preview-count-bg text-tree-preview-count-text text-[10px] leading-4
+                whitespace-nowrap tabular-nums
+              `}
+            >
               {activeDragNode.children.length} 项
             </span>
           )}

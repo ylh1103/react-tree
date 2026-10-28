@@ -57,7 +57,10 @@ function SystemEntries({ system }: { system: SystemInfo }) {
         <Button
           key={platform}
           block
-          className="h-64px! min-w-0! justify-start! gap-2! px-3! text-13px! bg-sidebar! hover:bg-hover! hover:border-accent-border-hover! shadow-none! motion-reduce:transition-none!"
+          className={`
+            h-64px! min-w-0! justify-start! gap-2! px-3! text-13px! bg-sidebar! hover:bg-hover!
+            hover:border-accent-border-hover! shadow-none! motion-reduce:transition-none!
+          `}
           icon={<span className={`${icon} w-18px h-18px text-accent-text`} aria-hidden="true" />}
           onClick={() => navigate(platformHome(system.systemName, platform))}
           aria-label={`进入 ${system.systemName} ${label}`}
@@ -89,7 +92,10 @@ export function SystemCard({
   const isMine = 'role' in system;
   return (
     <article
-      className="workspace-panel flex flex-col min-w-0 overflow-hidden transition-colors hover:border-accent-border-hover focus-within:border-accent motion-reduce:transition-none"
+      className={`
+        workspace-panel flex flex-col min-w-0 overflow-hidden transition-colors
+        hover:border-accent-border-hover focus-within:border-accent motion-reduce:transition-none
+      `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
       <div className="flex-1 p-4">
@@ -107,7 +113,11 @@ export function SystemCard({
                   type="text"
                   onClick={onDetails}
                   aria-label={`查看 ${system.systemName} 详情`}
-                  className="block! max-w-full! h-auto! p-0! text-text! text-16px! font-600! leading-24px! hover:text-accent-text! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent [&>span]:truncate"
+                  className={`
+                    block! max-w-full! h-auto! p-0! text-text! text-16px! font-600! leading-24px!
+                    hover:text-accent-text! focus-visible:outline-2 focus-visible:outline-solid
+                    focus-visible:outline-accent [&>span]:truncate
+                  `}
                 >
                   {system.systemName}
                 </Button>

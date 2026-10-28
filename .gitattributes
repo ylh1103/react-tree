@@ -1,0 +1,6 @@
+# 文本文件统一使用 LF，避免不同平台检出后产生换行符差异。
+* text=auto eol=lf
+
+# Windows 命令脚本保留原生 CRLF 换行。
+*.bat text eol=crlf
+*.cmd text eol=crlf

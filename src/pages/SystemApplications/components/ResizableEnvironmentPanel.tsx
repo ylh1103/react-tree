@@ -33,7 +33,11 @@ function PanelShortcutHint({ label, actionKey }: { label: string; actionKey: '+'
         {['Ctrl', actionKey].map((key) => (
           <kbd
             key={key}
-            className="inline-flex h-24px min-w-24px items-center justify-center rounded-control border border-solid [border-color:color-mix(in_srgb,currentColor_30%,transparent)] bg-transparent px-1.5 font-mono text-12px font-400 leading-none"
+            className={`
+              inline-flex h-24px min-w-24px items-center justify-center rounded-control border
+              border-solid [border-color:color-mix(in_srgb,currentColor_30%,transparent)]
+              bg-transparent px-1.5 font-mono text-12px font-400 leading-none
+            `}
           >
             {key}
           </kbd>
@@ -174,7 +178,13 @@ export function ResizableEnvironmentPanel({
         data-collapsed={collapsed}
         data-maximized={maximized}
         // 紧凑布局的边界由后方 1px 拖拽线统一绘制，避免与面板右边框叠成双线。
-        className={`group/environment relative min-w-0 shrink-0 overflow-hidden ${compact ? 'bg-surface' : 'workspace-panel'} ${hidden ? 'hidden' : ''} ${collapsed || maximized || layout.fixed ? '' : 'grow'} ${dragging ? 'select-none' : ''}`}
+        className={`
+          group/environment relative min-w-0 shrink-0 overflow-hidden
+          ${compact ? 'bg-surface' : 'workspace-panel'}
+          ${hidden ? 'hidden' : ''}
+          ${collapsed || maximized || layout.fixed ? '' : 'grow'}
+          ${dragging ? 'select-none' : ''}
+        `}
         style={{
           width: maximized ? '100%' : collapsed ? collapsedEnvironmentWidth : layout.width,
           // 放大只改变当前显示，原尺寸和其他列始终保留；退出后直接恢复。
@@ -190,7 +200,14 @@ export function ResizableEnvironmentPanel({
         <div
           // 模式切换会移动按钮；同步销毁旧提示与延迟任务，避免浮层在原坐标淡出时显示新动作文字。
           key={`${collapsed}/${maximized}/${hidden}`}
-          className={`absolute z-2 flex gap-0.5 rounded-control bg-surface opacity-0 pointer-events-none group-hover/environment:opacity-100 group-hover/environment:pointer-events-auto group-focus-within/environment:opacity-100 group-focus-within/environment:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto ${collapsed ? 'top-2 right-3 flex-col' : 'top-4 right-3'}`}
+          className={`
+            absolute z-2 flex gap-0.5 rounded-control bg-surface opacity-0 pointer-events-none
+            group-hover/environment:opacity-100 group-hover/environment:pointer-events-auto
+            group-focus-within/environment:opacity-100
+            group-focus-within/environment:pointer-events-auto [@media(hover:none)]:opacity-100
+            [@media(hover:none)]:pointer-events-auto
+            ${collapsed ? 'top-2 right-3 flex-col' : 'top-4 right-3'}
+          `}
         >
           <Tooltip
             title={<PanelShortcutHint label={maximized ? '退出放大' : '放大'} actionKey="+" />}

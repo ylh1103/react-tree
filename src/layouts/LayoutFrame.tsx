@@ -54,12 +54,18 @@ export function WorkspaceFrame({
     >
       {header}
       <div
-        className={`flex flex-1 min-h-0 gap-layout p-layout ${compact ? '' : '[&:has([data-split-pane])]:gap-0 [&:has([data-sidebar-expanded=true])>aside]:rounded-r-0'}`}
+        className={`
+          flex flex-1 min-h-0 gap-layout p-layout
+          ${compact ? '' : '[&:has([data-split-pane])]:gap-0 [&:has([data-sidebar-expanded=true])>aside]:rounded-r-0'}
+        `}
       >
         {navigation}
         <main
           id="app-page"
-          className={`layout-scroll ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-ui [&:has([data-split-pane])]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:border-l-0'}`}
+          className={`
+            layout-scroll
+            ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-ui [&:has([data-split-pane])]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:border-l-0'}
+          `}
           tabIndex={-1}
         >
           {children}
@@ -77,7 +83,12 @@ export function NavigationFrame({ children }: { children: ReactNode }) {
   return (
     <aside
       style={navigationThemeVariables[navigationTheme] as CSSProperties}
-      className={`${navigationIconOnly ? 'w-48px' : 'w-60px'} shrink-0 overflow-y-auto bg-nav [scrollbar-width:thin] ${navigationTheme === 'theme' ? 'border-border-subtle' : 'border-nav-hover'} ${layoutMode === 'compact' ? 'rounded-0 border-r border-r-solid' : 'border border-solid rounded-ui'}`}
+      className={`
+        ${navigationIconOnly ? 'w-48px' : 'w-60px'}
+        shrink-0 overflow-y-auto bg-nav [scrollbar-width:thin]
+        ${navigationTheme === 'theme' ? 'border-border-subtle' : 'border-nav-hover'}
+        ${layoutMode === 'compact' ? 'rounded-0 border-r border-r-solid' : 'border border-solid rounded-ui'}
+      `}
     >
       {children}
     </aside>

@@ -11,7 +11,18 @@ export function SettingsOptionCard({
   return (
     <Radio.Button
       {...props}
-      className={`relative flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border! border-solid! border-border! bg-surface! text-text! text-center whitespace-normal! leading-normal! before:hidden! [&:not(.ant-radio-button-wrapper-disabled):not(.ant-radio-button-wrapper-checked):hover]:border-text-muted! [&.ant-radio-button-wrapper-checked]:border-accent! [&.ant-radio-button-wrapper-checked]:bg-hover! [&.ant-radio-button-wrapper-disabled]:opacity-50 [&:has(:focus-visible)]:outline-2 [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none! ${className}`}
+      className={`
+        relative flex! h-auto! min-w-0 [&>span:last-child]:w-full px-2.5! py-3! rounded-ui! border!
+        border-solid! border-border! bg-surface! text-text! text-center whitespace-normal!
+        leading-normal! before:hidden!
+        [&:not(.ant-radio-button-wrapper-disabled):not(.ant-radio-button-wrapper-checked):hover]:border-text-muted!
+        [&.ant-radio-button-wrapper-checked]:border-accent!
+        [&.ant-radio-button-wrapper-checked]:bg-hover!
+        [&.ant-radio-button-wrapper-disabled]:opacity-50 [&:has(:focus-visible)]:outline-2
+        [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent
+        [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!
+        ${className}
+      `}
     >
       {children}
     </Radio.Button>

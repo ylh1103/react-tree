@@ -50,7 +50,12 @@ export function ApplicationParametersEmptyState({
             aria-hidden="true"
           >
             <span className="i-lucide-panels-top-left h-32px w-32px text-accent" />
-            <span className="absolute -bottom-2 -right-2 grid h-30px w-30px place-items-center rounded-full border-3 border-solid border-surface bg-accent">
+            <span
+              className={`
+                absolute -bottom-2 -right-2 grid h-30px w-30px place-items-center rounded-full
+                border-3 border-solid border-surface bg-accent
+              `}
+            >
               <span className="i-lucide-mouse-pointer-2 h-14px w-14px text-on-accent" />
             </span>
           </div>
@@ -371,7 +376,14 @@ function EnvironmentCheckboxes({
       <div
         role="group"
         aria-label={showAll ? '选择显示的应用环境' : '收起的应用环境'}
-        className={`gap-1 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-control [&_.ant-checkbox-wrapper]:px-1.5 [&_.ant-checkbox-wrapper]:py-1 [&_.ant-checkbox-wrapper]:text-text! [&_.ant-checkbox-wrapper:hover]:bg-sidebar [&_.ant-checkbox-wrapper-checked]:bg-sidebar [&_.ant-checkbox-wrapper]:font-mono [&_.ant-checkbox-wrapper]:text-12px ${inline ? 'flex flex-nowrap' : 'flex flex-wrap'}`}
+        className={`
+          gap-1 [&_.ant-checkbox-wrapper]:m-0! [&_.ant-checkbox-wrapper]:rounded-control
+          [&_.ant-checkbox-wrapper]:px-1.5 [&_.ant-checkbox-wrapper]:py-1
+          [&_.ant-checkbox-wrapper]:text-text! [&_.ant-checkbox-wrapper:hover]:bg-sidebar
+          [&_.ant-checkbox-wrapper-checked]:bg-sidebar [&_.ant-checkbox-wrapper]:font-mono
+          [&_.ant-checkbox-wrapper]:text-12px
+          ${inline ? 'flex flex-nowrap' : 'flex flex-wrap'}
+        `}
       >
         {environments.map((environment) => (
           <Checkbox

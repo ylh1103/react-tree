@@ -115,7 +115,11 @@ export function AppHeader() {
                   <Button
                     aria-label="切换系统"
                     title={`${workspace.system.systemName} · ${workspace.system.systemChineseName}`}
-                    className={`${contextControlClass} min-w-0 max-w-360px wide:max-w-440px text-text! border-border-subtle! [&>.ant-btn-content]:min-w-0 [&>.ant-btn-content]:flex-1`}
+                    className={`
+                      ${contextControlClass}
+                      min-w-0 max-w-360px wide:max-w-440px text-text! border-border-subtle!
+                      [&>.ant-btn-content]:min-w-0 [&>.ant-btn-content]:flex-1
+                    `}
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="shrink-0 font-600">{workspace.system.systemName}</span>

@@ -70,7 +70,12 @@ export function DeleteDirectoryContent({
   return (
     <div className="flex min-w-0 flex-col gap-5 pt-3 text-sm">
       <div className="flex items-start gap-3 rounded-ui border border-border-subtle bg-sidebar p-4">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-border-subtle bg-surface text-lg text-text-muted">
+        <span
+          className={`
+            flex h-9 w-9 shrink-0 items-center justify-center rounded-ui border border-border-subtle
+            bg-surface text-lg text-text-muted
+          `}
+        >
           <span aria-hidden="true" className="i-lucide-folder" />
         </span>
         <div className="min-w-0 flex-1">

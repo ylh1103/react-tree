@@ -181,7 +181,7 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
   fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   html = fixture.render();
   assert.match(html, /--layout-gap:4px/);
-  assert.match(html, /<aside[^>]*class="w-48px /);
+  assert.match(html, /<aside[^>]*class="\s*w-48px\s/);
   const nav = /<nav[^>]*aria-label="主导航加载中"[\s\S]*?<\/nav>/.exec(html)?.[0];
   assert.ok(nav);
   assert.equal([...nav.matchAll(/ant-skeleton-avatar(?: |")/g)].length, databaseRouteConfig.length);
@@ -202,7 +202,7 @@ test('根骨架随配置更新间距、紧凑模式及导航宽度，数据库�
   html = fixture.render();
   assert.match(html, /--layout-gap:0px/);
   assert.match(html, /data-layout="compact"/);
-  assert.match(html, /<aside[^>]*class="w-60px /);
+  assert.match(html, /<aside[^>]*class="\s*w-60px\s/);
   assert.match(html, /--color-nav:var\(--color-surface\)/);
   assert.equal([...html.matchAll(/<header\b/g)].length, 1);
   assert.equal([...html.matchAll(/<main\b/g)].length, 1);
