@@ -10,22 +10,20 @@ import {
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { OverlayScroll } from '@/components/OverlayScroll';
 import { useParams } from 'react-router';
+import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
+import { EnvironmentPanel } from './EnvironmentPanel';
 import {
   defaultEnvironmentPanelLayout,
   type EnvironmentPanelLayout,
 } from './environmentPanelLayout';
 import { ResizableEnvironmentPanel } from './ResizableEnvironmentPanel';
 
-// 布局预览数据；后续由应用关联的环境接口提供。
-const previewEnvironments = [
-  { key: 'dev', name: '开发环境' },
-  { key: 'st', name: '系统测试' },
-  { key: 'uat', name: '验收测试' },
-  { key: 'local', name: '本地环境' },
-  { key: 'stp', name: '预生产环境' },
-];
+/** 选择器与面板共用接口列表，key/name 仅为已有布局组件的视图映射。 */
+export type EnvironmentView = ApplicationEnvironment & { key: string; name: string };
+const emptyEnvironments: EnvironmentView[] = [];
 
 interface EnvironmentSelectionProps {
+  environments?: EnvironmentView[];
   selectedEnvironments: string[];
   onChange: (keys: string[]) => void;
 }
@@ -89,6 +87,7 @@ export function ApplicationParametersEmptyState({
 
 /** 按实际剩余宽度收纳环境与按钮文字，环境选择及比对状态不随收纳改变。 */
 export function ApplicationParametersToolbar({
+  environments = emptyEnvironments,
   selectedEnvironments,
   onChange,
 }: EnvironmentSelectionProps) {
@@ -97,7 +96,7 @@ export function ApplicationParametersToolbar({
   const comparisonRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<ToolbarLayout>({
-    visibleCount: previewEnvironments.length,
+    visibleCount: environments.length,
     actionLabelMode: 'icons',
     showMoreLabel: false,
   });
@@ -160,14 +159,14 @@ export function ApplicationParametersToolbar({
     ].forEach((element) => observer.observe(element));
     updateLayout();
     return () => observer.disconnect();
-  }, []);
-  const visibleEnvironments = previewEnvironments.slice(0, visibleCount);
-  const overflowEnvironments = previewEnvironments.slice(visibleCount);
+  }, [environments]);
+  const visibleEnvironments = environments.slice(0, visibleCount);
+  const overflowEnvironments = environments.slice(visibleCount);
   const overflowSelectedCount = overflowEnvironments.filter((item) =>
     selectedEnvironments.includes(item.key),
   ).length;
   const { message } = AntdApp.useApp();
-  const selectedCount = previewEnvironments.filter((item) =>
+  const selectedCount = environments.filter((item) =>
     selectedEnvironments.includes(item.key),
   ).length;
   const comparisonHint = comparisonEnabled
@@ -177,6 +176,7 @@ export function ApplicationParametersToolbar({
       : '请恰好勾选两个环境后开启比对';
   const selectionProps = {
     selectedEnvironments,
+    allEnvironments: environments,
     disabled: comparisonEnabled,
     onChange: (keys: string[]) => {
       if (!comparisonEnabled) onChange(keys);
@@ -194,7 +194,8 @@ export function ApplicationParametersToolbar({
           selectedEnvironments={[]}
           onChange={() => {}}
           disabled={false}
-          environments={previewEnvironments}
+          environments={environments}
+          allEnvironments={environments}
           inline
         />
         {(['label', 'icon'] as const).map((mode) => (
@@ -346,16 +347,18 @@ function EnvironmentCheckboxes({
   selectedEnvironments,
   onChange,
   disabled,
+  allEnvironments,
   environments,
   inline = false,
   showAll = true,
 }: EnvironmentSelectionProps & {
   disabled: boolean;
-  environments: typeof previewEnvironments;
+  environments: EnvironmentView[];
+  allEnvironments: EnvironmentView[];
   inline?: boolean;
   showAll?: boolean;
 }) {
-  const selectedCount = previewEnvironments.filter((item) =>
+  const selectedCount = allEnvironments.filter((item) =>
     selectedEnvironments.includes(item.key),
   ).length;
   return (
@@ -364,10 +367,10 @@ function EnvironmentCheckboxes({
         <Checkbox
           className="m-0! whitespace-nowrap text-13px!"
           disabled={disabled}
-          checked={selectedCount === previewEnvironments.length}
-          indeterminate={selectedCount > 0 && selectedCount < previewEnvironments.length}
+          checked={selectedCount > 0 && selectedCount === allEnvironments.length}
+          indeterminate={selectedCount > 0 && selectedCount < allEnvironments.length}
           onChange={(event) =>
-            onChange(event.target.checked ? previewEnvironments.map((item) => item.key) : [])
+            onChange(event.target.checked ? allEnvironments.map((item) => item.key) : [])
           }
         >
           全选
@@ -395,7 +398,7 @@ function EnvironmentCheckboxes({
               if (event.target.checked) next.add(environment.key);
               else next.delete(environment.key);
               onChange(
-                previewEnvironments.filter((item) => next.has(item.key)).map((item) => item.key),
+                allEnvironments.filter((item) => next.has(item.key)).map((item) => item.key),
               );
             }}
           >
@@ -409,15 +412,15 @@ function EnvironmentCheckboxes({
 
 /** 环境工作区按应用隔离临时布局；折叠、放大只影响显示，不修改环境选择。 */
 export function ApplicationParametersWorkspace({
+  environments: allEnvironments = emptyEnvironments,
+  appType,
   selectedEnvironments,
   onChange,
-}: EnvironmentSelectionProps) {
+}: EnvironmentSelectionProps & { appType: '0' | '1' }) {
   const { layoutMode } = useLayoutPreferences();
   const compact = layoutMode === 'compact';
   const { systemName, appName } = useParams();
-  const environments = previewEnvironments.filter((item) =>
-    selectedEnvironments.includes(item.key),
-  );
+  const environments = allEnvironments.filter((item) => selectedEnvironments.includes(item.key));
   return (
     <div className="flex min-w-0 min-h-full flex-col">
       <OverlayScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
@@ -425,7 +428,8 @@ export function ApplicationParametersWorkspace({
           key={`${systemName}/${appName}`}
           environments={environments}
           compact={compact}
-          onShowAll={() => onChange(previewEnvironments.map((item) => item.key))}
+          appType={appType}
+          onShowAll={() => onChange(allEnvironments.map((item) => item.key))}
         />
       </OverlayScroll>
     </div>
@@ -435,10 +439,12 @@ export function ApplicationParametersWorkspace({
 /** 按环境记录当前应用的临时布局；空选择也保持挂载，面板卸载后重新勾选仍可恢复。 */
 function EnvironmentPanels({
   environments,
+  appType,
   compact,
   onShowAll,
 }: {
-  environments: typeof previewEnvironments;
+  environments: EnvironmentView[];
+  appType: '0' | '1';
   compact: boolean;
   onShowAll: () => void;
 }) {
@@ -487,78 +493,9 @@ function EnvironmentPanels({
           hidden={maximized !== null && maximized !== environment.key}
           onMaximize={() => setMaximizedKey(maximized === environment.key ? null : environment.key)}
         >
-          <EnvironmentPanel environment={environment} compact={compact} />
+          <EnvironmentPanel environment={environment} compact={compact} appType={appType} />
         </ResizableEnvironmentPanel>
       ))}
     </div>
-  );
-}
-
-function EnvironmentPanel({
-  environment,
-  compact,
-}: {
-  environment: (typeof previewEnvironments)[number];
-  compact: boolean;
-}) {
-  return (
-    <article
-      className="flex h-full min-w-0 flex-col overflow-hidden bg-surface"
-      aria-label={`${environment.key} 环境参数配置`}
-    >
-      <header
-        className={`shrink-0 border-b border-b-solid bg-surface ${compact ? 'border-divider' : 'border-border-subtle'}`}
-      >
-        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 pr-18">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <h3 className="m-0 shrink-0 rounded-ui bg-hover px-2 text-accent font-mono text-14px font-600 leading-28px">
-              {environment.key}
-            </h3>
-            <span className="text-13px text-text-secondary">{environment.name}</span>
-          </div>
-          <Tooltip title="参数接入后可刷新配置">
-            <Button
-              size="small"
-              type="text"
-              disabled
-              aria-label={`刷新 ${environment.key} 配置`}
-              icon={<span className="i-lucide-refresh-cw w-13px h-13px" aria-hidden="true" />}
-            />
-          </Tooltip>
-        </div>
-        <div className="flex items-center justify-between gap-3 px-4 pb-3">
-          <span className="text-12px leading-20px text-text-secondary">参数待接入</span>
-          <div className="flex items-center gap-2">
-            <Tooltip title="参数接入后可创建配置快照">
-              <Button size="small" disabled>
-                快照
-              </Button>
-            </Tooltip>
-            <Tooltip title="参数接入后可发布配置">
-              <Button size="small" type="primary" disabled>
-                发布
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-      </header>
-      <div className="grid flex-1 place-items-center min-h-280px px-6 py-10 bg-surface">
-        <Empty
-          className="m-0! max-w-240px [&_.ant-empty-image]:h-28px! [&_.ant-empty-image]:mb-4!"
-          image={
-            <span
-              className="i-lucide-sliders-horizontal h-28px w-28px text-text-muted"
-              aria-hidden="true"
-            />
-          }
-          description={
-            <div className="text-text-secondary">
-              <p className="m-0 text-14px font-500 leading-22px">{environment.name}参数</p>
-              <p className="m-0 mt-1.5 text-13px leading-22px">参数数据尚未接入</p>
-            </div>
-          }
-        />
-      </div>
-    </article>
   );
 }

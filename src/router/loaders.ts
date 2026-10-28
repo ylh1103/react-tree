@@ -5,6 +5,7 @@
 import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router';
 import { queryClient } from '@/queries/client.ts';
 import { preloadRouteQuery } from '@/queries/routeQuery.ts';
+import { applicationEnvironmentsOptions } from '@/queries/applicationEnvironments.ts';
 import {
   systemsOptions,
   mySystemsOptions,
@@ -96,10 +97,19 @@ export async function preloadApplications({ params, request }: LoaderFunctionArg
   if (queryClient.isMutating({ mutationKey: groupedListKeys.write(id) })) return null;
   const { createSystemApplicationService } = await import('@/queries/applications.ts');
   if (queryClient.isMutating({ mutationKey: groupedListKeys.write(id) })) return null;
-  await preloadRouteQuery(
-    queryClient,
-    groupedListOptions(id, createSystemApplicationService(params.systemName)),
-    params.appName ? (nodes) => hasApplication(nodes, params.appName!) : undefined,
-  );
+  // 授权完成后并行读取清单和目标环境，直达应用 URL 时不等待清单再请求配置。
+  await Promise.all([
+    preloadRouteQuery(
+      queryClient,
+      groupedListOptions(id, createSystemApplicationService(params.systemName)),
+      params.appName ? (nodes) => hasApplication(nodes, params.appName!) : undefined,
+    ),
+    params.appName
+      ? preloadRouteQuery(
+          queryClient,
+          applicationEnvironmentsOptions(params.systemName, params.appName),
+        )
+      : Promise.resolve(),
+  ]);
   return null;
 }

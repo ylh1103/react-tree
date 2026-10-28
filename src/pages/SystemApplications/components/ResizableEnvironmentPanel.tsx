@@ -206,7 +206,7 @@ export function ResizableEnvironmentPanel({
             group-focus-within/environment:opacity-100
             group-focus-within/environment:pointer-events-auto [@media(hover:none)]:opacity-100
             [@media(hover:none)]:pointer-events-auto
-            ${collapsed ? 'top-2 right-3 flex-col' : 'top-4 right-3'}
+            ${collapsed ? 'top-2 right-3 flex-col' : 'top-14 right-3'}
           `}
         >
           <Tooltip

@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { createServer } from 'vite';
 import { createGenerator } from 'unocss';
+import { createMockApplicationEnvironments } from '../src/mocks/applicationEnvironments.ts';
 
 let vite;
 let createAppStore;
@@ -169,7 +170,7 @@ test('PC 分栏中 URL 选择只匹配业务项，分组不能作为应用详情
       cases()[1],
       [{ key: '分组', children: [{ key: '应用A', desc: '应用说明' }] }],
       '应用A',
-      '开发环境',
+      'dev 环境参数配置',
     ],
     [
       cases()[2],
@@ -179,12 +180,22 @@ test('PC 分栏中 URL 选择只匹配业务项，分组不能作为应用详情
     ],
   ]) {
     await t.test(config.path, (t) => {
-      const html = setup(t, {
+      const selectedFixture = setup(t, {
         ...config,
         data,
         staleTime: Infinity,
         path: config.path + '/' + encodeURIComponent(selectedName),
-      }).render();
+      });
+      // 环境详情已改为独立查询；分组清单不再隐式提供静态环境。
+      if (config.Page === application) {
+        selectedFixture.client.setQueryData(
+          ['application-environments', 'CAC', selectedName],
+          createMockApplicationEnvironments('CAC', selectedName).toSorted(
+            (a, b) => a.envOrder - b.envOrder,
+          ),
+        );
+      }
+      const html = selectedFixture.render();
       assert.match(html, /data-split-pane/);
       assert.ok(html.includes(detail), '选中项应展示所属页面的详情');
       assert.doesNotMatch(html, /不存在或已移除/);
@@ -197,6 +208,66 @@ test('PC 分栏中 URL 选择只匹配业务项，分组不能作为应用详情
       assert.match(missing, /「分组」不存在或已移除/);
       assert.match(missing, /返回.*首页/);
     });
+  }
+});
+
+test('应用环境独立加载，业务与公共工具栏分流，403/404 优先于缓存配置', async (t) => {
+  const { HttpError } = await vite.ssrLoadModule('/src/http/request.ts');
+  const key = ['application-environments', 'CAC', 'demo'];
+  const envs = createMockApplicationEnvironments('CAC', 'demo').toSorted(
+    (a, b) => a.envOrder - b.envOrder,
+  );
+  for (const appType of ['0', '1']) {
+    const fixture = setup(t, {
+      ...cases()[1],
+      data: [{ key: 'demo', appType }],
+      path: '/systems/CAC/application/demo',
+      staleTime: Infinity,
+    });
+    assert.match(fixture.render(), /正在加载应用环境/);
+    fixture.client.setQueryData(key, envs);
+    const html = fixture.render();
+    assert.match(html, /dev 环境参数配置/);
+    assert.match(html, /st 环境参数配置/);
+    assert.match(html, /当前环境暂无参数配置/);
+    if (appType === '0') {
+      assert.doesNotMatch(html, /aria-label="差异数暂不可用/);
+      assert.match(html, /aria-label="运行时配置差异数：3"/);
+      assert.doesNotMatch(html, /差异 -2/);
+      assert.match(html, /aria-label="最新快照版本 12"/);
+      assert.match(html, /aria-label="运行时快照版本 5"/);
+      assert.match(html, /aria-label="一键发布"/);
+      assert.doesNotMatch(html, /批量发布快照/);
+    } else {
+      assert.match(html, /批量创建快照/);
+      assert.match(html, /批量发布快照/);
+      assert.doesNotMatch(html, /最新快照版本|运行时快照版本|一键发布|刷新差异数/);
+    }
+    await assert.rejects(
+      fixture.client.query({
+        queryKey: key,
+        staleTime: 0,
+        queryFn: async () => {
+          throw new Error('网络失败');
+        },
+      }),
+    );
+    assert.match(fixture.render(), /环境刷新失败/);
+    assert.match(fixture.render(), /dev 环境参数配置/);
+    for (const status of [403, 404]) {
+      await assert.rejects(
+        fixture.client.query({
+          queryKey: key,
+          staleTime: 0,
+          queryFn: async () => {
+            throw new HttpError(status, '已失效');
+          },
+        }),
+      );
+      const blocked = fixture.render();
+      assert.doesNotMatch(blocked, /dev 环境参数配置|spring:/);
+      assert.match(blocked, status === 403 ? /无权|权限|403/ : /应用或环境不存在/);
+    }
   }
 });
 

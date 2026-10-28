@@ -116,9 +116,23 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   const systemName = config.params?.systemName ?? url.searchParams.get('systemName');
   if (
     systemName &&
-    ['/api/applications', '/api/applications/groups', '/api/parameters'].includes(url.pathname)
+    [
+      '/api/applications',
+      '/api/applications/groups',
+      '/api/applications/environments',
+      '/api/parameters',
+    ].includes(url.pathname)
   ) {
     const system = accessSystem(systemName, fail);
+    if (url.pathname === '/api/applications/environments' && method === 'GET') {
+      const appName = config.params?.appName ?? url.searchParams.get('appName');
+      const { createMockApplications } = await import('./applications.ts');
+      if (!createMockApplications(system.appCount).some((app) => app.appName === appName))
+        return fail(404, '应用不存在或已移除');
+      const { createMockApplicationEnvironments } = await import('./applicationEnvironments.ts');
+      if (config.signal?.aborted) throw new CanceledError();
+      return response(createMockApplicationEnvironments(systemName, appName));
+    }
     if (url.pathname === '/api/parameters' && method === 'GET') {
       const { createMockParameters } = await import('./parameters.ts');
       return response(

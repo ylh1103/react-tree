@@ -3,7 +3,12 @@
  * 侧栏和详情订阅同一合并清单；写入期间暂停查询，选中后通过 URL 导航。
  */
 import { useMemo, useState } from 'react';
-import { Button, Empty, Spin } from 'antd';
+import { Alert, Button, Empty, Spin } from 'antd';
+import { applicationEnvironmentsOptions } from '@/queries/applicationEnvironments';
+import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
+import { HttpError } from '@/http/request';
+import { isAccessDenied } from '@/utils/systems';
+import RouteStatusPage from '@/pages/RouteStatus';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router';
 import { createSystemApplicationService } from '@/queries/applications';
@@ -30,16 +35,6 @@ export default function SystemApplicationsPage() {
     applicationName?: string;
     keys: string[];
   }>({ keys: ['dev', 'st', 'uat'] });
-  const selectedEnvironments =
-    environmentSelection.systemName === system.systemName &&
-    environmentSelection.applicationName === appName
-      ? environmentSelection.keys
-      : ['dev', 'st', 'uat'];
-  const selection = {
-    selectedEnvironments,
-    onChange: (keys: string[]) =>
-      setEnvironmentSelection({ systemName: system.systemName, applicationName: appName, keys }),
-  };
   const service = useMemo(
     () => createSystemApplicationService(system.systemName),
     [system.systemName],
@@ -49,8 +44,26 @@ export default function SystemApplicationsPage() {
   const query = useQuery({
     ...groupedListOptions(listId, service),
     enabled: !writing,
-    select: applicationNames,
+    select: applicationLeaves,
   });
+  const selected = appName ? query.data?.find((item) => item.key === appName) : undefined;
+  const environmentQuery = useQuery({
+    ...applicationEnvironmentsOptions(system.systemName, appName ?? ''),
+    enabled: Boolean(selected) && !isAccessDenied(query.error),
+    select: environmentViews,
+  });
+  const environments = environmentQuery.data ?? [];
+  const selectedEnvironments =
+    environmentSelection.systemName === system.systemName &&
+    environmentSelection.applicationName === appName
+      ? environmentSelection.keys.filter((key) => environments.some((env) => env.key === key))
+      : environments.slice(0, 3).map((env) => env.key);
+  const selection = {
+    environments,
+    selectedEnvironments,
+    onChange: (keys: string[]) =>
+      setEnvironmentSelection({ systemName: system.systemName, applicationName: appName, keys }),
+  };
   // 首次无数据时才占位；路由只加载通用骨架，已有缓存的刷新仍保留交互工作区。
   if (query.isPending)
     return (
@@ -61,7 +74,11 @@ export default function SystemApplicationsPage() {
         integratedHeader={!appName}
       />
     );
-  const selected = appName !== undefined && query.data?.includes(appName);
+  // 环境接口拒绝访问时优先于旧配置，移除整个参数工作区。
+  if (isAccessDenied(query.error) || isAccessDenied(environmentQuery.error))
+    return <RouteStatusPage forbidden />;
+  const environmentMissing =
+    environmentQuery.error instanceof HttpError && environmentQuery.error.status === 404;
   // 刷新尚未确认目标是否存在时先等待，失败后由列表显示错误与重试，避免误报已删除。
   const checkingTarget = Boolean(appName && !selected && query.isFetching);
   const blockingError = Boolean(
@@ -75,7 +92,7 @@ export default function SystemApplicationsPage() {
       title={appName}
       integratedHeader={!appName}
       toolbar={
-        selected && !blockingError ? (
+        selected && !blockingError && environments.length > 0 && !environmentMissing ? (
           <ApplicationParametersToolbar key={appName} {...selection} />
         ) : null
       }
@@ -113,7 +130,52 @@ export default function SystemApplicationsPage() {
         </div>
       ) : (
         <div className="min-w-0 h-full">
-          <ApplicationParametersWorkspace {...selection} />
+          {environmentQuery.isPending ? (
+            <div
+              className="grid min-h-280px place-items-center"
+              role="status"
+              aria-label="正在加载应用环境"
+            >
+              <Spin />
+            </div>
+          ) : environmentMissing ? (
+            <Empty description="应用或环境不存在，可能已被移除" />
+          ) : (
+            <>
+              {environmentQuery.error && (
+                <Alert
+                  type="error"
+                  showIcon
+                  title={
+                    environmentQuery.data ? '环境刷新失败，正在显示已有数据' : '环境参数加载失败'
+                  }
+                  description={environmentQuery.error.message}
+                  action={
+                    <Button
+                      loading={environmentQuery.isFetching}
+                      onClick={() => void environmentQuery.refetch()}
+                    >
+                      重试
+                    </Button>
+                  }
+                />
+              )}
+              {environmentQuery.data && (
+                <div className="flex h-full min-h-0 flex-col">
+                  {environments.length ? (
+                    <div className="flex-1 min-h-0 overflow-auto">
+                      <ApplicationParametersWorkspace
+                        {...selection}
+                        appType={selected.appType ?? '0'}
+                      />
+                    </div>
+                  ) : (
+                    <Empty description="该应用暂无环境" />
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
     </SplitPane>
@@ -121,6 +183,11 @@ export default function SystemApplicationsPage() {
 }
 
 /** 详情只读取合并后清单中的叶子，分组不会被识别为应用。 */
-function applicationNames(nodes: ListNode[]): string[] {
-  return nodes.flatMap((node) => (node.children ? applicationNames(node.children) : [node.key]));
+function applicationLeaves(nodes: ListNode[]): ListNode[] {
+  return nodes.flatMap((node) => (node.children ? applicationLeaves(node.children) : [node]));
+}
+
+/** 稳定的 select 映射，查询数据未变时不重复创建环境视图和测量工具栏。 */
+function environmentViews(items: ApplicationEnvironment[]) {
+  return items.map((item) => ({ ...item, key: item.envTag, name: item.envDesc }));
 }
