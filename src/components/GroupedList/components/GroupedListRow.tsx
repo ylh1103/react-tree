@@ -5,6 +5,7 @@
 import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Button, Dropdown, Input, Tooltip, type InputRef } from 'antd';
+import { Link, type To } from 'react-router';
 import type {
   ListNodeMenuItem,
   ListNodeAction,
@@ -33,6 +34,7 @@ interface TreeRowProps {
   rowGap: number;
   dropLine: { position: DropIndicator['position']; depth: number } | null;
   config: GroupedListConfig;
+  to?: To;
   onSettings?: (node: LeafNode) => void;
   menuItems?: readonly ListNodeMenuItem[];
   onMenuAction: (action: ListNodeAction, node: LeafNode) => void;
@@ -61,6 +63,7 @@ export const GroupedListRow = memo(function GroupedListRow({
   rowGap,
   dropLine,
   config,
+  to,
   onSettings,
   menuItems,
   onMenuAction,
@@ -75,6 +78,7 @@ export const GroupedListRow = memo(function GroupedListRow({
 }: TreeRowProps) {
   const { node, depth } = flatNode;
   const isBranch = node.type === 'branch';
+  const hasLink = !isBranch && !isEditing && to !== undefined;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasKeyboardFocus, setHasKeyboardFocus] = useState(false);
   const [hasContentFocus, setHasContentFocus] = useState(false);
@@ -103,7 +107,7 @@ export const GroupedListRow = memo(function GroupedListRow({
     // 所以点击不再触发选中/展开，避免和拖拽手势冲突；展开箭头单独处理，见下方图标的 onClick。
     if (isEditing) return;
     if (node.type === 'leaf') {
-      onSelect(node.key);
+      if (!hasLink) onSelect(node.key);
     } else {
       onToggleExpand(node.key);
     }
@@ -144,7 +148,10 @@ export const GroupedListRow = memo(function GroupedListRow({
         onFocusCapture={(event) => {
           const visible = event.target.matches(':focus-visible');
           setHasKeyboardFocus(visible);
-          setHasContentFocus(visible && event.target.matches('.application-content, .group-name'));
+          setHasContentFocus(
+            visible &&
+              event.target.matches('.application-content, .application-node-link, .group-name'),
+          );
         }}
         onBlurCapture={() => {
           setHasKeyboardFocus(false);
@@ -160,8 +167,8 @@ export const GroupedListRow = memo(function GroupedListRow({
             handleRowClick();
           }
         }}
-        role={isEditing ? undefined : 'button'}
-        tabIndex={isEditing ? undefined : 0}
+        role={isEditing || hasLink ? undefined : 'button'}
+        tabIndex={isEditing || hasLink ? undefined : 0}
         aria-expanded={isBranch ? isExpanded : undefined}
         aria-label={node.title}
         onKeyDown={(event) => {
@@ -255,7 +262,7 @@ export const GroupedListRow = memo(function GroupedListRow({
           }
         >
           <div
-            className={`tree-node-card flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
+            className={`tree-node-card relative flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border border-solid border-border rounded-control bg-surface [transition-property:background,border-color,box-shadow] duration-150 motion-reduce:transition-none py-1 ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'} ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}`}
             data-has-actions={!isRenaming || undefined}
             data-menu-open={isMenuOpen || undefined}
             data-has-badge={
@@ -265,6 +272,17 @@ export const GroupedListRow = memo(function GroupedListRow({
             data-drop-inside={showInside || undefined}
             data-locate-highlighted={isHighlighted || undefined}
           >
+            {/* 链接覆盖卡片但不包裹操作按钮，保留原生右键、中键和修饰键打开行为。 */}
+            {hasLink && (
+              <Link
+                to={to}
+                className="application-node-link absolute inset-0 z-2 rounded-control focus-visible:outline-none"
+                aria-label={node.title}
+                aria-current={isSelected ? 'page' : undefined}
+                draggable={false}
+                onClick={(event) => event.stopPropagation()}
+              />
+            )}
             {isRenaming ? (
               <RenameInput
                 key={JSON.stringify([node.key, node.title])}
@@ -292,7 +310,7 @@ export const GroupedListRow = memo(function GroupedListRow({
                     onSettings={onSettings}
                     nameRef={nameRef}
                     descriptionRef={descriptionRef}
-                    showTooltip={showTooltip}
+                    showTooltip={showTooltip && !hasLink}
                   />
                 )}
               </span>
@@ -300,7 +318,7 @@ export const GroupedListRow = memo(function GroupedListRow({
 
             {!isRenaming && (
               <div
-                className="tree-node-actions flex items-center shrink-0 cursor-default"
+                className="tree-node-actions relative z-3 flex items-center shrink-0 cursor-default"
                 data-menu-open={isMenuOpen || undefined}
                 onPointerDown={(event) => event.stopPropagation()}
                 onKeyDown={(event) => event.stopPropagation()}
@@ -477,7 +495,7 @@ const GroupedLeaf = memo(function GroupedLeaf({
       <Button
         type="text"
         size="small"
-        className="application-settings-button"
+        className="application-settings-button relative z-3"
         aria-label={`设置 ${node.title}`}
         title="设置"
         disabled={isDragActive || !onSettings}

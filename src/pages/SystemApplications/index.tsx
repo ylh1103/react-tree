@@ -85,9 +85,6 @@ export default function SystemApplicationsPage() {
           service={service}
           selectedAppName={appName ?? null}
           embedded
-          onSelectApplication={(node) => {
-            navigate(applicationPath(system.systemName, node.key));
-          }}
         />
       }
     >

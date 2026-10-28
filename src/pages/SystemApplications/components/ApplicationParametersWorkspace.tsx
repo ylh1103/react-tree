@@ -9,6 +9,12 @@ import {
 } from './toolbarLayout';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { OverlayScroll } from '@/components/OverlayScroll';
+import { useParams } from 'react-router';
+import {
+  defaultEnvironmentPanelLayout,
+  type EnvironmentPanelLayout,
+} from './environmentPanelLayout';
+import { ResizableEnvironmentPanel } from './ResizableEnvironmentPanel';
 
 // 布局预览数据；后续由应用关联的环境接口提供。
 const previewEnvironments = [
@@ -389,45 +395,89 @@ function EnvironmentCheckboxes({
   );
 }
 
+/** 环境工作区按应用隔离临时布局；折叠、放大只影响显示，不修改环境选择。 */
 export function ApplicationParametersWorkspace({
   selectedEnvironments,
   onChange,
 }: EnvironmentSelectionProps) {
   const { layoutMode } = useLayoutPreferences();
   const compact = layoutMode === 'compact';
+  const { systemName, appName } = useParams();
   const environments = previewEnvironments.filter((item) =>
     selectedEnvironments.includes(item.key),
   );
   return (
     <div className="flex min-w-0 min-h-full flex-col">
       <OverlayScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
-        {environments.length ? (
-          <div className="grid min-w-0 flex-1 grid-flow-col auto-cols-[minmax(500px,1fr)] gap-layout">
-            {environments.map((environment) => (
-              <EnvironmentPanel key={environment.key} environment={environment} compact={compact} />
-            ))}
-          </div>
-        ) : (
-          <div className="grid flex-1 place-items-center min-h-320px p-6 bg-surface">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div className="text-text-secondary">
-                  <p className="m-0 text-14px font-500">选择要查看的环境</p>
-                  <p className="m-0 mt-1.5 text-13px">勾选上方环境，查看应用参数</p>
-                </div>
-              }
-            >
-              <Button
-                size="small"
-                onClick={() => onChange(previewEnvironments.map((item) => item.key))}
-              >
-                显示全部环境
-              </Button>
-            </Empty>
-          </div>
-        )}
+        <EnvironmentPanels
+          key={`${systemName}/${appName}`}
+          environments={environments}
+          compact={compact}
+          onShowAll={() => onChange(previewEnvironments.map((item) => item.key))}
+        />
       </OverlayScroll>
+    </div>
+  );
+}
+
+/** 按环境记录当前应用的临时布局；空选择也保持挂载，面板卸载后重新勾选仍可恢复。 */
+function EnvironmentPanels({
+  environments,
+  compact,
+  onShowAll,
+}: {
+  environments: typeof previewEnvironments;
+  compact: boolean;
+  onShowAll: () => void;
+}) {
+  // 使用函数更新合并各环境布局，避免连续操作覆盖其他环境；状态仅影响环境区，不订阅全局偏好。
+  const [layouts, setLayouts] = useState<Record<string, EnvironmentPanelLayout>>({});
+  const [maximizedKey, setMaximizedKey] = useState<string | null>(null);
+  const maximized = environments.some((item) => item.key === maximizedKey) ? maximizedKey : null;
+  // 放大是临时查看状态；目标被取消勾选后清除，重新勾选只恢复尺寸，不重新进入放大。
+  if (maximizedKey !== null && maximized === null) setMaximizedKey(null);
+  if (environments.length === 0)
+    return (
+      <div className="grid flex-1 place-items-center min-h-320px p-6 bg-surface">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <div className="text-text-secondary">
+              <p className="m-0 text-14px font-500">选择要查看的环境</p>
+              <p className="m-0 mt-1.5 text-13px">勾选上方环境，查看应用参数</p>
+            </div>
+          }
+        >
+          <Button size="small" onClick={onShowAll}>
+            显示全部环境
+          </Button>
+        </Empty>
+      </div>
+    );
+  return (
+    <div className="flex flex-1 min-w-0 min-h-full">
+      {environments.map((environment) => (
+        <ResizableEnvironmentPanel
+          key={environment.key}
+          environment={environment}
+          compact={compact}
+          layout={layouts[environment.key] ?? defaultEnvironmentPanelLayout}
+          onLayoutChange={(next) =>
+            setLayouts((previous) => ({
+              ...previous,
+              [environment.key]:
+                typeof next === 'function'
+                  ? next(previous[environment.key] ?? defaultEnvironmentPanelLayout)
+                  : next,
+            }))
+          }
+          maximized={maximized === environment.key}
+          hidden={maximized !== null && maximized !== environment.key}
+          onMaximize={() => setMaximizedKey(maximized === environment.key ? null : environment.key)}
+        >
+          <EnvironmentPanel environment={environment} compact={compact} />
+        </ResizableEnvironmentPanel>
+      ))}
     </div>
   );
 }
@@ -441,13 +491,13 @@ function EnvironmentPanel({
 }) {
   return (
     <article
-      className={`flex min-w-0 flex-col overflow-hidden ${compact ? 'border-r border-r-solid border-divider last:border-r-0' : 'workspace-panel'}`}
+      className="flex h-full min-w-0 flex-col overflow-hidden bg-surface"
       aria-label={`${environment.key} 环境参数配置`}
     >
       <header
         className={`shrink-0 border-b border-b-solid bg-surface ${compact ? 'border-divider' : 'border-border-subtle'}`}
       >
-        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 pr-18">
           <div className="flex min-w-0 items-center gap-2.5">
             <h3 className="m-0 shrink-0 rounded-ui bg-hover px-2 text-accent font-mono text-14px font-600 leading-28px">
               {environment.key}

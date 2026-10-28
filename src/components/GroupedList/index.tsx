@@ -8,6 +8,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import { Alert, Button, Dropdown, Input, Space, Spin, Tooltip } from 'antd';
+import type { To } from 'react-router';
 import type {
   LeafNode,
   DropIndicator,
@@ -58,6 +59,7 @@ export function GroupedList({
   menuItems,
   selectedKey: controlledSelectedKey,
   onSelect,
+  getNodeTo,
   embedded = false,
 }: ListNodeActions & {
   service: GroupedListService;
@@ -65,6 +67,8 @@ export function GroupedList({
   config: GroupedListConfig;
   selectedKey?: string | null;
   onSelect?: (node: LeafNode['data']) => void;
+  /** 提供时由真实链接负责叶子导航，选中项应由 URL 通过 selectedKey 传入。 */
+  getNodeTo?: (node: LeafNode['data']) => To;
   embedded?: boolean;
 }) {
   // TanStack Virtual 实例内部可变，暂不参与 Compiler 自动缓存；兼容后移除。
@@ -446,6 +450,7 @@ export function GroupedList({
                           : null
                       }
                       config={config}
+                      to={node.type === 'leaf' && !isEditing ? getNodeTo?.(node.data) : undefined}
                       onSettings={!isEditing && onSettings ? handleSettings : undefined}
                       menuItems={
                         node.type === 'leaf'

@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { Button, Typography } from 'antd';
 import { useDebounceFn, useEventListener, useSize } from 'ahooks';
 import { dragResize } from './dragResize';
+import { splitPaneSeparatorClassName } from './separatorStyle';
 import type { DragResizeState } from './dragResize';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { SplitPaneFrame } from './components/Frame';
@@ -213,7 +214,14 @@ export function SplitPane({
       separator={
         <div
           ref={separatorRef}
-          className={`layout-focus relative z-1 ${readOnly ? 'cursor-default' : 'cursor-ew-resize touch-none'} transition-colors duration-100 ease-out motion-reduce:transition-none [&.hover]:bg-accent [&.active]:bg-accent [&.hover]:after:opacity-0 [&.active]:after:opacity-0 focus-visible:bg-accent focus-visible:after:opacity-0 ${compact ? `flex-[0_0_1px] rounded-0 bg-divider before:content-[''] before:absolute before:inset-y-0 before:left-1/2 before:translate-x-[-50%] before:w-4px before:transition-colors before:duration-100 motion-reduce:before:transition-none [&.hover]:before:bg-accent [&.active]:before:bg-accent [&:focus-visible:not([aria-disabled=true])]:before:bg-accent ${expanded ? '' : 'basis-0! bg-transparent!'}` : 'flex-[0_0_var(--layout-gap)] rounded-ui bg-transparent'} ${upper > 0 && !compact ? `after:content-[''] after:absolute after:pointer-events-none after:top-1/2 after:left-1/2 after:translate-x-[-50%] after:translate-y-[-50%] after:w-2px after:h-2px after:rounded-full after:bg-handle after:text-handle after:[box-shadow:0_-5px_currentColor,0_5px_currentColor]` : ''} ${upper > 0 && hovered ? 'hover' : ''} ${upper > 0 && dragging ? 'active' : ''}`}
+          className={splitPaneSeparatorClassName({
+            compact,
+            expanded,
+            readOnly,
+            upper,
+            hovered,
+            dragging,
+          })}
           role="separator"
           tabIndex={readOnly ? -1 : 0}
           aria-label={`调整${sidebarLabel}宽度`}
@@ -227,7 +235,7 @@ export function SplitPane({
           title={
             readOnly
               ? '加载中，布局暂不可调整'
-              : '拖拽调整宽度，向左拖到底收起，向右拖动展开；双击恢复默认，Enter 切换侧栏'
+              : '拖拽调整宽度，向左拖到底收起，向右拖动展开；双击恢复默认'
           }
           onPointerEnter={(event) => {
             if (readOnly || event.pointerType === 'touch' || upper === 0) return;
@@ -279,12 +287,6 @@ export function SplitPane({
           }}
           onKeyDown={(event) => {
             if (readOnly || upper === 0) return;
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              endDrag();
-              setLayout((previous) => ({ ...previous, visible: !previous.visible }));
-              return;
-            }
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             endDrag();
             if (!expanded) {
