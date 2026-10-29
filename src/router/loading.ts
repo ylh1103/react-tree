@@ -16,7 +16,21 @@ export function matchPageSkeleton(
   const matches = matchRoutes(routes, pathname);
   if (!matches || (layoutId && !matches.some(({ route }) => route.id === layoutId))) return null;
   const target = matches.at(-1);
-  const current = currentPathname ? matchRoutes(routes, currentPathname)?.at(-1) : undefined;
+  const currentMatches = currentPathname ? matchRoutes(routes, currentPathname) : null;
+  const current = currentMatches?.at(-1);
+  // 父配置页与其子操作共享同一工作区；等待子模块时保留原画面及 Effect，不能触发外层 Activity 清理。
+  const preservedWorkspace = matches.find(({ route }) => route.handle?.preserveWorkspace);
+  if (
+    preservedWorkspace &&
+    currentMatches?.some(
+      ({ route, params }) =>
+        route === preservedWorkspace.route &&
+        params.systemName === preservedWorkspace.params.systemName &&
+        params.appName === preservedWorkspace.params.appName,
+    )
+  ) {
+    return null;
+  }
   // 同一系统内只改变应用/类型等参数时，保留已加载的页面和侧栏。
   if (
     current &&

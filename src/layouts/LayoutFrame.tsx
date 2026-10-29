@@ -56,7 +56,7 @@ export function WorkspaceFrame({
       <div
         className={`
           flex flex-1 min-h-0 gap-layout p-layout
-          ${compact ? '' : '[&:has([data-split-pane])]:gap-0 [&:has([data-sidebar-expanded=true])>aside]:rounded-r-0'}
+          ${compact ? '' : '[&:has([data-split-pane]):not(:has([data-application-view=operation]))]:gap-0 [&:has([data-sidebar-expanded=true]):not(:has([data-application-view=operation]))>aside]:rounded-r-0'}
         `}
       >
         {navigation}
@@ -64,7 +64,7 @@ export function WorkspaceFrame({
           id="app-page"
           className={`
             layout-scroll
-            ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-ui [&:has([data-split-pane])]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&_[data-sidebar-expanded=true]>aside]:border-l-0'}
+            ${compact ? 'rounded-0 [&>.workspace-panel]:border-0' : 'rounded-ui [&:has([data-split-pane]):not(:has([data-application-view=operation]))]:rounded-l-0 [&:not(:has([data-application-view=operation]))_[data-sidebar-expanded=true]>aside]:rounded-l-0 [&:not(:has([data-application-view=operation]))_[data-sidebar-expanded=true]>aside]:border-l-0'}
           `}
           tabIndex={-1}
         >

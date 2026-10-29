@@ -13,7 +13,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { applicationRouteConfig as navigationItems } from '../src/router/application.ts';
 import { databaseRouteConfig as databaseNavigationItems } from '../src/router/database.ts';
-import { applicationPath, databasePath, platformHome, systemPath } from '../src/router/paths.ts';
+import {
+  applicationPath,
+  applicationOperationPath,
+  databasePath,
+  platformHome,
+  systemPath,
+} from '../src/router/paths.ts';
 import { filterSystems, isAccessDenied } from '../src/utils/systems.ts';
 import { mockSystems } from '../src/mocks/systems.ts';
 
@@ -152,6 +158,38 @@ test('动态路径段正确编码中文、斜杠、空格、百分号与特殊�
   assert.equal(database.params.systemName, system);
   assert.equal(database.params.paramTypeName, name);
   assert.equal(application.params.appName, name);
+});
+
+test('应用环境操作路由保留应用、环境与可选版本，检查不接受版本段', () => {
+  const systemName = '核心 / 100% #?';
+  const appName = '应用 / 50% #?';
+  const envTag = 'dev / 测试';
+  for (const operation of ['create', 'publish', 'inspect']) {
+    for (const version of operation === 'inspect' ? [undefined] : [undefined, '0', '版本 / 4']) {
+      const path = applicationOperationPath(systemName, operation, appName, envTag, version);
+      const result = match(path);
+      assert.equal(result.params.systemName, systemName);
+      assert.equal(result.params.appName, appName);
+      assert.equal(result.params.envTag, envTag);
+      assert.equal(result.params.version, version);
+      assert.equal(
+        result.route.path,
+        `:envTag/${operation}${operation === 'inspect' ? '' : '/:version?'}`,
+      );
+      assert.equal(typeof result.route.lazy, 'function');
+      assert.equal(
+        matchRoutes(routes, path).at(-2).route,
+        match(applicationPath(systemName, appName)).route,
+        '三个操作必须复用配置页父路由，返回时保持同一个页面实例',
+      );
+      assert.equal(path.includes('?'), false, '业务选择应从路径读取');
+    }
+  }
+  assert.equal(
+    applicationOperationPath('CAC', 'create', 'demo', 'dev', '4'),
+    '/systems/CAC/application/demo/dev/create/4',
+  );
+  assert.equal(match('/systems/CAC/application/demo/dev/inspect/4').route.path, '*');
 });
 
 test('切换入口仅保留系统与平台，不带原应用或类型', () => {
@@ -524,6 +562,60 @@ test('同系统切换应用或类型不替换整页骨架，跨系统和跨页�
     assert.equal(matchLoadingParams(routes, applicationPath('CAC', name)).appName, name);
     assert.equal(matchLoadingParams(routes, databasePath('CAC', name)).paramTypeName, name);
   }
+});
+
+test('配置页与同一应用的三个子操作往返不切换骨架或重复执行配置 loader', async (t) => {
+  const { matchPageSkeleton } = await vite.ssrLoadModule('/src/router/loading.ts');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
+  const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
+  queryClient.setQueryData(groupedListKeys.list('applications:CAC'), [{ key: 'demo' }]);
+  t.after(() => queryClient.clear());
+  const source = '/systems/CAC/application/demo';
+  const parent = match(source).route;
+  let loads = 0;
+  const router = createMemoryRouter(
+    [
+      {
+        ...parent,
+        path: `systems/:systemName/${parent.path}`,
+        lazy: undefined,
+        Component: () => null,
+        loader: () => {
+          loads++;
+          return null;
+        },
+        children: parent.children.map((child) => ({
+          ...child,
+          lazy: undefined,
+          Component: () => null,
+        })),
+      },
+    ],
+    { initialEntries: [source] },
+  );
+  t.after(() => router.dispose());
+  if (!router.state.initialized) {
+    await new Promise((resolve) => {
+      const unsubscribe = router.subscribe((state) => {
+        if (state.initialized) {
+          unsubscribe();
+          resolve();
+        }
+      });
+    });
+  }
+  for (const operation of ['create', 'publish', 'inspect']) {
+    const target = applicationOperationPath('CAC', operation, 'demo', 'dev');
+    assert.equal(matchPageSkeleton(routes, target, 'workspace', source), null);
+    assert.equal(matchPageSkeleton(routes, source, 'workspace', target), null);
+    await router.navigate(target);
+    await router.navigate(source);
+    assert.equal(loads, 1, `${operation} 往返应复用父配置页及已加载数据`);
+  }
+  assert.ok(
+    matchPageSkeleton(routes, '/systems/OTHER/application/demo/dev/inspect', 'workspace', source),
+  );
+  assert.ok(matchPageSkeleton(routes, '/systems/CAC/overview', 'workspace', source));
 });
 
 test('应用和数据库各自的清单路由复用缓存，缺少目标、跨系统和显式刷新仍重跑', async (t) => {

@@ -1,4 +1,4 @@
-/** 环境面板尺寸模型：宽度连续跟随指针，只有达到名称窄条宽度时才进入折叠显示。 */
+/** 环境面板尺寸模型：宽度连续跟随指针，只有达到操作窄条宽度时才进入折叠显示。 */
 import type { DragResizeState } from '@/components/SplitPane/dragResize.ts';
 
 export const collapsedEnvironmentWidth = 48;

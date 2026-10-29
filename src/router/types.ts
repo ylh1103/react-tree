@@ -14,4 +14,6 @@ export interface WorkspaceRouteConfig {
   page?: () => Promise<PageModule>;
   loader?: LoaderFunction;
   shouldRevalidate?: ShouldRevalidateFunction;
+  /** 子页面由所属工作区渲染，父页面可在操作期间保留自身状态与编辑器实例。 */
+  children?: WorkspaceRouteConfig[];
 }

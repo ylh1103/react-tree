@@ -19,6 +19,8 @@ export default function MonacoDiffEditorView({
   const editorOptions = useMemo(
     () => ({
       automaticLayout: true,
+      // 差异两侧的悬浮提示同样需要越过编辑区与分栏的裁剪边界。
+      fixedOverflowWidgets: true,
       scrollBeyondLastLine: false,
       tabSize: 2,
       readOnly: true,

@@ -10,7 +10,7 @@ import { HttpError } from '@/http/request';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useOutlet, useParams } from 'react-router';
 import { createSystemApplicationService } from '@/queries/applications';
 import { applicationListId, groupedListKeys, groupedListOptions } from '@/queries/groupedList';
 import type { ListNode } from '@/components/GroupedList/types';
@@ -26,6 +26,30 @@ import { SplitPane } from '@/components/SplitPane';
 import { CollectionSkeleton } from '@/components/CollectionSkeleton';
 
 export default function SystemApplicationsPage() {
+  const operation = useOutlet();
+  const { appName } = useParams();
+  if (operation && !appName) return <RouteStatusPage />;
+  return (
+    <div
+      data-application-view={operation ? 'operation' : 'configuration'}
+      className="relative isolate h-full min-h-0"
+    >
+      {/* 两层始终使用相同定位边界，后台配置保持原尺寸，避免 Monaco 和工具栏因尺寸归零而重新布局。
+          inert 与 aria-hidden 隔离后台交互；离开应用区域或系统权限失效时仍正常卸载。 */}
+      <div
+        inert={Boolean(operation)}
+        aria-hidden={Boolean(operation)}
+        className={`absolute inset-0 min-h-0 overflow-auto ${operation ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+      >
+        <ApplicationParametersPage />
+      </div>
+      {operation && <div className="absolute inset-0 z-1 overflow-auto bg-canvas">{operation}</div>}
+    </div>
+  );
+}
+
+/** 配置正文在子操作页显示期间保持挂载，草稿、环境选择和面板布局仍由原组件就地持有。 */
+function ApplicationParametersPage() {
   const { system } = useSystemWorkspace();
   const { appName } = useParams();
   const navigate = useNavigate();

@@ -19,6 +19,8 @@ export default function MonacoEditorView({
   const editorOptions = useMemo(
     () => ({
       automaticLayout: true,
+      // 报错悬浮、补全等浮层按视口定位，避免被分栏及编辑区的 overflow-hidden 裁剪。
+      fixedOverflowWidgets: true,
       scrollBeyondLastLine: false,
       tabSize: 2,
       ...options,

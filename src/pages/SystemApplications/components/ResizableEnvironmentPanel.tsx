@@ -1,9 +1,11 @@
-/** 页面私有环境面板：保留名称的折叠窄条、悬停操作、指针捕获拖拽及键盘调宽；放大由工作区统一控制。 */
+/** 页面私有环境面板：提供底栏布局操作、折叠窄条及指针/键盘调宽；放大由工作区统一控制。 */
 import { useId, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { Button, Tooltip } from 'antd';
 import { useDebounceFn, useEventListener } from 'ahooks';
 import type { DragResizeState } from '@/components/SplitPane/dragResize';
 import { splitPaneSeparatorClassName } from '@/components/SplitPane/separatorStyle';
+import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
+import { EnvironmentTag } from './EnvironmentTag';
 import {
   collapsedEnvironmentWidth,
   defaultEnvironmentWidth,
@@ -13,7 +15,7 @@ import {
 } from './environmentPanelLayout';
 
 interface ResizableEnvironmentPanelProps {
-  environment: { key: string; name: string };
+  environment: ApplicationEnvironment & { key: string; name: string };
   compact: boolean;
   maximized: boolean;
   hidden: boolean;
@@ -21,7 +23,8 @@ interface ResizableEnvironmentPanelProps {
   /** 布局由应用工作区持有，取消勾选卸载面板后仍保留；指针等瞬时状态留在本组件。 */
   layout: EnvironmentPanelLayout;
   onLayoutChange: Dispatch<SetStateAction<EnvironmentPanelLayout>>;
-  children: ReactNode;
+  /** 展开时由参数底栏承载操作，避免悬浮按钮遮挡代码；折叠时由窄条承载。 */
+  children: (panelActions: ReactNode) => ReactNode;
 }
 
 /** 将动作名和按键分开呈现；键帽继承 Tooltip 文字颜色，兼容统一浮层的浅色与暗色主题。 */
@@ -168,6 +171,81 @@ export function ResizableEnvironmentPanel({
     { target: () => panelRef.current?.ownerDocument, enable: !hidden },
   );
 
+  const panelActions = (
+    <div
+      // 模式切换会移动按钮；同步销毁旧提示与延迟任务，避免浮层在原坐标淡出时显示新动作文字。
+      key={`${collapsed}/${maximized}/${hidden}`}
+      role="group"
+      aria-label={`${label}面板布局`}
+      // 隐藏时保留占位；容器仅在键盘聚焦时显示，避免鼠标折叠后保留的容器焦点使按钮常驻。
+      // 按钮组自身聚焦仍保持可见，确保 Tab 导航和触屏操作可用。
+      className={`
+        flex shrink-0 items-center gap-0.5 text-text-muted opacity-0 pointer-events-none
+        group-hover/environment:opacity-100 group-hover/environment:pointer-events-auto
+        group-focus-visible/environment:opacity-100 group-focus-visible/environment:pointer-events-auto
+        focus-within:opacity-100 focus-within:pointer-events-auto
+        [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto
+        ${collapsed ? 'flex-col' : ''}
+      `}
+    >
+      <Tooltip
+        title={
+          <PanelShortcutHint
+            label={collapsed ? `${environment.key} · 放大` : maximized ? '退出放大' : '放大'}
+            actionKey="+"
+          />
+        }
+        mouseEnterDelay={0.3}
+        trigger={['hover', 'focus']}
+      >
+        <Button
+          type="text"
+          size="small"
+          className="text-text-muted! hover:text-text-secondary!"
+          aria-label={`${maximized ? '退出放大' : '放大'} ${label}`}
+          aria-pressed={maximized}
+          aria-keyshortcuts="Control+Plus Control+="
+          onClick={() => activatePanelAction('maximize')}
+          icon={
+            <span
+              className={`${maximized ? 'i-lucide-minimize' : 'i-lucide-maximize'} h-14px w-14px`}
+              aria-hidden="true"
+            />
+          }
+        />
+      </Tooltip>
+      {!maximized && (
+        <Tooltip
+          title={
+            <PanelShortcutHint
+              label={collapsed ? `${environment.key} · 展开` : '折叠'}
+              actionKey="-"
+            />
+          }
+          mouseEnterDelay={0.3}
+          trigger={['hover', 'focus']}
+        >
+          <Button
+            type="text"
+            size="small"
+            className="text-text-muted! hover:text-text-secondary!"
+            aria-label={`${collapsed ? '展开' : '折叠'} ${label}`}
+            aria-expanded={!collapsed}
+            aria-keyshortcuts="Control+-"
+            aria-controls={contentId}
+            onClick={() => activatePanelAction('collapse')}
+            icon={
+              <span
+                className={`${collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-left'} h-14px w-14px`}
+                aria-hidden="true"
+              />
+            }
+          />
+        </Tooltip>
+      )}
+    </div>
+  );
+
   return (
     <>
       <div
@@ -197,89 +275,39 @@ export function ResizableEnvironmentPanel({
           }
         }}
       >
-        <div
-          // 模式切换会移动按钮；同步销毁旧提示与延迟任务，避免浮层在原坐标淡出时显示新动作文字。
-          key={`${collapsed}/${maximized}/${hidden}`}
-          className={`
-            absolute z-2 flex gap-0.5 rounded-control bg-surface opacity-0 pointer-events-none
-            group-hover/environment:opacity-100 group-hover/environment:pointer-events-auto
-            group-focus-within/environment:opacity-100
-            group-focus-within/environment:pointer-events-auto [@media(hover:none)]:opacity-100
-            [@media(hover:none)]:pointer-events-auto
-            ${collapsed ? 'top-2 right-3 flex-col' : 'top-14 right-3'}
-          `}
-        >
-          <Tooltip
-            title={<PanelShortcutHint label={maximized ? '退出放大' : '放大'} actionKey="+" />}
-            mouseEnterDelay={0.3}
-            trigger={['hover', 'focus']}
-          >
-            <Button
-              type="text"
-              size="small"
-              aria-label={`${maximized ? '退出放大' : '放大'} ${label}`}
-              aria-pressed={maximized}
-              aria-keyshortcuts="Control+Plus Control+="
-              onClick={() => activatePanelAction('maximize')}
-              icon={
-                <span
-                  className={`${maximized ? 'i-lucide-minimize' : 'i-lucide-maximize'} h-14px w-14px`}
-                  aria-hidden="true"
-                />
-              }
-            />
-          </Tooltip>
-          {!maximized && (
-            <Tooltip
-              title={<PanelShortcutHint label={collapsed ? '展开' : '折叠'} actionKey="-" />}
-              mouseEnterDelay={0.3}
-              trigger={['hover', 'focus']}
-            >
-              <Button
-                type="text"
-                size="small"
-                aria-label={`${collapsed ? '展开' : '折叠'} ${label}`}
-                aria-expanded={!collapsed}
-                aria-keyshortcuts="Control+-"
-                aria-controls={contentId}
-                onClick={() => activatePanelAction('collapse')}
-                icon={
-                  <span
-                    className={`${collapsed ? 'i-lucide-chevron-right' : 'i-lucide-chevron-left'} h-14px w-14px`}
-                    aria-hidden="true"
-                  />
-                }
-              />
-            </Tooltip>
-          )}
-        </div>
         {collapsed && (
           <div
-            className="flex h-full items-center flex-col gap-3 pt-20 pb-4 bg-surface"
+            className="flex h-full box-border flex-col items-center gap-3 pt-2 pb-1.5 bg-surface"
             aria-label={`${label}已折叠`}
           >
-            <span className="font-mono text-13px font-600 text-accent [writing-mode:vertical-rl]">
-              {environment.key}
-            </span>
-            <span className="text-13px text-text-secondary [writing-mode:vertical-rl]">
-              {environment.name}
-            </span>
+            <div className="pt-1.5">
+              <EnvironmentTag environment={environment} vertical />
+            </div>
+            <div className="mt-auto">{panelActions}</div>
           </div>
         )}
-        {/* 圆角与边框由实际调宽的外层持有；内部保留可读宽度并裁切，避免缩窄时把右侧外框一起裁掉。 */}
-        <div
-          id={contentId}
-          hidden={collapsed}
-          className={collapsed ? 'hidden' : 'h-full min-w-320px'}
-        >
-          {children}
+        {/* 外层持有圆角和边框；头部随面板缩窄以判断实际溢出，编辑区自己保留可读宽度。 */}
+        <div id={contentId} hidden={collapsed} className={collapsed ? 'hidden' : 'h-full min-w-0'}>
+          {children(collapsed ? null : panelActions)}
         </div>
       </div>
       {!hidden && !maximized && (
         <div
           ref={separatorRef}
           data-environment-separator={environment.key}
-          className={splitPaneSeparatorClassName({ compact, hovered, dragging })}
+          // 普通布局保留完整拖拽热区，只高亮中央细线；紧凑布局沿用既有边界高亮。
+          className={`${splitPaneSeparatorClassName({ compact, hovered, dragging })} ${
+            compact
+              ? ''
+              : `
+                [&.hover]:bg-transparent! [&.active]:bg-transparent! focus-visible:bg-transparent!
+                before:content-[''] before:pointer-events-none before:absolute before:inset-y-0
+                before:left-1/2 before:translate-x-[-50%] before:w-3px before:rounded-full
+                before:bg-accent before:opacity-0 before:transition-opacity before:duration-100
+                [&.hover]:before:opacity-100 [&.active]:before:opacity-100 focus-visible:before:opacity-100
+                motion-reduce:before:transition-none
+              `
+          }`}
           role="separator"
           tabIndex={0}
           aria-label={`调整 ${label}宽度`}
@@ -288,7 +316,9 @@ export function ResizableEnvironmentPanel({
           aria-valuemin={collapsedEnvironmentWidth}
           aria-valuemax={maximumEnvironmentWidth}
           aria-valuenow={collapsed ? collapsedEnvironmentWidth : layout.width}
-          aria-valuetext={collapsed ? '已折叠，仅显示环境名' : `${Math.round(layout.width)} 像素`}
+          aria-valuetext={
+            collapsed ? '已折叠，显示环境 tag 和面板操作' : `${Math.round(layout.width)} 像素`
+          }
           title="拖拽调整宽度，向左拖到底折叠，向右拖动展开；双击恢复默认；Ctrl+- 折叠 / 展开，Ctrl++ 放大 / 恢复"
           onPointerEnter={(event) => {
             if (event.pointerType !== 'touch') scheduleHover();

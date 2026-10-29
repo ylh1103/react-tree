@@ -40,8 +40,11 @@ function createWorkspaceRoute(config: WorkspaceRouteConfig): RouteObject {
     ErrorBoundary: RouteErrorPage,
     handle: {
       label: config.label,
+      // 有子操作的工作区在同一应用内保留挂载，导航等待时也不能用 Activity 隐藏并清理编辑器 Effect。
+      preserveWorkspace: Boolean(config.children?.length),
     },
     lazy: config.page ? lazyPage(config.page) : lazyWorkspace(config.label, config.splitPane),
+    children: config.children?.map(createWorkspaceRoute),
   };
 }
 

@@ -229,7 +229,11 @@ test('应用环境独立加载，业务与公共工具栏分流，403/404 优先
     const html = fixture.render();
     assert.match(html, /dev 环境参数配置/);
     assert.match(html, /st 环境参数配置/);
-    assert.match(html, /当前环境暂无参数配置/);
+    // st 的配置为空，仍须提供与 dev 相同的编辑区域，不能回退到空状态或只读面板。
+    assert.equal(envs.find((env) => env.envTag === 'st').configInfo.trim(), '');
+    assert.match(html, /aria-label="dev 配置内容（可编辑）"/);
+    assert.match(html, /aria-label="st 配置内容（可编辑）"/);
+    assert.doesNotMatch(html, /当前环境暂无参数配置|只读配置|配置内容（只读）/);
     if (appType === '0') {
       assert.doesNotMatch(html, /aria-label="差异数暂不可用/);
       assert.match(html, /aria-label="运行时配置差异数：3"/);

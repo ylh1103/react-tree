@@ -2,6 +2,28 @@
 import { preloadApplications, revalidateSystemCollection } from './loaders.ts';
 import type { WorkspaceRouteConfig } from './types.ts';
 
+/** 应用环境操作嵌套在配置页下，切换操作不会卸载父工作区；不生成独立导航菜单。 */
+const applicationOperationRoutes: WorkspaceRouteConfig[] = [
+  {
+    path: ':envTag/create/:version?',
+    label: '创建快照',
+    icon: 'i-lucide-camera',
+    page: () => import('@/pages/CreateSnapshot/index.tsx'),
+  },
+  {
+    path: ':envTag/publish/:version?',
+    label: '发布',
+    icon: 'i-lucide-send',
+    page: () => import('@/pages/PublishSnapshot/index.tsx'),
+  },
+  {
+    path: ':envTag/inspect',
+    label: '检查',
+    icon: 'i-lucide-scan-eye',
+    page: () => import('@/pages/InspectParameters/index.tsx'),
+  },
+];
+
 /** 应用参数平台独立维护页面顺序及菜单，系统默认入口由路由树重定向到总览。 */
 export const applicationRouteConfig: WorkspaceRouteConfig[] = [
   {
@@ -18,6 +40,7 @@ export const applicationRouteConfig: WorkspaceRouteConfig[] = [
     loader: preloadApplications,
     shouldRevalidate: revalidateSystemCollection,
     page: () => import('@/pages/SystemApplications/index.tsx'),
+    children: applicationOperationRoutes,
   },
   {
     path: 'params',

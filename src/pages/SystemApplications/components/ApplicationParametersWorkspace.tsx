@@ -449,6 +449,8 @@ function EnvironmentPanels({
   onShowAll: () => void;
 }) {
   // 使用函数更新合并各环境布局，避免连续操作覆盖其他环境；状态仅影响环境区，不订阅全局偏好。
+  // 草稿仅在当前应用工作区内保留，隐藏环境不会丢失；切换应用后随工作区卸载清除。
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [layouts, setLayouts] = useState<Record<string, EnvironmentPanelLayout>>({});
   const [maximizedKey, setMaximizedKey] = useState<string | null>(null);
   const maximized = environments.some((item) => item.key === maximizedKey) ? maximizedKey : null;
@@ -493,7 +495,17 @@ function EnvironmentPanels({
           hidden={maximized !== null && maximized !== environment.key}
           onMaximize={() => setMaximizedKey(maximized === environment.key ? null : environment.key)}
         >
-          <EnvironmentPanel environment={environment} compact={compact} appType={appType} />
+          {(panelActions) => (
+            <EnvironmentPanel
+              environment={environment}
+              appType={appType}
+              panelActions={panelActions}
+              draft={drafts[environment.key]}
+              onDraftChange={(value) =>
+                setDrafts((previous) => ({ ...previous, [environment.key]: value }))
+              }
+            />
+          )}
         </ResizableEnvironmentPanel>
       ))}
     </div>

@@ -16,6 +16,19 @@ export function applicationPath(systemName: string, appName?: string) {
   return systemPath(systemName, `application${appName ? `/${encodeURIComponent(appName)}` : ''}`);
 }
 
+/** 应用、环境与可选版本写入路径；检查页没有版本段，关闭时可回到来源应用。 */
+export function applicationOperationPath(
+  systemName: string,
+  operation: 'create' | 'publish' | 'inspect',
+  appName: string,
+  envTag: string,
+  version?: string,
+) {
+  const versionPath =
+    operation !== 'inspect' && version !== undefined ? `/${encodeURIComponent(version)}` : '';
+  return `${applicationPath(systemName, appName)}/${encodeURIComponent(envTag)}/${operation}${versionPath}`;
+}
+
 export function databasePath(systemName: string, paramTypeName?: string) {
   return systemPath(
     systemName,
