@@ -295,7 +295,7 @@ function PreferenceSlider({
           }}
           className={`
             w-84px!
-            ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'}
+            ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent!'}
             [&_input]:font-600 [&_input]:tabular-nums
           `}
         />
@@ -380,7 +380,7 @@ function MenuDisplaySetting({
           { label: '仅图标', value: 'icon' },
           { label: '图标和文字', value: 'text' },
         ]}
-        className="settings-segmented w-190px"
+        className="w-190px p-1! bg-sidebar! text-text-secondary! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent motion-reduce:[&_.ant-segmented-thumb]:transition-none motion-reduce:[&_.ant-segmented-thumb]:animate-none"
       />
     </div>
   );
@@ -417,7 +417,6 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
     <div
       className={`
         flex h-full min-h-0 flex-col gap-3 [--color-text-muted:var(--color-text-secondary)]
-        [--color-accent-text:var(--color-settings-accent-text)]
       `}
       aria-busy={loading || saving}
     >
@@ -436,7 +435,8 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
           // 滚动容器铺满抽屉，内容自身两侧留白 24px；右侧 12px 覆盖条因此落在留白内，不遮挡控件。
           content: 'h-full! min-h-0! overflow-hidden!',
           indicator: 'hidden!',
-          item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-text-secondary [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
+          // 设置项与滑块统一使用平台主色，避免局部文字覆盖产生另一套强调色。
+          item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-text-secondary [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
         }}
         items={[
           {
@@ -590,12 +590,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                       </SettingsOptionCard>
                     ))}
                   </Radio.Group>
-                  <div className="mt-2">
-                    <h3 className="m-0 text-14px font-600 leading-5 text-text">间距与圆角</h3>
-                    <p className="m-0 mt-1 text-12px leading-5 text-text-muted">
-                      松开滑块或结束输入后自动保存。
-                    </p>
-                  </div>
+                  <h3 className="m-0 mt-2! text-14px font-600 leading-5 text-text">间距与圆角</h3>
                   <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
                     <PreferenceSlider
                       setting="layoutGap"
@@ -621,9 +616,6 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                     />{' '}
                   </div>
                   <h3 className="m-0 text-14px font-600 leading-5 text-text mt-1!">菜单显示</h3>
-                  <p className="m-0 text-12px leading-5 text-text-muted">
-                    默认仅显示图标，悬停可查看名称。
-                  </p>
                   <MenuDisplaySetting
                     label="导航栏"
                     icon="i-lucide-panel-left"
@@ -646,7 +638,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             key: 'editor',
             label: (
               <span className="flex items-center gap-2">
-                <span aria-hidden="true" className="i-lucide-code text-14px" />
+                <span aria-hidden="true" className="i-lucide-file-code-2 text-14px" />
                 <span>编辑器</span>
               </span>
             ),

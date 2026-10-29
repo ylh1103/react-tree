@@ -25,8 +25,6 @@ export default defineConfig({
     // 根节点统一原生滚动条配色，覆盖 body 弹层；后代选择器降低优先级，保留局部隐藏与悬停行为。
     'app-scrollbars':
       '[scrollbar-color:var(--color-border)_transparent] [:where(&)_*]:[scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar-thumb]:bg-border [:where(&)_*::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [:where(&)_*::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-corner]:bg-transparent [:where(&)_*::-webkit-scrollbar-corner]:bg-transparent',
-    'settings-segmented':
-      'p-1! bg-sidebar! text-text-secondary! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent-text! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent motion-reduce:[&_.ant-segmented-thumb]:transition-none motion-reduce:[&_.ant-segmented-thumb]:animate-none',
 
     'tree-scrollbar':
       '[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:w-8px [&::-webkit-scrollbar]:h-8px [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-4px [&:hover::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-corner]:bg-transparent',

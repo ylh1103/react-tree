@@ -1,10 +1,11 @@
-/** 编辑器偏好面板：复用外观主题卡片与局部预览变量，交互沿用抽屉的串行保存、失败回退和重试。 */
-import { Button, Radio, Select, Switch } from 'antd';
+/** 编辑器偏好面板：主题选项和选中值共用缩略图，交互沿用抽屉的串行保存、失败回退和重试。 */
+import { Button, Select, Switch } from 'antd';
 import { useId, type CSSProperties } from 'react';
 import { themeVariablesByMode } from '@/styles/theme';
 import { customEditorThemes, type CustomEditorTheme } from '@/components/MonacoEditor/themeCatalog';
-import { SettingsOptionCard, SettingsDefaultBadge } from './SettingsOptionCard';
+import { SettingsDefaultBadge } from './SettingsOptionCard';
 import { useAppSelector } from '@/store/hooks';
+import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import type { UserSettings } from '@/types/preferences';
 import {
   defaultEditorPreferences,
@@ -65,18 +66,47 @@ function EditorThemePreview({
   );
 }
 
-/** 与外观页一致的两列主题卡片；默认项独占一行，保留清晰的默认标记。 */
+/** 轻量主题目录驱动选项与预览，新增精选主题直接追加到列表，不增加面板高度。 */
 const editorThemes = [
-  { value: 'vs', label: '浅色', icon: 'i-lucide-sun', dark: false },
-  { value: 'vs-dark', label: '深色', icon: 'i-lucide-moon', dark: true },
-  { value: 'platform', label: '跟随平台', icon: 'i-lucide-monitor', dark: false },
-  { value: 'hc-light', label: '高对比度浅色', icon: 'i-lucide-contrast', dark: false },
-  { value: 'hc-black', label: '高对比度深色', icon: 'i-lucide-contrast', dark: true },
-  ...customEditorThemes.map((theme) => ({
-    ...theme,
-    icon: theme.dark ? 'i-lucide-moon' : 'i-lucide-sun',
-  })),
+  { value: 'platform', label: '跟随平台', dark: false },
+  { value: 'vs', label: '浅色', dark: false },
+  { value: 'vs-dark', label: '深色', dark: true },
+  { value: 'hc-light', label: '高对比度浅色', dark: false },
+  { value: 'hc-black', label: '高对比度深色', dark: true },
+  ...customEditorThemes,
 ] as const;
+
+// label 保持纯文本以供搜索和无障碍命名，缩略图通过 Select 的渲染接口统一展示。
+const editorThemeOptions = editorThemes.map(({ value, label }) => ({ value, label }));
+
+/** 下拉选项与选中值使用相同布局；跟随平台的预览同步实际配色。 */
+function EditorThemeOption({
+  theme,
+  platformDark,
+}: {
+  theme: (typeof editorThemes)[number];
+  platformDark: boolean;
+}) {
+  const followsPlatform = theme.value === 'platform';
+  const dark = followsPlatform ? platformDark : theme.dark;
+  return (
+    <span className="flex w-full min-w-0 items-center gap-3 py-1">
+      <span className="w-136px shrink-0">
+        <EditorThemePreview
+          dark={dark}
+          contrast={theme.value === 'hc-light' || theme.value === 'hc-black'}
+          palette={customEditorThemes.find((palette) => palette.value === theme.value)}
+        />
+      </span>
+      <span className="flex min-w-0 flex-col gap-1 whitespace-normal">
+        <span className="flex flex-wrap items-center gap-1.5 text-13px font-500 leading-5">
+          {theme.label}
+          {followsPlatform && <SettingsDefaultBadge />}
+        </span>
+      </span>
+    </span>
+  );
+}
 
 export function EditorSetting({
   disabled,
@@ -86,6 +116,8 @@ export function EditorSetting({
   onSave: (changes: Partial<UserSettings>) => void;
 }) {
   const editor = useAppSelector((state) => state.preferences.editor);
+  const themeMode = useAppSelector((state) => state.preferences.themeMode);
+  const platformTheme = useResolvedTheme(themeMode);
   const id = useId();
   const save = (changes: Partial<EditorPreferences>) =>
     onSave({ editor: { ...editor, ...changes } });
@@ -94,62 +126,36 @@ export function EditorSetting({
       <h3 id={`${id}-theme`} className="m-0 text-14px font-600 leading-5 text-text">
         编辑器主题
       </h3>
-      <Radio.Group
-        name={`${id}-theme`}
+      <Select<EditorPreferences['theme']>
+        id={`${id}-theme-select`}
         aria-labelledby={`${id}-theme`}
         value={editor.theme}
         disabled={disabled}
-        className="grid! w-full! grid-cols-2 gap-3"
-        onChange={(event) => {
-          const theme = editorThemes.find((item) => item.value === event.target.value)?.value;
-          if (theme) save({ theme });
+        className="w-full py-1!"
+        size="large"
+        showSearch={{ optionFilterProp: 'label' }}
+        options={editorThemeOptions}
+        listHeight={360}
+        listItemHeight={98}
+        labelRender={({ value, label }) => {
+          const theme = editorThemes.find((item) => item.value === value);
+          return theme ? (
+            <EditorThemeOption theme={theme} platformDark={platformTheme === 'dark'} />
+          ) : (
+            label
+          );
         }}
-      >
-        {editorThemes.map(({ value, label, icon, dark }) => (
-          <SettingsOptionCard
-            key={value}
-            value={value}
-            aria-label={label}
-            className={value === 'platform' ? 'col-span-2 text-left!' : ''}
-          >
-            {value === 'platform' ? (
-              <span className="grid w-full grid-cols-2 items-center gap-32px">
-                <span
-                  aria-hidden="true"
-                  className="relative block h-80px w-full overflow-hidden rounded-control"
-                >
-                  <EditorThemePreview dark={false} />
-                  <span className="absolute inset-0 [clip-path:polygon(58%_0,100%_0,100%_100%,42%_100%)]">
-                    <EditorThemePreview dark />
-                  </span>
-                </span>
-                <span className="flex min-w-0 flex-col gap-1">
-                  <span className="flex flex-wrap items-center gap-1.5 text-14px font-500 leading-5">
-                    {label}
-                    <SettingsDefaultBadge />
-                  </span>
-                  <span className="text-12px leading-4 text-text-muted">随平台外观自动切换</span>
-                </span>
-              </span>
-            ) : (
-              <span className="flex w-full min-w-0 flex-col gap-2">
-                <EditorThemePreview
-                  dark={dark}
-                  contrast={value === 'hc-light' || value === 'hc-black'}
-                  palette={customEditorThemes.find((theme) => theme.value === value)}
-                />
-                <span className="flex items-center justify-center gap-1.5 text-14px font-500 leading-5">
-                  <span aria-hidden="true" className={`${icon} shrink-0 text-16px`} />
-                  {label}
-                </span>
-              </span>
-            )}
-          </SettingsOptionCard>
-        ))}
-      </Radio.Group>
-      <p className="m-0 text-12px leading-5 text-text-muted">
-        主题仅作用于编辑区，适用于参数编辑与差异对比。
-      </p>
+        optionRender={(option) => {
+          const theme = editorThemes.find((item) => item.value === option.value);
+          return theme ? (
+            <EditorThemeOption theme={theme} platformDark={platformTheme === 'dark'} />
+          ) : (
+            option.label
+          );
+        }}
+        notFoundContent="未找到匹配的主题"
+        onChange={(theme) => save({ theme })}
+      />
       <h3 className="m-0 mt-3! text-14px font-600 leading-5 text-text">阅读与显示</h3>
       <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
         <div className="flex items-center justify-between gap-3 py-3">
@@ -217,17 +223,11 @@ export function EditorSetting({
           />
         </div>
         <div className="flex items-center justify-between gap-3 py-3">
-          <div>
-            <label htmlFor={`${id}-tab`} className="text-14px text-text">
-              缩进大小
-            </label>
-            <p id={`${id}-tab-help`} className="m-0 mt-1 text-12px leading-5 text-text-muted">
-              用于输入和 YAML 格式化
-            </p>
-          </div>
+          <label htmlFor={`${id}-tab`} className="text-14px text-text">
+            缩进大小
+          </label>
           <Select<number>
             id={`${id}-tab`}
-            aria-describedby={`${id}-tab-help`}
             className="w-150px shrink-0"
             value={editor.tabSize}
             disabled={disabled}

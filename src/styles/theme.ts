@@ -178,7 +178,6 @@ function createThemeVariables(mode: ResolvedThemeMode) {
     '--color-accent-hover': tokens.colorPrimaryHover,
     '--color-accent-active': tokens.colorPrimaryActive,
     '--color-accent-text': tokens.colorPrimaryText,
-    '--color-settings-accent-text': mode === 'light' ? '#0068b5' : tokens.colorPrimaryText,
     '--color-settings-surface': tokens.colorBgElevated,
     '--color-on-accent': tokens.colorTextLightSolid,
     '--color-hover': tokens.colorPrimaryBg,

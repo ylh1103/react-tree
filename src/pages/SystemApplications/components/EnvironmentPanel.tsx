@@ -182,7 +182,7 @@ export function EnvironmentPanel({
           <div
             role="toolbar"
             aria-label={`${env.envTag} 参数操作`}
-            className="flex min-h-52px w-max min-w-full items-center gap-1.5 px-3 py-2 box-border whitespace-nowrap"
+            className="flex w-max min-w-full items-center gap-1.5 p-3 box-border whitespace-nowrap"
           >
             <EnvironmentTag environment={env} />
             <PendingAction label="历史记录" icon="i-lucide-history" />

@@ -1,5 +1,6 @@
 /** 工具栏右缘提示：仅在右侧还有被裁切的内容时渐隐，随尺寸与横向滚动更新。 */
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { OverlayScroll } from '@/components/OverlayScroll';
 
 export function ToolbarOverflowFade({
   children,
@@ -9,13 +10,16 @@ export function ToolbarOverflowFade({
   /** 底部状态栏隐藏滚动条，保持固定高度；仍保留原生横向滚动及键盘焦点滚入。 */
   showScrollbar?: boolean;
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [fade, setFade] = useState<{ right: number; width: number } | null>(null);
 
   useLayoutEffect(() => {
-    const viewport = viewportRef.current;
+    const container = containerRef.current;
+    const viewport = showScrollbar
+      ? container?.querySelector('section')
+      : container?.firstElementChild;
     const content = viewport?.firstElementChild;
-    if (!viewport || !content) return;
+    if (!(viewport instanceof HTMLElement) || !content) return;
     // 整个环境面板也可能被外层工作区裁切，不能只比较工具栏自己的 scrollWidth/clientWidth。
     const clippingParents: HTMLElement[] = [];
     for (let parent = viewport.parentElement; parent; parent = parent.parentElement) {
@@ -66,16 +70,18 @@ export function ToolbarOverflowFade({
       window.removeEventListener('resize', scheduleMeasure);
       if (frame !== undefined) window.cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [showScrollbar]);
 
   return (
-    <div className="relative min-w-0">
-      <div
-        ref={viewportRef}
-        className={`min-w-0 overflow-x-auto ${showScrollbar ? 'tree-scrollbar' : '[scrollbar-width:none] [&::-webkit-scrollbar]:hidden'}`}
-      >
-        {children}
-      </div>
+    <div ref={containerRef} className="relative min-w-0">
+      {/* 顶栏复用覆盖式滚动条，不占底部内边距，调宽时也不会改变高度。 */}
+      {showScrollbar ? (
+        <OverlayScroll label="参数工具栏">{children}</OverlayScroll>
+      ) : (
+        <div className="min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {children}
+        </div>
+      )}
       {fade && (
         <div
           aria-hidden="true"
