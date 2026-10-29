@@ -1,4 +1,9 @@
 /** 平台显示配置契约与兼容校验；完整 userSetting 文档的解析位于 userSettings.ts。 */
+import {
+  defaultEditorPreferences,
+  parseEditorPreferences,
+  type EditorPreferences,
+} from './editorPreferences.ts';
 import { isLoadingStyleId, type LoadingStyleId } from './loading.ts';
 export type LayoutMode = 'default' | 'compact';
 /** 实际显示颜色，只用于主题算法、CSS 变量和浏览器 color-scheme。 */
@@ -9,8 +14,10 @@ export type ThemeMode = ResolvedThemeMode | 'system';
 export type NavigationTheme = 'contrast' | 'theme';
 export const layoutGapRange = { min: 2, max: 16 } as const;
 export const borderRadiusRange = { min: 0, max: 24 } as const;
-/** 本项目负责的配置字段白名单；不包含编辑器设置或运行时预览状态。 */
+/** 本项目负责的配置字段白名单；包含编辑器个性化设置，不包含运行时预览状态。 */
 export interface UserSettings {
+  /** 编辑器个性化选项；历史顶层 theme 字段仍按原样保留。 */
+  editor: EditorPreferences;
   /** 全局数据加载图标；与参数项图库共用稳定方案标识。 */
   loadingStyle: LoadingStyleId;
   /** 布局模式：default 为标准布局，compact 为紧凑布局。 */
@@ -32,6 +39,7 @@ export interface UserSettings {
 }
 /** 旧配置缺字段时补齐；不能作为非法 JSON 的自动修复或自动保存内容。 */
 export const defaultUserSettings: UserSettings = {
+  editor: defaultEditorPreferences,
   loadingStyle: 'data-trace',
   layoutMode: 'default',
   layoutGap: 4,
@@ -90,6 +98,8 @@ export function parseUserSettings(value: unknown): UserSettings {
     throw new Error('用户设置格式错误');
   }
   return {
+    editor:
+      'editor' in value ? parseEditorPreferences(value.editor) : { ...defaultEditorPreferences },
     loadingStyle:
       'loadingStyle' in value && isLoadingStyleId(value.loadingStyle)
         ? value.loadingStyle

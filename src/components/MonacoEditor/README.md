@@ -22,7 +22,7 @@ export function ParameterEditor() {
 }
 ```
 
-`MonacoEditorProps` 保留原库 `EditorProps`：支持 `defaultValue`、`value`、`path`、`defaultPath`、`beforeMount`、`onMount`、`onChange`、`onValidate` 等。默认 JSON、400px 高度、自动布局、2 空格缩进，关闭缩略图和末行后的空白滚动；`options` 可以覆盖默认值。`loading` 同时用于代码下载与 Monaco 初始化等待，传 `null` 可隐藏占位内容。
+`MonacoEditorProps` 保留原库 `EditorProps`：支持 `defaultValue`、`value`、`path`、`defaultPath`、`beforeMount`、`onMount`、`onChange`、`onValidate` 等。默认 JSON、400px 高度、自动布局、2 空格缩进，关闭缩略图和末行后的空白滚动；`options` 可以覆盖用户偏好和默认值；缩略图选项按字段合并。自动换行只改变显示，不改写文档；关闭缩进自动检测并默认插入空格，让用户设置作用于现有模型的后续输入；YAML 服务同步 indentation 与格式化 tabWidth，执行“格式化文档”时使用当前缩进，不因偏好变化自动重排文档。YAML 服务为全局共享，同屏实例若覆盖 options.tabSize 应保持一致；其他格式化选项、Schema 与校验配置保持原值。monaco-yaml 5.5.0 的类型未声明 tabWidth，本地适配已按 Worker 实现补齐，并以安装版格式化器测试验证。`loading` 同时用于代码下载与 Monaco 初始化等待，传 `null` 可隐藏占位内容。
 
 ## 差异对比
 
@@ -47,9 +47,15 @@ export function ParameterDiff() {
 
 ## 主题与模型
 
-两个组件需在项目 Redux Provider 内使用，默认仅订阅 `preferences.themeMode`，并跟随系统外观。传 `theme` 可指定已注册的主题；自定义主题可在 `beforeMount` 中通过 `monaco.editor.defineTheme` 注册。Monaco 的主题属于共享实例，同屏编辑器应使用一致的主题。
+两个组件需在项目 Redux Provider 内使用，订阅 `preferences.editor` 和 `preferences.themeMode`。用户配置的“编辑器”分组可设置主题、自动换行、显示或隐藏行号（显示文档的实际行号，旧版相对行号配置读取为显示）、10–24px 字号、缩略图和 2/4/8 空格缩进；普通编辑和差异对比即时生效，保存失败回退并支持重试。默认主题跟随平台实际配色，也可独立选择浅色、深色及高对比度主题。传 `theme` 可指定已注册的主题；自定义主题可在 `beforeMount` 中通过 `monaco.editor.defineTheme` 注册。Monaco 的主题属于共享实例，同屏编辑器应使用一致的主题。
 
-组件不修改旧 `userSetting.theme`，不保存编辑内容或请求业务接口。不同业务文档使用不同的 `path`；差异两侧使用不同的 `originalModelPath`、`modifiedModelPath`，避免复用同一模型导致内容串联。模型和编辑器默认由原库在卸载时释放；开启 `keepCurrentModel`、`keepCurrentOriginalModel` 或 `keepCurrentModifiedModel` 后，模型释放由调用方负责。复用同一路径时，还应避免一个组件卸载释放其他组件正在使用的模型。
+精选主题使用 `monaco-themes@0.4.5`：GitHub Light（`github-light`）、GitHub Dark（`github-dark`）、Dracula（`dracula`）、Night Owl（`night-owl`）、Cobalt2（`cobalt2`）。选择这些在 VS Code 中广泛使用、且包内已有的配色移植版，不保证与最新版 VS Code 插件逐项一致。固定 0.4.5 是因为 0.4.8 的 exports 未开放主题 JSON 子路径。来源：[monaco-themes](https://github.com/brijeshb42/monaco-themes)、[GitHub Theme](https://marketplace.visualstudio.com/items?itemName=GitHub.github-vscode-theme)、[Dracula](https://marketplace.visualstudio.com/items?itemName=dracula-theme.theme-dracula)、[Night Owl](https://marketplace.visualstudio.com/items?itemName=sdras.night-owl)、[Cobalt2](https://marketplace.visualstudio.com/items?itemName=wesbos.theme-cobalt2)。
+
+`themeDefinitions.ts` 只随编辑器运行时懒加载 5 份 JSON，并在 `loader.config` 前同步注册，切换时没有异步请求及旧响应竞争；不导入主题转换器或额外高亮引擎。`themeCatalog.ts` 是轻量目录，设置面板只读取色板预览，不挂载 Monaco。源主题 `base` 经校验后原样保留，不依赖预览目录推导。TextMate scope 与 Monaco token 不完全相同，因此仅补齐 YAML 键名及各类数字、JSON 属性名/字符串/数字/关键字的语言专用规则；源主题已有对应精确颜色时保留。YAML 字符串仅在浅色基础主题的具体规则遮蔽通用颜色，或源主题缺少字符串颜色时补齐；注释和大多数主题的 YAML 关键字直接沿用源规则；Dracula 的 YAML/JSON 布尔值与空值使用 Dracula 青色（`#8be9fd`），与粉色键名、紫色数字及黄色字符串区分，设置预览同步使用该颜色，其他语言关键字保持源主题配色。语言后缀位于 token 最后，`number.yaml` 不匹配 `number.float.yaml`，各数字类型分别映射；JSON 需使用 `string.key.json` 等精确名称，才能覆盖基础主题更具体的规则。其他语言及字符串转义、非法字符串等既有规则保持不变，回归测试使用安装版 Monaco 匹配器核对最终颜色和字体样式。各主题在保留原有色系的基础上区分键名、字符串、数字和布尔/空值四类颜色：GitHub Light/Dark 数字采用源主题紫色，避免与蓝色字符串接近或相同；Cobalt2 键名采用源主题青色，区别绿色字符串；Night Owl 保持原配色。布尔值和空值沿用同一 keyword token，不增加分词器。新增主题时需同步目录、配置 ID、JSON 导入及回归验证。
+
+个性化配置写入独立的 `userSetting.editor`，旧配置缺项时补默认值；显式非法值触发读取错误并禁止保存。组件不修改旧 `userSetting.theme`，不保存编辑内容或请求业务接口。不同业务文档使用不同的 `path`；差异两侧使用不同的 `originalModelPath`、`modifiedModelPath`，避免复用同一模型导致内容串联。模型和编辑器默认由原库在卸载时释放；开启 `keepCurrentModel`、`keepCurrentOriginalModel` 或 `keepCurrentModifiedModel` 后，模型释放由调用方负责。复用同一路径时，还应避免一个组件卸载释放其他组件正在使用的模型。
+
+应用环境参数面板只在首次勾选时创建编辑器，取消勾选（包括全不选）仅隐藏已打开的面板，再次勾选沿用内容、撤销/重做栈与光标；未打开的环境不提前创建 Monaco 实例。切换应用、离开工作区或环境被接口移除时，编辑器正常卸载并释放模型；刷新页面后的持久化历史不在此保留范围。
 
 两类编辑器默认开启 `fixedOverflowWidgets`，让报错悬浮提示及补全浮层按视口定位，越过环境分栏和编辑区的 `overflow-hidden` 边界，避免首行错误提示上半部分被截断。调用方仍可通过 `options` 覆盖。承载编辑器的祖先应避免设置创建固定定位包含块的 `transform`、`filter` 或 `contain`，否则需另行配置浮层容器。
 

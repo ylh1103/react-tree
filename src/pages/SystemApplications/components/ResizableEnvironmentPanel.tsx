@@ -20,7 +20,7 @@ interface ResizableEnvironmentPanelProps {
   maximized: boolean;
   hidden: boolean;
   onMaximize: () => void;
-  /** 布局由应用工作区持有，取消勾选卸载面板后仍保留；指针等瞬时状态留在本组件。 */
+  /** 布局由应用工作区持有，取消勾选只隐藏面板；指针等瞬时状态留在本组件。 */
   layout: EnvironmentPanelLayout;
   onLayoutChange: Dispatch<SetStateAction<EnvironmentPanelLayout>>;
   /** 展开时由参数底栏承载操作，避免悬浮按钮遮挡代码；折叠时由窄条承载。 */

@@ -12,6 +12,7 @@ import CssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import HtmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import TypeScriptWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import YamlWorker from './yaml.worker?worker';
+import { registerEditorThemes } from './themeDefinitions';
 
 // Monaco 0.47 的列表及粘贴交互使用 Array.at；Chrome 86 需要定向补丁，语法降级不能替代它。
 // 该补丁只在编辑器首次加载时执行，Worker 内不依赖这些主线程交互。
@@ -47,7 +48,7 @@ monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
 
 // 两类编辑器共享 YAML 服务；语法检查和格式化在本地执行，不下载远程 Schema。
 // 业务字段校验需集中注册内联 schemas，并用 fileMatch 隔离文档。
-const yamlService = configureMonacoYaml(monaco, {
+export const yamlService = configureMonacoYaml(monaco, {
   validate: true,
   completion: true,
   hover: true,
@@ -61,4 +62,5 @@ if (import.meta.hot) {
   import.meta.hot.dispose(() => yamlService.dispose());
 }
 
+registerEditorThemes(monaco.editor.defineTheme);
 loader.config({ monaco });

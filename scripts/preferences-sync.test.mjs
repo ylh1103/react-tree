@@ -62,7 +62,7 @@ const settle = async () => {
 
 function assertSettings(store, settings) {
   const state = store.getState().preferences;
-  for (const [key, value] of Object.entries(settings)) assert.equal(state[key], value, key);
+  for (const [key, value] of Object.entries(settings)) assert.deepEqual(state[key], value, key);
 }
 
 test('保存成功同步所有已打开页签，保留抽屉状态，不回写或循环广播', async (t) => {
@@ -85,6 +85,12 @@ test('保存成功同步所有已打开页签，保留抽屉状态，不回写�
   }
   stores[1].dispatch(openUserSettings());
   const settings = {
+    editor: {
+      ...defaultUserSettings.editor,
+      theme: 'hc-black',
+      wordWrap: 'on',
+      lineNumbers: 'off',
+    },
     layoutMode: 'compact',
     layoutGap: 12,
     borderRadius: 0,

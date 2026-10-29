@@ -1,5 +1,5 @@
 /**
- * 页头显示设置入口使用的布局、主题和图标配置面板。
+ * 页头显示设置入口使用的布局、主题、图标和编辑器配置面板。
  * 所有更改通过 Redux 保存；失败反馈和重试读取同一个状态机，主题预览复用主题定义。
  */
 import { Alert, Button, InputNumber, Radio, Segmented, Slider, Tabs } from 'antd';
@@ -20,6 +20,7 @@ import type {
 } from '@/types/preferences';
 import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '@/types/preferences';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
+import { EditorSetting } from './components/EditorSetting';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
 import { OverlayScroll } from '@/components/OverlayScroll';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
@@ -638,6 +639,20 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                     onChange={(checked) => onSave({ headerToolsIconOnly: checked })}
                   />
                 </section>
+              </OverlayScroll>
+            ),
+          },
+          {
+            key: 'editor',
+            label: (
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true" className="i-lucide-code text-14px" />
+                <span>编辑器</span>
+              </span>
+            ),
+            children: (
+              <OverlayScroll direction="vertical" label="编辑器设置" className="px-6">
+                <EditorSetting disabled={disabled} onSave={onSave} />
               </OverlayScroll>
             ),
           },

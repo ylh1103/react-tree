@@ -65,8 +65,6 @@ const modifiedExample = originalExample
   .replace('root: info', 'root: warn')
   .replace('enabled: false', 'enabled: true');
 const editorOptions: NonNullable<MonacoDiffEditorProps['options']> = {
-  fontSize: 13,
-  lineHeight: 22,
   padding: { top: 12, bottom: 12 },
   renderSideBySide: true,
   renderSideBySideInlineBreakpoint: 0,

@@ -37,12 +37,10 @@ function EditorCursorPosition({ editor }: { editor: ConfigEditor | null }) {
   );
 }
 
-// 保持字号、行高及选项引用稳定；空配置和已有配置使用相同的可编辑模式。
+// 保持行高及选项引用稳定，字号使用用户偏好；空配置和已有配置使用相同的可编辑模式。
 const configEditorOptions: NonNullable<MonacoEditorProps['options']> = {
   readOnly: false,
   domReadOnly: false,
-  fontSize: 12,
-  lineHeight: 22,
   padding: { top: 12, bottom: 12 },
 };
 
@@ -161,7 +159,7 @@ export function EnvironmentPanel({
   appType: '0' | '1';
   /** 面板布局动作固定在底栏左侧，与业务操作及编辑内容分开。 */
   panelActions: ReactNode;
-  /** 草稿由应用工作区按环境持有，取消勾选卸载编辑器时仍保留；不写入查询缓存。 */
+  /** 草稿由应用工作区按环境持有，取消勾选仅隐藏编辑器；不写入查询缓存。 */
   draft: string | undefined;
   onDraftChange: (value: string) => void;
 }) {

@@ -24,6 +24,8 @@ import {
  * 本地仅补充读写和交互状态；saved* 保存确认基线，preview* 只用于临时预览。
  */
 interface PreferencesState extends UserSettings {
+  /** 已确认的编辑器配置，保存失败时整体回退到最近成功值。 */
+  savedEditor: UserSettings['editor'];
   /** 首次读取成功前为启动图标提示，成功后为服务端确认方案；读取或保存失败时据此回退。 */
   savedLoadingStyle: LoadingStyleId;
   /** 是否结束首次配置等待；读取失败也置为 true，让页面展示回退配置与重试入口。 */
@@ -152,6 +154,7 @@ const saveQueues = new WeakMap<() => PreferencesStoreState, Promise<void>>();
 /** 只提取可持久化字段，不把预览值、抽屉状态、错误和请求编号发送给后端。 */
 function currentSettings(state: PreferencesState): UserSettings {
   const {
+    editor,
     loadingStyle,
     layoutMode,
     layoutGap,
@@ -163,6 +166,7 @@ function currentSettings(state: PreferencesState): UserSettings {
     headerToolsIconOnly,
   } = state;
   return {
+    editor,
     loadingStyle,
     layoutMode,
     layoutGap,
@@ -218,6 +222,8 @@ export const saveUserSettings = createAppAsyncThunk<UserSettings, Partial<UserSe
 
 /** 创建或重置 Slice 时使用的默认状态；各字段含义见 PreferencesState，默认值不代表已读取。 */
 const initialState: PreferencesState = {
+  editor: defaultUserSettings.editor,
+  savedEditor: defaultUserSettings.editor,
   loadingStyle: defaultUserSettings.loadingStyle,
   savedLoadingStyle: defaultUserSettings.loadingStyle,
   initialized: false,
@@ -254,6 +260,7 @@ const initialState: PreferencesState = {
 
 /** 更新服务端确认基线；较早保存成功时也要推进基线，供后续保存失败正确回退。 */
 function updateSavedSettings(state: PreferencesState, settings: UserSettings) {
+  state.savedEditor = settings.editor;
   state.savedLoadingStyle = settings.loadingStyle;
   state.savedLayoutMode = settings.layoutMode;
   state.savedLayoutGap = settings.layoutGap;
@@ -355,6 +362,7 @@ const preferencesSlice = createSlice({
         state.navigationIconOnly = state.savedNavigationIconOnly = initialState.navigationIconOnly;
         state.headerToolsIconOnly = state.savedHeaderToolsIconOnly =
           initialState.headerToolsIconOnly;
+        state.editor = state.savedEditor = initialState.editor;
         state.initialized = true;
         state.layoutMode = state.savedLayoutMode = initialState.layoutMode;
         state.layoutGap = state.savedLayoutGap = initialState.layoutGap;
@@ -402,6 +410,7 @@ const preferencesSlice = createSlice({
           state.controlBorderRadius = action.meta.arg.controlBorderRadius;
         if (typeof action.meta.arg.borderRadius === 'number')
           state.borderRadius = action.meta.arg.borderRadius;
+        if (action.meta.arg.editor) state.editor = action.meta.arg.editor;
         if (action.meta.arg.themeMode) state.themeMode = action.meta.arg.themeMode;
         if (action.meta.arg.loadingStyle) state.loadingStyle = action.meta.arg.loadingStyle;
         if (action.meta.arg.navigationTheme)
@@ -431,6 +440,7 @@ const preferencesSlice = createSlice({
         // 只处理当前最新请求的失败；回退到最近一次成功值，同时保留修改项供用户显式重试。
         if (state.saveRequestId !== action.meta.requestId) return;
         state.saveRequestId = null;
+        state.editor = state.savedEditor;
         state.layoutMode = state.savedLayoutMode;
         state.layoutGap = state.savedLayoutGap;
         state.borderRadius = state.savedBorderRadius;

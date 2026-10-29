@@ -2,6 +2,8 @@
 import './monaco';
 import Editor from '@monaco-editor/react';
 import { useMemo } from 'react';
+import { useYamlIndentation } from '@/components/MonacoEditor/useYamlIndentation';
+import { useAppSelector } from '@/store/hooks';
 import type { MonacoEditorProps } from './index';
 import { EditorLoading } from './Loading';
 import { useEditorTheme } from './useEditorTheme';
@@ -15,18 +17,26 @@ export default function MonacoEditorView({
   ...props
 }: MonacoEditorProps) {
   const editorTheme = useEditorTheme(theme);
-  // 保持选项引用稳定，避免仅主题、尺寸或受控值变化时重复调用 Monaco.updateOptions。
+  const preferences = useAppSelector((state) => state.preferences.editor);
+  useYamlIndentation(options?.tabSize ?? preferences.tabSize);
+  // 保持选项引用稳定，避免仅尺寸或受控值变化时重复调用 Monaco.updateOptions。
   const editorOptions = useMemo(
     () => ({
       automaticLayout: true,
       // 报错悬浮、补全等浮层按视口定位，避免被分栏及编辑区的 overflow-hidden 裁剪。
       fixedOverflowWidgets: true,
       scrollBeyondLastLine: false,
-      tabSize: 2,
+      // 用户偏好只更新显示与后续输入；调用方原生 options 保留覆盖能力。
+      wordWrap: preferences.wordWrap,
+      lineNumbers: preferences.lineNumbers,
+      fontSize: preferences.fontSize,
+      tabSize: preferences.tabSize,
+      detectIndentation: false,
+      insertSpaces: true,
       ...options,
-      minimap: { enabled: false, ...options?.minimap },
+      minimap: { enabled: preferences.minimap, ...options?.minimap },
     }),
-    [options],
+    [options, preferences],
   );
 
   return (

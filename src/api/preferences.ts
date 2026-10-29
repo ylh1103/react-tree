@@ -23,9 +23,16 @@ export function createUserSettingsApi(url: string, loadTimeoutMs = 10_000): User
         url,
         signal,
       });
+      const document = parseSettingsDocument(current.userSetting);
+      // 编辑器组同样保留未知扩展字段；损坏的已知配置也不得被一次保存静默修复。
+      settingsFromDocument(current.userSetting);
       const userSetting = JSON.stringify({
-        ...parseSettingsDocument(current.userSetting),
+        ...document,
         ...settings,
+        editor: {
+          ...(document.editor as Record<string, unknown> | undefined),
+          ...settings.editor,
+        },
       });
       const saved = (
         await requestData<{ userSetting: string }>({
