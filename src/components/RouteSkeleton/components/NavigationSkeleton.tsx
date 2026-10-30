@@ -12,7 +12,7 @@ export function NavigationSkeleton({
   return (
     <NavigationFrame>
       <nav
-        className="flex flex-col gap-0.5 min-h-full py-2 px-0.75 motion-reduce:[&_.ant-skeleton-active_*]:animate-none!"
+        className="flex flex-col gap-0.5 min-h-full py-2 px-0.75"
         aria-label="主导航加载中"
         aria-busy
       >

@@ -50,7 +50,7 @@ test('统一图标可独立静态渲染，保留 SVG 属性、默认回退与多
   assert.match(trace, /data-testid="indicator"/);
   assert.match(trace, /viewBox="0 0 200 200"/);
   assert.match(trace, /aria-hidden="true"/);
-  assert.match(trace, /motion-reduce:animate-none/);
+  assert.doesNotMatch(trace, /motion-reduce:/, '应用内加载动画不受系统减少动态效果影响');
   assert.equal(render('unknown'), render('data-trace'), '未知方案沿用品牌描边回退');
   for (const [styleId, animation] of [
     ['data-trace', 'loading-trace'],

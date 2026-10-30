@@ -73,11 +73,11 @@ function EditorThemePreview({
 /** 轻量主题目录驱动选项与预览，新增精选主题直接追加到列表，不增加面板高度。 */
 const editorThemes = [
   { value: 'platform', label: '跟随平台', dark: false },
-  { value: 'vs', label: '浅色', dark: false },
-  { value: 'vs-dark', label: '深色', dark: true },
+  ...customEditorThemes,
+  { value: 'vs', label: 'vs浅色', dark: false },
+  { value: 'vs-dark', label: 'vs深色', dark: true },
   { value: 'hc-light', label: '高对比度浅色', dark: false },
   { value: 'hc-black', label: '高对比度深色', dark: true },
-  ...customEditorThemes,
 ] as const;
 
 // label 保持纯文本以供搜索和无障碍命名，缩略图通过 Select 的渲染接口统一展示。
@@ -166,23 +166,6 @@ export function EditorSetting({
       <h3 className="m-0 mt-3! text-14px font-600 leading-5 text-text">阅读与显示</h3>
       <div className="rounded-ui bg-sidebar px-3 [&>div+div]:border-t [&>div+div]:border-t-solid [&>div+div]:border-divider">
         <div className="flex items-center justify-between gap-3 py-3">
-          <div>
-            <label htmlFor={`${id}-wrap`} className="text-14px text-text">
-              自动换行
-            </label>
-            <p id={`${id}-wrap-help`} className="m-0 mt-1 text-12px leading-5 text-text-muted">
-              长行按编辑区宽度折行，不修改文件内容。
-            </p>
-          </div>
-          <Switch
-            id={`${id}-wrap`}
-            aria-describedby={`${id}-wrap-help`}
-            checked={editor.wordWrap === 'on'}
-            disabled={disabled}
-            onChange={(checked) => save({ wordWrap: checked ? 'on' : 'off' })}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-3 py-3">
           <label htmlFor={`${id}-lines`} className="text-14px text-text">
             显示行号
           </label>
@@ -202,6 +185,23 @@ export function EditorSetting({
             checked={editor.minimap}
             disabled={disabled}
             onChange={(minimap) => save({ minimap })}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3 py-3">
+          <div>
+            <label htmlFor={`${id}-wrap`} className="text-14px text-text">
+              自动换行
+            </label>
+            <p id={`${id}-wrap-help`} className="m-0 mt-1 text-12px leading-5 text-text-muted">
+              长行按编辑区宽度折行，不修改文件内容。
+            </p>
+          </div>
+          <Switch
+            id={`${id}-wrap`}
+            aria-describedby={`${id}-wrap-help`}
+            checked={editor.wordWrap === 'on'}
+            disabled={disabled}
+            onChange={(checked) => save({ wordWrap: checked ? 'on' : 'off' })}
           />
         </div>
       </div>
@@ -247,12 +247,12 @@ export function EditorSetting({
         </div>
       </div>
       <Button
-        type="text"
-        className="mt-1 h-auto! self-start px-0! text-text-secondary! hover:text-accent-text!"
+        block
+        className="mt-1 h-36px! layout-focus"
+        icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
         disabled={disabled}
         onClick={() => onSave({ editor: defaultEditorPreferences })}
       >
-        <span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />
         恢复编辑器默认设置
       </Button>
     </section>

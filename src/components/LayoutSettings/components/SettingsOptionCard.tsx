@@ -20,7 +20,7 @@ export function SettingsOptionCard({
         [&.ant-radio-button-wrapper-checked]:bg-hover!
         [&.ant-radio-button-wrapper-disabled]:opacity-50 [&:has(:focus-visible)]:outline-2
         [&:has(:focus-visible)]:outline-solid [&:has(:focus-visible)]:outline-accent
-        [&:has(:focus-visible)]:outline-offset-2 motion-reduce:transition-none!
+        [&:has(:focus-visible)]:outline-offset-2
         ${className}
       `}
     >

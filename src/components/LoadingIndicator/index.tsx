@@ -10,7 +10,7 @@ interface LoadingIndicatorProps extends SVGProps<SVGSVGElement> {
   styleId: LoadingStyleId;
 }
 
-const origin = '[transform-origin:98px_92px] motion-reduce:animate-none';
+const origin = '[transform-origin:98px_92px]';
 const redMotion = `[animation:brand-red_1.25s_ease-in-out_infinite] ${origin}`;
 const blueMotion = `[animation:brand-blue_1.25s_ease-in-out_infinite] ${origin}`;
 
@@ -83,7 +83,7 @@ export function LoadingIndicator({
         </g>
       )}
       {styleId === 'data-comet' && (
-        <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px] motion-reduce:animate-none">
+        <g className="[animation:loading-ring_1.6s_linear_infinite] [transform-origin:100px_100px]">
           {cometDots.map((dot, index) => (
             <circle
               key={index}
@@ -105,14 +105,14 @@ export function LoadingIndicator({
             stroke="#ff3159"
             pathLength="100"
             strokeDasharray="30 70"
-            className="[animation:loading-trace_1.8s_linear_infinite] motion-reduce:animate-none"
+            className="[animation:loading-trace_1.8s_linear_infinite]"
           />
           <path
             d={blue}
             stroke="#249afc"
             pathLength="100"
             strokeDasharray="30 70"
-            className="[animation:loading-trace_1.8s_linear_infinite] [animation-delay:-900ms]! motion-reduce:animate-none"
+            className="[animation:loading-trace_1.8s_linear_infinite] [animation-delay:-900ms]!"
           />
         </g>
       )}
@@ -128,7 +128,7 @@ export function LoadingIndicator({
             fill={color}
             className={`
               [animation:loading-wave_1.1s_ease-in-out_infinite] [transform-box:fill-box]
-              [transform-origin:center] motion-reduce:animate-none
+              [transform-origin:center]
               ${delays[index]}
             `}
           />
@@ -143,7 +143,7 @@ export function LoadingIndicator({
             fill={colors[(index % 3) * 2]}
             className={`
               [animation:loading-dot_1.4s_ease-in-out_infinite] [transform-box:fill-box]
-              [transform-origin:center] motion-reduce:animate-none
+              [transform-origin:center]
               ${dotDelays[index]}
             `}
           />

@@ -41,7 +41,7 @@ export function AppNavigation() {
                 aria-label={label}
                 end={page !== 'application' && (page !== 'db' || isDatabaseSetting)}
                 className={({ isActive }) =>
-                  `group relative flex shrink-0 flex-col items-center justify-center gap-0.5 ${navigationIconOnly ? 'min-h-44px' : 'min-h-60px'} py-1 px-0 rounded-control no-underline transition-colors duration-140 motion-reduce:transition-none layout-focus ${bottom ? 'mt-auto' : ''} ${isActive ? 'text-nav-emphasis! visited:text-nav-emphasis! font-600' : 'text-nav-text! visited:text-nav-text! hover:text-nav-emphasis! visited:hover:text-nav-emphasis!'}`
+                  `group relative flex shrink-0 flex-col items-center justify-center gap-0.5 ${navigationIconOnly ? 'min-h-44px' : 'min-h-60px'} py-1 px-0 rounded-control no-underline transition-colors duration-140 layout-focus ${bottom ? 'mt-auto' : ''} ${isActive ? 'text-nav-emphasis! visited:text-nav-emphasis! font-600' : 'text-nav-text! visited:text-nav-text! hover:text-nav-emphasis! visited:hover:text-nav-emphasis!'}`
                 }
               >
                 {({ isActive, isPending }) => (
@@ -49,13 +49,13 @@ export function AppNavigation() {
                     <span
                       className={`
                         flex items-center justify-center w-36px h-36px shrink-0 rounded-control
-                        transition-colors duration-140 motion-reduce:transition-none
+                        transition-colors duration-140
                         ${isActive ? 'bg-nav-active text-nav-active-text group-hover:bg-nav-active-hover group-active:bg-nav-active-hover' : 'group-hover:bg-nav-hover group-active:bg-nav-pressed'}
                         ${isPending ? 'ring-1 ring-inset ring-nav-emphasis' : ''}
                       `}
                     >
                       <span
-                        className={`${isPending ? 'i-lucide-loader-circle animate-spin motion-reduce:animate-none' : icon} ${iconSizeClass} shrink-0`}
+                        className={`${isPending ? 'i-lucide-loader-circle animate-spin ' : icon} ${iconSizeClass} shrink-0`}
                         aria-hidden="true"
                       />
                     </span>

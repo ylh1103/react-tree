@@ -245,7 +245,9 @@ GroupedList 的 UI、Hooks 和树模型在 `src/components/GroupedList`，页面
 
 布局与控件优先 UnoCSS 和 Ant Design。全局主题只保留跨模块颜色、间距、圆角等语义；单个页面/组件的组合直接写工具类或私有常量。同一局部多次使用不等于全局复用。
 
-品牌动画的专用关键帧在所属组件 model/animations.ts，就近内嵌最小 `<style>`；原因是 @keyframes 无法通过普通工具类定义。动画属性和减少动态效果仍使用 UnoCSS，不新增 CSS 文件。现有 GroupedList.css 保留其现有复杂交互职责。
+品牌动画的专用关键帧在所属组件 model/animations.ts，就近内嵌最小 `<style>`；原因是 @keyframes 无法通过普通工具类定义。动画属性仍使用 UnoCSS，不新增 CSS 文件。现有 GroupedList.css 保留其现有复杂交互职责。
+
+项目动效统一启用，不再跟随系统的“减少动态效果”偏好：首屏 HTML 与应用内图标共用不含 `motion-reduce` 禁用规则的组件；骨架、导航及控件过渡也移除对应工具类。`AppThemeProvider` 使用 `src/styles/motion.ts` 的 cssinjs 转换器，在 Ant Design 样式生成时移除 `prefers-reduced-motion: reduce` 分支，保留各控件原有动画和响应式规则，含挂载到 body 的弹层。此策略只处理项目和组件库主动禁用动效的规则，浏览器后台节流或不支持的动画特性仍由浏览器决定；图库的手动暂停功能保留。
 
 全部 5 款加载方案的 SVG、轮廓和动画集中在 `src/components/LoadingIndicator`，启动 HTML 与应用内均使用 `<LoadingIndicator styleId={...} />`，无需区分图标系列；`UserLoadingIndicator` 只负责订阅 Redux 偏好。关键帧按当前方案内嵌，避免每个图标重复携带无关动画。
 

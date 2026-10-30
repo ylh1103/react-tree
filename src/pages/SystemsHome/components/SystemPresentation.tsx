@@ -59,7 +59,7 @@ function SystemEntries({ system }: { system: SystemInfo }) {
           block
           className={`
             h-64px! min-w-0! justify-start! gap-2! px-3! text-13px! bg-sidebar! hover:bg-hover!
-            hover:border-accent-border-hover! shadow-none! motion-reduce:transition-none!
+            hover:border-accent-border-hover! shadow-none!
           `}
           icon={<span className={`${icon} w-18px h-18px text-accent-text`} aria-hidden="true" />}
           onClick={() => navigate(platformHome(system.systemName, platform))}
@@ -94,7 +94,7 @@ export function SystemCard({
     <article
       className={`
         workspace-panel flex flex-col min-w-0 overflow-hidden transition-colors
-        hover:border-accent-border-hover focus-within:border-accent motion-reduce:transition-none
+        hover:border-accent-border-hover focus-within:border-accent
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >

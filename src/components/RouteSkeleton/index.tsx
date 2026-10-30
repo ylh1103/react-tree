@@ -3,10 +3,7 @@ import { Skeleton } from 'antd';
 
 export function RouteSkeleton() {
   return (
-    <section
-      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! workspace-panel min-h-full p-6"
-      aria-busy
-    >
+    <section className="workspace-panel min-h-full p-6" aria-busy>
       <span className="sr-only" role="status">
         页面加载中…
       </span>

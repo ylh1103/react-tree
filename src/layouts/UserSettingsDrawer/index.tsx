@@ -74,6 +74,8 @@ export function UserSettingsDrawer() {
         classNames={{
           wrapper: 'user-settings-panel max-w-full!',
           section: 'user-settings-surface',
+          // 与 AppHeader 的 51px 内容及 1px 分隔线对齐，避免默认内边距撑高抽屉头部。
+          header: 'box-border! h-52px! min-h-52px! px-6! py-0!',
           // 内容留白由设置面板内部维护，让覆盖式滚动条使用抽屉右侧留白，不压住表单。
           body: 'flex! min-h-0! flex-col! overflow-hidden! px-0! pt-0! pb-0!',
           footer: 'px-6! py-3!',
@@ -81,10 +83,20 @@ export function UserSettingsDrawer() {
         footer={
           <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <Popconfirm
-              title="恢复全部默认设置？"
-              description="主题、配色、加载图标、布局、圆角和菜单显示都会恢复默认。"
-              okText="恢复默认"
-              cancelText="取消"
+              title="将所有用户设置恢复为默认值？"
+              description={
+                <p className="m-0 text-13px leading-6 whitespace-normal break-words text-text-secondary">
+                  外观、布局和编辑器设置将全部重置，并自动保存。
+                </p>
+              }
+              // 限制浮层宽度并允许换行，避免长描述将按钮挤出抽屉或小屏视口。
+              classNames={{
+                root: 'w-320px max-w-[calc(100vw-32px)]',
+                container: 'p-4!',
+                title: 'text-14px! font-600! leading-6! whitespace-normal',
+              }}
+              okText="全部恢复默认"
+              cancelText="保留设置"
               placement="topLeft"
               disabled={status === 'idle' || status === 'loading' || status === 'load-error'}
               onConfirm={() => save(defaultUserSettings)}
@@ -105,7 +117,7 @@ export function UserSettingsDrawer() {
                 <>
                   <span
                     aria-hidden="true"
-                    className="i-lucide-loader-circle animate-spin motion-reduce:animate-none text-accent text-14px"
+                    className="i-lucide-loader-circle animate-spin text-accent text-14px"
                   />
                   正在保存…
                 </>

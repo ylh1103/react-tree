@@ -89,7 +89,7 @@ export function OverlayScroll({
           group-hover/overlay-scroll:opacity-100 group-hover/overlay-scroll:pointer-events-auto
           group-focus-within/overlay-scroll:opacity-100
           group-focus-within/overlay-scroll:pointer-events-auto transition-opacity duration-150
-          motion-reduce:transition-none [scrollbar-gutter:auto]!
+          [scrollbar-gutter:auto]!
           [scrollbar-color:var(--color-border)_transparent]! [&::-webkit-scrollbar-thumb]:bg-border!
           ${vertical ? 'inset-y-0 right-0 w-12px overflow-y-auto overflow-x-hidden' : 'inset-x-0 bottom-0 h-12px overflow-x-auto overflow-y-hidden'}
         `}

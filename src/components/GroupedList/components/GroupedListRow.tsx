@@ -224,7 +224,6 @@ export const GroupedListRow = memo(function GroupedListRow({
                 aria-hidden="true"
                 className={`
                   i-lucide-chevron-right w-4 h-4 -translate-x-2 transition-transform duration-150
-                  motion-reduce:transition-none
                   ${isExpanded ? 'rotate-90' : ''}
                 `}
               />
@@ -272,7 +271,7 @@ export const GroupedListRow = memo(function GroupedListRow({
               tree-node-card relative flex-1 flex items-center min-w-0 gap-1.5 h-full px-2.5 border
               border-solid border-border rounded-control bg-surface
               [transition-property:background,border-color,box-shadow] duration-150
-              motion-reduce:transition-none py-1
+              py-1
               ${isBranch ? '' : 'border-l-2 border-l-[var(--accent)]'}
               ${isSelected ? 'border-[var(--accent-border)]! border-l-[var(--accent)]!' : ''}
             `}

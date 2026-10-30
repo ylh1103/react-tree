@@ -380,7 +380,7 @@ function MenuDisplaySetting({
           { label: '仅图标', value: 'icon' },
           { label: '图标和文字', value: 'text' },
         ]}
-        className="w-190px p-1! bg-sidebar! text-text-secondary! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent motion-reduce:[&_.ant-segmented-thumb]:transition-none motion-reduce:[&_.ant-segmented-thumb]:animate-none"
+        className="w-190px p-1! bg-sidebar! text-text-secondary! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent"
       />
     </div>
   );
@@ -539,6 +539,22 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                     ))}
                   </Radio.Group>
                   <LoadingStyleSetting disabled={disabled} onSave={onSave} />
+                  <Button
+                    block
+                    className="mt-1 h-36px! layout-focus"
+                    icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
+                    disabled={disabled}
+                    onClick={() =>
+                      // 仅恢复本分组字段，保留布局、编辑器及完整配置文档中的其他偏好。
+                      onSave({
+                        themeMode: defaultUserSettings.themeMode,
+                        navigationTheme: defaultUserSettings.navigationTheme,
+                        loadingStyle: defaultUserSettings.loadingStyle,
+                      })
+                    }
+                  >
+                    恢复外观默认设置
+                  </Button>
                 </section>
               </OverlayScroll>
             ),
@@ -630,6 +646,25 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                     disabled={disabled}
                     onChange={(checked) => onSave({ headerToolsIconOnly: checked })}
                   />
+                  <Button
+                    block
+                    className="mt-1 h-36px! layout-focus"
+                    icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
+                    disabled={disabled}
+                    onClick={() =>
+                      // 布局与菜单显示作为一次变更提交，沿用串行保存和失败回退。
+                      onSave({
+                        layoutMode: defaultUserSettings.layoutMode,
+                        layoutGap: defaultUserSettings.layoutGap,
+                        borderRadius: defaultUserSettings.borderRadius,
+                        controlBorderRadius: defaultUserSettings.controlBorderRadius,
+                        navigationIconOnly: defaultUserSettings.navigationIconOnly,
+                        headerToolsIconOnly: defaultUserSettings.headerToolsIconOnly,
+                      })
+                    }
+                  >
+                    恢复布局默认设置
+                  </Button>
                 </section>
               </OverlayScroll>
             ),

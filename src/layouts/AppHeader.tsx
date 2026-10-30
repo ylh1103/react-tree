@@ -38,9 +38,8 @@ export function AppHeader() {
   const wideHeader = useSyncExternalStore(subscribeWideHeader, getWideHeaderSnapshot);
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const showToolTips = headerToolsIconOnly || !wideHeader;
-  const contextControlClass =
-    'h-36px! px-2.5! gap-2! text-13px! rounded-control! layout-focus motion-reduce:transition-none!';
-  const toolControlClass = `shrink-0 h-36px! text-13px! text-text-secondary! rounded-control! layout-focus motion-reduce:transition-none! ${showToolTips ? 'w-36px! px-0! gap-0!' : 'px-2.5! gap-2!'}`;
+  const contextControlClass = 'h-36px! px-2.5! gap-2! text-13px! rounded-control! layout-focus';
+  const toolControlClass = `shrink-0 h-36px! text-13px! text-text-secondary! rounded-control! layout-focus ${showToolTips ? 'w-36px! px-0! gap-0!' : 'px-2.5! gap-2!'}`;
   // 仅图标模式放大图形以提高辨识度，保持按钮尺寸和头部布局稳定。
   const toolIconSizeClass = showToolTips ? 'w-18px h-18px' : 'w-16px h-16px';
 
@@ -54,7 +53,7 @@ export function AppHeader() {
             onClick={() => navigate('/')}
             aria-label="灵动参数管家，返回主页"
             title="返回主页"
-            className="h-36px! px-1! gap-2! text-text! layout-focus motion-reduce:transition-none!"
+            className="h-36px! px-1! gap-2! text-text! layout-focus"
           >
             <img
               src={logo}

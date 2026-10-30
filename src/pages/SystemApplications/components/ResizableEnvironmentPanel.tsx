@@ -305,7 +305,6 @@ export function ResizableEnvironmentPanel({
                 before:left-1/2 before:translate-x-[-50%] before:w-3px before:rounded-full
                 before:bg-accent before:opacity-0 before:transition-opacity before:duration-100
                 [&.hover]:before:opacity-100 [&.active]:before:opacity-100 focus-visible:before:opacity-100
-                motion-reduce:before:transition-none
               `
           }`}
           role="separator"

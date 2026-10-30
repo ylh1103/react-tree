@@ -7,7 +7,6 @@ export function HeaderSkeleton() {
     <header
       className={`
         shrink-0 min-w-0 bg-header border-b border-b-solid border-divider
-        motion-reduce:[&_.ant-skeleton-active_*]:animate-none!
       `}
       aria-label="页头加载中"
       aria-busy

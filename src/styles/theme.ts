@@ -29,12 +29,21 @@ const dracula = {
   green: '#50fa7b',
   orange: '#ffb86c',
   pink: '#ff79c6',
-  purple: '#bd93f9',
   red: '#ff5555',
   // 用不同亮度区分浮层、侧栏和页面画布，避免暗色界面只靠阴影表达层级。
   surfaceLight: '#343746',
   surfaceDark: '#21222c',
   surfaceDarker: '#191a21',
+};
+
+/** 主色采用 Dracula 徽标粉；平台强调与 Ant Design 控件共用同一组交互色。 */
+const darkAccent = {
+  main: dracula.pink,
+  hover: '#ff92df',
+  active: '#e563af',
+  background: '#402d3b',
+  backgroundHover: '#503346',
+  border: '#9b527e',
 };
 
 /** 保留暗色算法的控件层级，再显式校准文本、表面和交互状态色。 */
@@ -62,18 +71,18 @@ export const darkAppTheme: ThemeConfig = {
     colorTextQuaternary: dracula.comment,
     colorTextDisabled: dracula.comment,
     colorTextPlaceholder: '#a6afcf',
-    // 覆盖暗色算法的降亮结果，保留 Dracula 标志性的紫色。
-    colorPrimary: dracula.purple,
-    colorPrimaryHover: '#d6acff',
-    colorPrimaryActive: '#a87de8',
-    colorPrimaryText: dracula.purple,
-    colorPrimaryTextHover: '#d6acff',
-    colorPrimaryTextActive: '#a87de8',
-    colorPrimaryBg: '#353044',
-    colorPrimaryBgHover: '#403650',
-    colorPrimaryBorder: '#786198',
-    colorPrimaryBorderHover: dracula.purple,
-    // 亮色实心按钮、勾选框和节点徽标使用深字，保证对比度。
+    // 覆盖暗色算法的降亮结果，粉色强调与低亮度选中背景分别控制。
+    colorPrimary: darkAccent.main,
+    colorPrimaryHover: darkAccent.hover,
+    colorPrimaryActive: darkAccent.active,
+    colorPrimaryText: darkAccent.main,
+    colorPrimaryTextHover: darkAccent.hover,
+    colorPrimaryTextActive: darkAccent.active,
+    colorPrimaryBg: darkAccent.background,
+    colorPrimaryBgHover: darkAccent.backgroundHover,
+    colorPrimaryBorder: darkAccent.border,
+    colorPrimaryBorderHover: darkAccent.main,
+    // 亮色实心区域默认使用深字；主按钮文字单独与复选框勾选标记保持一致。
     colorTextLightSolid: dracula.surfaceDark,
     colorLink: dracula.cyan,
     colorLinkHover: '#a4ffff',
@@ -100,6 +109,8 @@ export const darkAppTheme: ThemeConfig = {
       colorTextLightSolid: dracula.foreground,
     },
     Button: {
+      // Ant Design 复选框勾选标记使用 colorWhite（#fff），主按钮文字同步使用纯白。
+      primaryColor: '#fff',
       // 默认按钮使用同色系表面与中性边框，避免在弹层上形成突兀的深色块。
       defaultBg: dracula.surfaceLight,
       defaultColor: '#c0c5dc',
@@ -111,17 +122,9 @@ export const darkAppTheme: ThemeConfig = {
       colorBgContainerDisabled: dracula.surfaceDark,
       colorBorderDisabled: dracula.background,
       colorTextDisabled: '#737687',
+      // 仅覆盖交互表面色；文字与边框使用 Ant Design 从主色派生的 hover/active 默认值。
       defaultHoverBg: dracula.selection,
-      defaultHoverColor: dracula.foreground,
-      defaultHoverBorderColor: dracula.comment,
       defaultActiveBg: dracula.background,
-      defaultActiveColor: dracula.foreground,
-      defaultActiveBorderColor: dracula.purple,
-      // 主按钮使用浅字配深紫底；组件级配置保留其他控件的亮色强调。
-      primaryColor: dracula.foreground,
-      colorPrimary: '#7652ad',
-      colorPrimaryHover: '#805bb8',
-      colorPrimaryActive: '#68469c',
     },
   },
 };
@@ -288,16 +291,16 @@ function createThemeVariables(mode: ResolvedThemeMode) {
     '--color-header': tokens.colorBgContainer,
     '--color-nav': dracula.surfaceLight,
     '--color-nav-hover': dracula.selection,
-    '--color-nav-active': '#353044',
-    '--color-nav-active-text': dracula.purple,
-    '--color-nav-active-hover': '#403650',
+    '--color-nav-active': tokens.colorPrimaryBg,
+    '--color-nav-active-text': tokens.colorPrimaryText,
+    '--color-nav-active-hover': tokens.colorPrimaryBgHover,
     '--color-nav-pressed': dracula.selection,
     '--color-nav-text': tokens.colorTextSecondary,
     '--color-nav-emphasis': tokens.colorText,
     '--color-tree-panel-border': tokens.colorBorderSecondary,
     '--color-tree-empty': tokens.colorTextSecondary,
     '--color-tree-switcher': tokens.colorTextSecondary,
-    '--color-tree-folder': dracula.purple,
+    '--color-tree-folder': darkAccent.main,
     '--color-tree-count-text': tokens.colorTextSecondary,
     '--color-tree-count-bg': dracula.selection,
     '--color-tree-search-bg': '#4a3933',

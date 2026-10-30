@@ -4,11 +4,13 @@
  * 只负责显示同步，主题保存和失败回退由偏好状态机处理，启动缓存由入口订阅维护。
  */
 import { ConfigProvider } from 'antd';
+import { StyleProvider } from '@ant-design/cssinjs';
 import { useLayoutEffect, useMemo, type ReactNode } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { createAppTheme, applyTheme } from '@/styles/theme';
 import { UserLoadingIndicator } from '@/components/LoadingIndicator/UserLoadingIndicator';
+import { appMotionTransformers } from '@/styles/motion';
 
 const spinConfig = { indicator: <UserLoadingIndicator /> };
 // 全局文字提示默认隐藏箭头；个别 Tooltip 可通过自身 arrow 属性覆盖。
@@ -40,8 +42,10 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(resolvedTheme, borderRadius, controlBorderRadius);
   }, [resolvedTheme, borderRadius, controlBorderRadius]);
   return (
-    <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>
-      {children}
-    </ConfigProvider>
+    <StyleProvider transformers={appMotionTransformers}>
+      <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>
+        {children}
+      </ConfigProvider>
+    </StyleProvider>
   );
 }

@@ -33,10 +33,7 @@ export function CollectionSkeleton({
     </div>
   );
   return (
-    <section
-      className="motion-reduce:[&_.ant-skeleton-active_*]:animate-none! h-full min-h-full min-w-0"
-      aria-busy
-    >
+    <section className="h-full min-h-full min-w-0" aria-busy>
       <span className="sr-only" role="status">
         列表资源加载中…
       </span>

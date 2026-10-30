@@ -192,7 +192,7 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
     '启动画面必须与 React 根节点并列，挂载应用不能重建正在播放的 SVG',
   );
   assert.equal([...html.matchAll(/data-loading-style="/g)].length, loadingStyleIds.length);
-  assert.match(css[1], /prefers-reduced-motion/);
+  assert.doesNotMatch(css[1], /prefers-reduced-motion/, '首屏动画不受系统减少动态效果影响');
   assert.match(css[1], /animation:loading-wave/);
   assert.match(css[1], /animation:brand-red/);
   assert.match(css[1], /animation:brand-blue/);
