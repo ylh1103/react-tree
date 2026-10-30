@@ -172,11 +172,11 @@ export function EnvironmentPanel({
   const config = draft ?? env.configInfo;
   return (
     <article
-      className="flex h-full min-w-0 flex-col overflow-hidden bg-surface [--toolbar-background:var(--color-sidebar)] [--toolbar-fade-base:var(--color-surface)]"
+      className="flex h-full min-w-0 flex-col overflow-hidden bg-surface [--toolbar-background:var(--color-surface)]"
       aria-label={`${env.envTag} 环境参数配置`}
     >
-      {/* 顶部工具栏以柔和表面色区分编辑区，底栏保持连续背景，不增加分割线。 */}
-      <header className="shrink-0 bg-[var(--toolbar-background)]">
+      {/* 顶部工具栏沿用面板底色；溢出渐隐也使用同一底色，避免两侧残留色块。 */}
+      <header className="shrink-0">
         {/* 单行工具栏紧邻配置内容；缩窄面板时横向滚动，避免操作换行挤占正文。 */}
         <ToolbarOverflowFade>
           <div

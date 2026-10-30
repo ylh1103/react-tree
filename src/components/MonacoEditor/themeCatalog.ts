@@ -67,3 +67,9 @@ export const customEditorThemes = [
 ] as const;
 
 export type CustomEditorTheme = (typeof customEditorThemes)[number];
+
+/** 跟随平台时的默认主题；编辑器与设置预览共用映射，保留 platform 偏好以响应配色切换。 */
+export const platformEditorThemes = {
+  light: 'github-light',
+  dark: 'dracula',
+} as const;

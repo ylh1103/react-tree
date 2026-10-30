@@ -2,7 +2,11 @@
 import { Button, Select, Switch } from 'antd';
 import { useId, type CSSProperties } from 'react';
 import { themeVariablesByMode } from '@/styles/theme';
-import { customEditorThemes, type CustomEditorTheme } from '@/components/MonacoEditor/themeCatalog';
+import {
+  customEditorThemes,
+  platformEditorThemes,
+  type CustomEditorTheme,
+} from '@/components/MonacoEditor/themeCatalog';
 import { SettingsDefaultBadge } from './SettingsOptionCard';
 import { useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
@@ -89,13 +93,16 @@ function EditorThemeOption({
 }) {
   const followsPlatform = theme.value === 'platform';
   const dark = followsPlatform ? platformDark : theme.dark;
+  const themeValue = followsPlatform
+    ? platformEditorThemes[platformDark ? 'dark' : 'light']
+    : theme.value;
   return (
     <span className="flex w-full min-w-0 items-center gap-3 py-1">
       <span className="w-136px shrink-0">
         <EditorThemePreview
           dark={dark}
           contrast={theme.value === 'hc-light' || theme.value === 'hc-black'}
-          palette={customEditorThemes.find((palette) => palette.value === theme.value)}
+          palette={customEditorThemes.find((palette) => palette.value === themeValue)}
         />
       </span>
       <span className="flex min-w-0 flex-col gap-1 whitespace-normal">

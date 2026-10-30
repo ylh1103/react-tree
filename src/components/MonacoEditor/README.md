@@ -47,7 +47,7 @@ export function ParameterDiff() {
 
 ## 主题与模型
 
-两个组件需在项目 Redux Provider 内使用，订阅 `preferences.editor` 和 `preferences.themeMode`。用户配置的“编辑器”分组可设置主题、自动换行、显示或隐藏行号（显示文档的实际行号，旧版相对行号配置读取为显示）、10–24px 字号、缩略图和 2/4/8 空格缩进；普通编辑和差异对比即时生效，保存失败回退并支持重试。默认主题跟随平台实际配色，也可独立选择浅色、深色及高对比度主题。传 `theme` 可指定已注册的主题；自定义主题可在 `beforeMount` 中通过 `monaco.editor.defineTheme` 注册。Monaco 的主题属于共享实例，同屏编辑器应使用一致的主题。
+两个组件需在项目 Redux Provider 内使用，订阅 `preferences.editor` 和 `preferences.themeMode`。用户配置的“编辑器”分组可设置主题、自动换行、显示或隐藏行号（显示文档的实际行号，旧版相对行号配置读取为显示）、10–24px 字号、缩略图和 2/4/8 空格缩进；普通编辑和差异对比即时生效，保存失败回退并支持重试。默认主题跟随平台实际配色：浅色使用 GitHub Light（`github-light`），深色使用 Dracula（`dracula`），设置面板预览同步显示对应主题；也可独立选择浅色、深色及高对比度主题。传 `theme` 可指定已注册的主题；自定义主题可在 `beforeMount` 中通过 `monaco.editor.defineTheme` 注册。Monaco 的主题属于共享实例，同屏编辑器应使用一致的主题。
 
 精选主题使用 `monaco-themes@0.4.5`：GitHub Light（`github-light`）、GitHub Dark（`github-dark`）、Dracula（`dracula`）、Night Owl（`night-owl`）、Cobalt2（`cobalt2`）。选择这些在 VS Code 中广泛使用、且包内已有的配色移植版，不保证与最新版 VS Code 插件逐项一致。固定 0.4.5 是因为 0.4.8 的 exports 未开放主题 JSON 子路径。来源：[monaco-themes](https://github.com/brijeshb42/monaco-themes)、[GitHub Theme](https://marketplace.visualstudio.com/items?itemName=GitHub.github-vscode-theme)、[Dracula](https://marketplace.visualstudio.com/items?itemName=dracula-theme.theme-dracula)、[Night Owl](https://marketplace.visualstudio.com/items?itemName=sdras.night-owl)、[Cobalt2](https://marketplace.visualstudio.com/items?itemName=wesbos.theme-cobalt2)。
 

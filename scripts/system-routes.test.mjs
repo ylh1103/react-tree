@@ -242,6 +242,53 @@ test('导航菜单都对应显式路由，动态页面具有懒加载入口', ()
   assert.equal(typeof match('/').route.lazy, 'function');
 });
 
+test('应用菜单关闭子操作并保留 URL 中的应用，已选应用重复点击也不清空选择', async (t) => {
+  const { AppNavigation } = await vite.ssrLoadModule('/src/layouts/AppNavigation.tsx');
+  const { SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
+  const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
+  const system = mockSystems.find((item) => item.systemName === 'CAC');
+  const appName = '应用 / 50% #?';
+  const target = applicationPath(system.systemName, appName);
+  const sources = [
+    target,
+    ...['create', 'publish', 'inspect'].map((operation) =>
+      applicationOperationPath(system.systemName, operation, appName, 'dev', '4'),
+    ),
+    applicationPath(system.systemName),
+    systemPath(system.systemName, 'overview'),
+  ];
+  for (const source of sources) {
+    const router = createMemoryRouter([{ path: '*', Component: AppNavigation }], {
+      initialEntries: [source],
+    });
+    t.after(() => router.dispose());
+    const render = () =>
+      renderToStaticMarkup(
+        createElement(
+          Provider,
+          { store: createAppStore() },
+          createElement(
+            SystemContext,
+            { value: { system, systems: mockSystems, platform: 'application' } },
+            createElement(RouterProvider, { router }),
+          ),
+        ),
+      );
+    const link = /<a\b[^>]*aria-label="应用"[^>]*>/.exec(render())?.[0];
+    assert.ok(link, '应用菜单必须保留链接语义');
+    const href = /href="([^"]+)"/.exec(link)?.[1];
+    const hasSelection = source === target || source.startsWith(`${target}/`);
+    assert.equal(href, hasSelection ? target : applicationPath(system.systemName), source);
+    if (hasSelection) assert.match(link, /aria-current="page"/);
+    await router.navigate(href);
+    assert.equal(router.state.location.pathname, hasSelection ? target : applicationPath('CAC'));
+    assert.match(
+      /<a\b[^>]*aria-label="应用"[^>]*>/.exec(render())?.[0] ?? '',
+      /aria-current="page"/,
+    );
+  }
+});
+
 test('设置菜单通过链接进入所属平台页面，设置页不再提供抽屉入口', async (t) => {
   const { AppNavigation } = await vite.ssrLoadModule('/src/layouts/AppNavigation.tsx');
   const { SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
