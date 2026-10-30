@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button, Typography } from 'antd';
+import { Button, Tooltip, Typography } from 'antd';
 import { useDebounceFn, useEventListener, useSize } from 'ahooks';
 import { dragResize } from './dragResize';
 import { splitPaneSeparatorClassName } from './separatorStyle';
@@ -12,6 +12,8 @@ import type { DragResizeState } from './dragResize';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { SplitPaneFrame } from './components/Frame';
 import { readSplitPaneLayout } from './model/layout';
+import { ShortcutHint } from '@/components/ShortcutHint';
+import { useActionTooltip } from '@/hooks/useActionTooltip';
 
 export interface SplitPaneProps {
   sidebar: ReactNode;
@@ -54,6 +56,7 @@ export function SplitPane({
   const sidebarId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const toggleHint = useActionTooltip();
   const separatorRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragResizeState | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -170,9 +173,7 @@ export function SplitPane({
         );
       if (activePane !== container || !container?.getClientRects().length) return;
       event.preventDefault();
-      endDrag();
-      toggleRef.current?.focus();
-      setLayout((previous) => ({ ...previous, visible: !previous.visible }));
+      toggle();
     },
     { target: () => containerRef.current?.ownerDocument, enable: !readOnly },
   );
@@ -190,10 +191,12 @@ export function SplitPane({
     }
   }
   function toggle() {
-    if (readOnly) return;
-    endDrag();
-    toggleRef.current?.focus();
-    setLayout((previous) => ({ ...previous, visible: !previous.visible }));
+    if (readOnly || upper === 0) return;
+    toggleHint.run(() => {
+      endDrag();
+      toggleRef.current?.focus();
+      setLayout((previous) => ({ ...previous, visible: !previous.visible }));
+    });
   }
 
   return (
@@ -309,23 +312,53 @@ export function SplitPane({
       }
       titleContent={
         <>
-          <Button
-            ref={toggleRef}
-            type="text"
-            htmlType="button"
-            onClick={toggle}
-            disabled={readOnly || upper === 0}
-            aria-controls={sidebarId}
-            aria-expanded={expanded}
-            aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
-            title={upper === 0 ? '当前空间不足以展开侧边栏' : '切换侧边栏（Ctrl / ⌘ B）'}
-            icon={
-              <span
-                className={`w-18px h-18px ${expanded ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left-open'}`}
-                aria-hidden="true"
-              />
+          <Tooltip
+            {...toggleHint.tooltipProps}
+            title={
+              readOnly ? (
+                '加载中，布局暂不可调整'
+              ) : upper === 0 ? (
+                '当前空间不足以展开侧边栏'
+              ) : (
+                <ShortcutHint
+                  label={expanded ? '收起侧边栏' : '展开侧边栏'}
+                  keys={['Ctrl / ⌘', 'B']}
+                />
+              )
             }
-          />
+          >
+            <Button
+              ref={toggleRef}
+              type="text"
+              htmlType="button"
+              {...toggleHint.getTriggerProps()}
+              onClick={toggle}
+              disabled={readOnly || upper === 0}
+              aria-controls={sidebarId}
+              aria-expanded={expanded}
+              aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
+              icon={
+                // 沿用 VS Code 的侧栏状态表达：展开时填充左栏，收起时仅显示轮廓。
+                <svg
+                  className="w-18px h-18px"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
+                  {expanded && (
+                    <path
+                      d="M3.5 1.5H6v13H3.5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"
+                      fill="currentColor"
+                      stroke="none"
+                    />
+                  )}
+                  <path d="M6 1.5v13" />
+                </svg>
+              }
+            />
+          </Tooltip>
           {title && (
             <h2 className="workspace-page__title min-w-0 max-w-200px">
               <Typography.Text

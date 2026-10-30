@@ -6,6 +6,8 @@ import type { DragResizeState } from '@/components/SplitPane/dragResize';
 import { splitPaneSeparatorClassName } from '@/components/SplitPane/separatorStyle';
 import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
 import { EnvironmentTag } from './EnvironmentTag';
+import { ShortcutHint } from '@/components/ShortcutHint';
+import { useActionTooltip } from '@/hooks/useActionTooltip';
 import {
   collapsedEnvironmentWidth,
   defaultEnvironmentWidth,
@@ -25,29 +27,6 @@ interface ResizableEnvironmentPanelProps {
   onLayoutChange: Dispatch<SetStateAction<EnvironmentPanelLayout>>;
   /** 展开时由参数底栏承载操作，避免悬浮按钮遮挡代码；折叠时由窄条承载。 */
   children: (panelActions: ReactNode) => ReactNode;
-}
-
-/** 将动作名和按键分开呈现；键帽继承 Tooltip 文字颜色，兼容统一浮层的浅色与暗色主题。 */
-function PanelShortcutHint({ label, actionKey }: { label: string; actionKey: '+' | '-' }) {
-  return (
-    <span className="flex items-center gap-3 whitespace-nowrap text-13px leading-24px">
-      <span>{label}</span>
-      <span className="flex items-center gap-1" aria-label={`Ctrl ${actionKey}`}>
-        {['Ctrl', actionKey].map((key) => (
-          <kbd
-            key={key}
-            className={`
-              inline-flex h-24px min-w-24px items-center justify-center rounded-control border
-              border-solid [border-color:color-mix(in_srgb,currentColor_30%,transparent)]
-              bg-transparent px-1.5 font-mono text-12px font-400 leading-none
-            `}
-          >
-            {key}
-          </kbd>
-        ))}
-      </span>
-    </span>
-  );
 }
 
 export function ResizableEnvironmentPanel({
@@ -70,6 +49,9 @@ export function ResizableEnvironmentPanel({
     wait: 300,
   });
   const collapsed = !maximized && layout.collapsed;
+  const actionScope = `${collapsed}/${maximized}/${hidden}`;
+  const maximizeHint = useActionTooltip(actionScope);
+  const collapseHint = useActionTooltip(actionScope);
   const label = `${environment.key} 环境`;
 
   function clearHover() {
@@ -105,11 +87,16 @@ export function ResizableEnvironmentPanel({
     }));
   }
 
-  /** 点击和快捷键统一聚焦稳定容器，提示重建后仍可连续操作，避免按钮聚焦重新打开提示。 */
+  /** 点击、快捷键及 Escape 共用入口；先关闭另一操作的提示，再在当前操作内完成焦点交接和切换。 */
   function activatePanelAction(action: 'collapse' | 'maximize') {
-    panelRef.current?.focus({ preventScroll: true });
-    if (action === 'collapse') toggleCollapsed();
-    else onMaximize();
+    const activeHint = action === 'collapse' ? collapseHint : maximizeHint;
+    const otherHint = action === 'collapse' ? maximizeHint : collapseHint;
+    otherHint.dismiss();
+    activeHint.run(() => {
+      panelRef.current?.focus({ preventScroll: true });
+      if (action === 'collapse') toggleCollapsed();
+      else onMaximize();
+    });
   }
 
   function resizeTo(nextWidth: number) {
@@ -173,8 +160,8 @@ export function ResizableEnvironmentPanel({
 
   const panelActions = (
     <div
-      // 模式切换会移动按钮；同步销毁旧提示与延迟任务，避免浮层在原坐标淡出时显示新动作文字。
-      key={`${collapsed}/${maximized}/${hidden}`}
+      // 外部隐藏或拖拽折叠也会移动按钮；重建触发区域以取消旧布局中的延迟任务。
+      key={actionScope}
       role="group"
       aria-label={`${label}面板布局`}
       // 隐藏时保留占位；容器仅在键盘聚焦时显示，避免鼠标折叠后保留的容器焦点使按钮常驻。
@@ -190,13 +177,12 @@ export function ResizableEnvironmentPanel({
     >
       <Tooltip
         title={
-          <PanelShortcutHint
+          <ShortcutHint
             label={collapsed ? `${environment.key} · 放大` : maximized ? '退出放大' : '放大'}
-            actionKey="+"
+            keys={['Ctrl', '+']}
           />
         }
-        mouseEnterDelay={0.3}
-        trigger={['hover', 'focus']}
+        {...maximizeHint.tooltipProps}
       >
         <Button
           type="text"
@@ -205,6 +191,7 @@ export function ResizableEnvironmentPanel({
           aria-label={`${maximized ? '退出放大' : '放大'} ${label}`}
           aria-pressed={maximized}
           aria-keyshortcuts="Control+Plus Control+="
+          {...maximizeHint.getTriggerProps()}
           onClick={() => activatePanelAction('maximize')}
           icon={
             <span
@@ -217,13 +204,12 @@ export function ResizableEnvironmentPanel({
       {!maximized && (
         <Tooltip
           title={
-            <PanelShortcutHint
+            <ShortcutHint
               label={collapsed ? `${environment.key} · 展开` : '折叠'}
-              actionKey="-"
+              keys={['Ctrl', '-']}
             />
           }
-          mouseEnterDelay={0.3}
-          trigger={['hover', 'focus']}
+          {...collapseHint.tooltipProps}
         >
           <Button
             type="text"
@@ -233,6 +219,7 @@ export function ResizableEnvironmentPanel({
             aria-expanded={!collapsed}
             aria-keyshortcuts="Control+-"
             aria-controls={contentId}
+            {...collapseHint.getTriggerProps()}
             onClick={() => activatePanelAction('collapse')}
             icon={
               <span
@@ -271,7 +258,7 @@ export function ResizableEnvironmentPanel({
         onKeyDown={(event) => {
           if (maximized && event.key === 'Escape') {
             event.preventDefault();
-            onMaximize();
+            activatePanelAction('maximize');
           }
         }}
       >
