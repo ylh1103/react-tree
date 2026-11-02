@@ -145,7 +145,8 @@ export function SplitPane({
         event.repeat ||
         event.isComposing ||
         upper === 0 ||
-        !(event.ctrlKey || event.metaKey) ||
+        !event.ctrlKey ||
+        event.metaKey ||
         event.altKey ||
         event.shiftKey ||
         event.key.toLowerCase() !== 'b'
@@ -320,10 +321,7 @@ export function SplitPane({
               ) : upper === 0 ? (
                 '当前空间不足以展开侧边栏'
               ) : (
-                <ShortcutHint
-                  label={expanded ? '收起侧边栏' : '展开侧边栏'}
-                  keys={['Ctrl / ⌘', 'B']}
-                />
+                <ShortcutHint label={expanded ? '收起侧边栏' : '展开侧边栏'} keys={['Ctrl', 'B']} />
               )
             }
           >

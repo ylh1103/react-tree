@@ -19,7 +19,7 @@ const headerTools = [
   {
     label: '帮助',
     icon: 'i-lucide-circle-help',
-    content: '从左侧菜单切换功能。应用与搜索支持拖动分割线调整侧栏，Ctrl / ⌘ B 可切换侧栏。',
+    content: '从左侧菜单切换功能。应用与搜索支持拖动分割线调整侧栏，Ctrl + B 可切换侧栏。',
   },
 ] as const;
 

@@ -59,7 +59,10 @@ export function OverlayScroll({
 
   return (
     <div
-      className={`group/overlay-scroll relative flex flex-1 min-w-0 min-h-0 ${vertical ? 'h-full' : ''}`}
+      // 仅控制直接子滚动条，避免工作区悬停穿透到嵌套工具栏；鼠标点击留下的焦点不维持显示。
+      className={`relative flex flex-1 min-w-0 min-h-0
+        [&:hover>[data-overlay-scrollbar]]:opacity-100
+        [&:hover>[data-overlay-scrollbar]]:pointer-events-auto ${vertical ? 'h-full' : ''}`}
     >
       <section
         ref={viewportRef}
@@ -67,7 +70,7 @@ export function OverlayScroll({
         tabIndex={0}
         onScroll={syncScroll}
         className={`
-          flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none]
+          peer/overlay-scroll flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none]
           [&::-webkit-scrollbar]:hidden
           ${vertical ? 'overflow-y-auto overflow-x-hidden' : 'flex overflow-x-auto'}
           ${className}
@@ -79,6 +82,7 @@ export function OverlayScroll({
       </section>
       <div
         ref={scrollbarRef}
+        data-overlay-scrollbar=""
         role="region"
         aria-label={`${label}${vertical ? '纵向' : '横向'}滚动条`}
         tabIndex={0}
@@ -86,9 +90,8 @@ export function OverlayScroll({
         onScroll={syncScroll}
         className={`
           tree-scrollbar layout-focus absolute z-1 overscroll-contain opacity-0 pointer-events-none
-          group-hover/overlay-scroll:opacity-100 group-hover/overlay-scroll:pointer-events-auto
-          group-focus-within/overlay-scroll:opacity-100
-          group-focus-within/overlay-scroll:pointer-events-auto transition-opacity duration-150
+          peer-focus-visible/overlay-scroll:opacity-100 peer-focus-visible/overlay-scroll:pointer-events-auto
+          focus-visible:opacity-100 focus-visible:pointer-events-auto transition-opacity duration-150
           [scrollbar-gutter:auto]!
           [scrollbar-color:var(--color-border)_transparent]! [&::-webkit-scrollbar-thumb]:bg-border!
           ${vertical ? 'inset-y-0 right-0 w-12px overflow-y-auto overflow-x-hidden' : 'inset-x-0 bottom-0 h-12px overflow-x-auto overflow-y-hidden'}
