@@ -51,7 +51,7 @@ export function HeaderUserMenu() {
   const dispatch = useAppDispatch();
   const userName = useAppSelector((state) => state.user.userInfo?.userName);
   const ystId = useAppSelector((state) => state.user.userInfo?.ystId);
-  // 这里只控制平台入口展示；系统访问仍由系统接口独立授权。
+  // 这里只控制平台入口展示；工作区访问统一由 requireSystemAccess 校验。
   const isPlatformUser = useAppSelector((state) => state.user.userInfo?.userType === '0');
   // null 表示尚未打开；关闭后保留模块挂载，让 Modal 完成关闭动画。
   const [profileOpen, setProfileOpen] = useState<boolean | null>(null);

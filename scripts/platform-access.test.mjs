@@ -1,20 +1,17 @@
 import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
-/** 系统接口回归：登录身份不参与系统授权，保留接口错误、请求去重、配置完整性及取消边界。 */
+/** 系统接口回归：平台角色与成员关系决定系统访问，保留接口错误、请求去重、配置完整性及取消边界。 */
 import assert from 'node:assert/strict';
-import test, { afterEach } from 'node:test';
+import test, { beforeEach, afterEach } from 'node:test';
 import { mockConfig } from '../src/mocks/config.ts';
 import { writeMock, readMock } from '../src/mocks/storage.ts';
-import {
-  loadSystems,
-  loadMySystems,
-  loadSystemPage,
-  loadSystemAccess,
-  createSystem,
-} from '../src/api/systems.ts';
+import { loadSystems, loadMySystems, loadSystemPage, createSystem } from '../src/api/systems.ts';
+import { loadSystemAccess } from '../src/api/systemAccess.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
 import { createSystemApplicationApi } from '../src/api/applications.ts';
 import { httpClient, requestData } from '../src/http/request.ts';
-import { createAppStore } from '../src/store/index.ts';
+import { createDemoLoginUser } from '../src/mocks/login.ts';
+import { setUserInfo } from '../src/store/slices/userSlice.ts';
+import { store, createAppStore } from '../src/store/index.ts';
 import { queryClient } from '../src/queries/client.ts';
 import {
   requireSystemAccess,
@@ -33,6 +30,7 @@ import {
 import { defaultUserSettings } from '../src/types/preferences.ts';
 
 mockConfig.delayMs = 0;
+beforeEach(() => store.dispatch(setUserInfo(createDemoLoginUser('1'))));
 afterEach(() => {
   mockConfig.systemAccessError = null;
   mockConfig.delayMs = 0;
@@ -207,8 +205,9 @@ test('父子 loader 共用系统访问请求，接口拒绝前不发送业务请
     preloadApplications({ params: { systemName: 'CAC' } }),
     preloadDatabase({ params: { systemName: 'CAC' } }),
   ]);
-  assert.equal(requests.filter((url) => url === '/api/systems/CAC/access').length, 1);
-  assert.equal(requests[0], '/api/systems/CAC/access');
+  assert.equal(requests.filter((url) => url === '/api/systems/page').length, 1);
+  assert.equal(requests[0], '/api/systems/page');
+  assert.equal(requests.filter((url) => url === '/api/systems/mine').length, 1);
   assert.equal(requests.includes('/api/session'), false);
   requests.length = 0;
   mockConfig.systemAccessError = 403;
@@ -222,7 +221,7 @@ test('父子 loader 共用系统访问请求，接口拒绝前不发送业务请
       (error) => error.status === 403,
     ),
   ]);
-  assert.deepEqual(requests, ['/api/systems/ParamPlat/access']);
+  assert.deepEqual(requests, ['/api/systems/page']);
 });
 
 test('接口返回 403 时传播错误，系统与业务缓存不再由全局监听改写', async () => {
@@ -311,4 +310,80 @@ test('模拟请求超时和取消保持有效，取消的创建不产生业务�
     (await loadSystems()).some((item) => item.systemName === name),
     false,
   );
+});
+
+test('平台人员可访问未加入系统，普通用户仅能访问 V/D/R 成员系统，未登录不放行', async () => {
+  for (const name of ['CACTEST1', 'ParamPlat', 'CAC'])
+    assert.equal((await requireSystemAccess(name)).systemName, name);
+  await assert.rejects(requireSystemAccess('demo_1'), (error) => error.status === 403);
+  store.dispatch(setUserInfo(createDemoLoginUser('0')));
+  assert.equal((await requireSystemAccess('demo_1')).systemName, 'demo_1');
+  assert.equal(
+    (await loadMySystems()).some((item) => item.systemName === 'demo_1'),
+    false,
+  );
+  await assert.rejects(requireSystemAccess('not-a-system'), (error) => error.status === 404);
+  store.dispatch(setUserInfo(createDemoLoginUser('1')));
+  await assert.rejects(requireSystemAccess('demo_1'), (error) => error.status === 403);
+  store.dispatch(setUserInfo(null));
+  await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 401);
+});
+
+test('授权重新读取成员关系，撤销成员后旧访问成功缓存不能放行', async (t) => {
+  const relations = readMock(
+    'system-relations',
+    (await import('../src/mocks/systems.ts')).mockSystemRelations,
+  );
+  t.after(() => writeMock('system-relations', relations));
+  await requireSystemAccess('CAC');
+  const next = { ...relations };
+  delete next.CAC;
+  writeMock('system-relations', next);
+  await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 403);
+  assert.equal(queryClient.getQueryState(systemAccessOptions('CAC').queryKey).error.status, 403);
+});
+
+test('存在性检索每页 999 条并精确匹配，跨页候选及取消、服务失败不误报 404', async (t) => {
+  const requests = [];
+  const original = httpClient.defaults.adapter;
+  const sample = (await loadSystems())[0];
+  httpClient.defaults.adapter = async (config) => {
+    requests.push(config.params);
+    assert.equal(config.url, '/api/systems/page');
+    assert.equal(config.params.pageSize, 999);
+    const pageNum = config.params.pageNum;
+    const records =
+      pageNum === 1
+        ? Array.from({ length: 999 }, (_, index) => ({
+            ...sample,
+            systemName: `prefix_TARGET_${index}`,
+            userRelation: false,
+          }))
+        : [{ ...sample, systemName: 'TARGET', userRelation: false }];
+    return {
+      data: { records, total: 1000, pageNum, pageSize: 999 },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+    };
+  };
+  t.after(() => {
+    httpClient.defaults.adapter = original;
+  });
+  assert.equal((await loadSystemAccess('TARGET')).systemName, 'TARGET');
+  assert.deepEqual(
+    requests.map((params) => params.pageNum),
+    [1, 2],
+  );
+  httpClient.defaults.adapter = original;
+  await assert.rejects(loadSystemAccess('cac'), (error) => error.status === 404);
+  mockConfig.systemAccessError = 503;
+  await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 503);
+  mockConfig.systemAccessError = null;
+  mockConfig.delayMs = 50;
+  const controller = new AbortController();
+  const pending = loadSystemAccess('CAC', controller.signal);
+  controller.abort();
+  await assert.rejects(pending, (error) => error.code === 'ERR_CANCELED');
 });

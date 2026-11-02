@@ -1,4 +1,4 @@
-/** 模拟系统目录与关系响应；访问始终独立走 accessSystem，不从目录关系授予权限。 */
+/** 模拟系统目录与关系响应；目录关系用于前端演示授权；业务模拟接口仍保留错误注入，真实后端须独立鉴权。 */
 import type {
   AllSystemInfo,
   CreateSystemInput,
@@ -90,7 +90,7 @@ export function mySystems(): MySystemInfo[] {
       : [],
   );
 }
-/** 按系统查找业务资料；403/503 直接模拟接口结果，后续鉴权由新的登录设计接入。 */
+/** 按系统查找业务资料；403/503 直接模拟接口结果，真实后端必须独立校验登录与授权，不能依赖前端入口。 */
 export function accessSystem(name: string, fail: Fail): SystemInfo {
   const system = records().find((item) => item.systemName === name);
   if (!system) return fail(404, '系统不存在');

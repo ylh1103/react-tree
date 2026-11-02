@@ -12,10 +12,8 @@ export const loadSystems = (signal?: AbortSignal) =>
   requestData<AllSystemInfo[]>({ url: '/api/systems', signal });
 export const loadMySystems = (signal?: AbortSignal) =>
   requestData<MySystemInfo[]>({ url: '/api/systems/mine', signal });
-/** 分页目录与工作区全量切换器契约分开，避免首页为分页拉取整份系统清单。 */
+/** 分页目录与我的系统契约分开，避免首页为分页拉取整份系统清单。 */
 export const loadSystemPage = (params: SystemPageParams, signal?: AbortSignal) =>
   requestData<SystemPage>({ url: '/api/systems/page', params, signal });
-export const loadSystemAccess = (name: string, signal?: AbortSignal) =>
-  requestData<SystemInfo>({ url: `/api/systems/${encodeURIComponent(name)}/access`, signal });
 export const createSystem = (data: CreateSystemInput) =>
   requestData<SystemInfo>({ url: '/api/systems', method: 'POST', data });

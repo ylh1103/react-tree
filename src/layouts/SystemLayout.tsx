@@ -5,7 +5,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
-import { systemsOptions, systemAccessOptions } from '@/queries/systems';
+import { mySystemsOptions, systemAccessOptions } from '@/queries/systems';
+import { useAppSelector } from '@/store/hooks';
 import { HttpError } from '@/http/request';
 import { SystemContext } from '@/contexts/SystemContext';
 import { isAccessDenied } from '@/utils/systems';
@@ -14,8 +15,10 @@ import RouteStatusPage from '@/pages/RouteStatus';
 export default function SystemLayout() {
   const { systemName } = useParams();
   const isDatabase = Boolean(useMatch('/systems/:systemName/db/*'));
-  const query = useQuery(systemAccessOptions(systemName!));
-  const list = useQuery(systemsOptions());
+  const user = useAppSelector((state) => state.user.userInfo);
+  const query = useQuery(systemAccessOptions(systemName!, user));
+  // 切换器始终只展示已加入系统；当前系统独立取自 URL 的授权结果。
+  const list = useQuery(mySystemsOptions());
   const system = query.data;
   const systems = list.data ?? [];
   if (query.isPending || (!system && query.isFetching))

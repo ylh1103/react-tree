@@ -3,7 +3,7 @@ import { Avatar, Modal, Tag } from 'antd';
 import profileCover from '@/assets/profile-cover.jpg';
 import { useAppSelector } from '@/store/hooks';
 
-// 展示标签仅描述用户资料，平台角色与登录网络均不用于推导系统访问权限。
+// 展示标签仅描述用户资料，此处不执行授权；工作区按平台角色和接口成员关系控制访问，登录网络不参与。
 const networkTags = {
   '0': { label: '办公网', color: 'cyan', icon: 'i-lucide-building-2' },
   '1': { label: '互联网', color: 'geekblue', icon: 'i-lucide-globe-2' },

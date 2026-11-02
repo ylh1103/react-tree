@@ -3,11 +3,13 @@
  * 查询键包含系统维度；数据库结果剔除 setting 保留名称，避免与静态设置路由冲突。
  */
 import { queryOptions } from '@tanstack/react-query';
-import { loadSystems, loadMySystems, loadSystemAccess, loadSystemPage } from '@/api/systems.ts';
+import { loadSystems, loadMySystems, loadSystemPage } from '@/api/systems.ts';
 import { queryClient } from './client.ts';
 import type { SystemInfo, SystemPageParams } from '@/types/systems.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
 import type { ParameterType } from '@/types/systems.ts';
+import { store } from '@/store/index.ts';
+import type { LoginUser } from '@/types/user.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
 
 export const systemsOptions = () =>
@@ -21,7 +23,7 @@ export const systemsOptions = () =>
 export const mySystemsOptions = () =>
   queryOptions({
     ...routeQueryMountOptions,
-    queryKey: ['systems', 'mine'],
+    queryKey: ['systems', 'mine', store.getState().user.userInfo?.openId ?? null],
     queryFn: ({ signal }) => loadMySystems(signal),
   });
 
@@ -51,10 +53,17 @@ export function parameterTypesOptions(systemName: string) {
   });
 }
 
-export function systemAccessOptions(systemName: string) {
+/** 本地演示授权：平台人员访问存在的系统，普通用户必须在接口成员清单中；真实后端仍须逐请求鉴权。 */
+export function systemAccessOptions(
+  systemName: string,
+  user: LoginUser | null = store.getState().user.userInfo,
+) {
   return queryOptions<SystemInfo>({
-    queryKey: ['system-access', systemName],
-    queryFn: ({ signal }) => loadSystemAccess(systemName, signal),
+    queryKey: ['system-access', systemName, user?.openId ?? null, user?.userType ?? null],
+    queryFn: async ({ signal }) => {
+      const { resolveSystemAccess } = await import('./systemAccess.ts');
+      return resolveSystemAccess(systemName, user, signal);
+    },
     staleTime: 0,
     retry: false,
     refetchOnMount: false,

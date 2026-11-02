@@ -1,6 +1,10 @@
 /** 环境接口与缓存回归：排序、维度隔离、请求去重、取消和授权失败。 */
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
+import { store } from '../src/store/index.ts';
+import { setUserInfo } from '../src/store/slices/userSlice.ts';
+import { createDemoLoginUser } from '../src/mocks/login.ts';
+beforeEach(() => store.dispatch(setUserInfo(createDemoLoginUser('1'))));
 import axios from 'axios';
 import { QueryClient } from '@tanstack/react-query';
 import { httpClient } from '../src/http/request.ts';
@@ -98,7 +102,7 @@ test('loader 校验访问后预取环境，拒绝访问时不产生环境请求'
   const appName = createMockApplications(3)[0].appName;
   await preloadApplications({ params: { systemName: 'CACTEST1', appName } });
   assert.ok(queryClient.getQueryData(applicationEnvironmentsOptions('CACTEST1', appName).queryKey));
-  assert.equal(calls[0], '/api/systems/CACTEST1/access');
+  assert.equal(calls[0], '/api/systems/page');
   assert.equal(calls.filter((url) => url === '/api/applications/environments').length, 1);
   calls.length = 0;
   mockConfig.systemAccessError = 403;
@@ -106,5 +110,5 @@ test('loader 校验访问后预取环境，拒绝访问时不产生环境请求'
     preloadApplications({ params: { systemName: 'CACTEST1', appName } }),
     (error) => error.status === 403,
   );
-  assert.deepEqual(calls, ['/api/systems/CACTEST1/access']);
+  assert.deepEqual(calls, ['/api/systems/page']);
 });

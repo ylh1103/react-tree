@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import test, { before, after } from 'node:test';
+import test, { before, beforeEach, after } from 'node:test';
 import {
   generatePath,
   matchRoutes,
@@ -32,6 +32,12 @@ before(async () => {
     optimizeDeps: { noDiscovery: true, include: [] },
   });
   ({ routes } = await vite.ssrLoadModule('/src/router/routes.tsx'));
+});
+beforeEach(async () => {
+  const { store } = await vite.ssrLoadModule('/src/store/index.ts');
+  const { setUserInfo } = await vite.ssrLoadModule('/src/store/slices/userSlice.ts');
+  const { createDemoLoginUser } = await vite.ssrLoadModule('/src/mocks/login.ts');
+  store.dispatch(setUserInfo(createDemoLoginUser('1')));
 });
 after(async () => {
   await vite?.close();
@@ -475,7 +481,7 @@ test('首次加载及导航使用统一骨架，加载完成显示页面，取�
 
 test('父子 loader 等待授权后并行预取，与组件共享系统维度缓存', async (t) => {
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
-  const { systemsOptions, parameterTypesOptions } =
+  const { mySystemsOptions, parameterTypesOptions } =
     await vite.ssrLoadModule('/src/queries/systems.ts');
   queryClient.clear();
   t.after(() => queryClient.clear());
@@ -497,7 +503,7 @@ test('父子 loader 等待授权后并行预取，与组件共享系统维度缓
   prefetch.mock.restore();
   assert.deepEqual(
     requests.map(JSON.stringify).sort(),
-    [systemsOptions().queryKey, parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
+    [mySystemsOptions().queryKey, parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
   );
   let refetched = false;
   const data = await queryClient.query({
@@ -529,7 +535,8 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
   await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
   const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
   assert.deepEqual(lock, groupedListKeys.write('applications:CAC'));
-  assert.deepEqual(requests, [['system-access', 'CAC']]);
+  const { systemAccessOptions } = await vite.ssrLoadModule('/src/queries/systems.ts');
+  assert.deepEqual(requests, [systemAccessOptions('CAC').queryKey]);
 });
 
 test('页面 chunk 失败显示静态恢复入口，并保留父级布局', async (t) => {
@@ -749,5 +756,72 @@ test('应用和数据库各自的清单路由复用缓存，缺少目标、跨�
       await router.navigate(`/systems/OTHER/${path}/b`);
       assert.equal(loads, 4);
     });
+  }
+});
+
+test('工作区切换列表对两种平台角色均只使用我的系统，403 时移除旧工作区', async (t) => {
+  const { QueryClientProvider } = await import('@tanstack/react-query');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
+  const { systemAccessOptions, mySystemsOptions, systemsOptions } =
+    await vite.ssrLoadModule('/src/queries/systems.ts');
+  const { default: SystemLayout } = await vite.ssrLoadModule('/src/layouts/SystemLayout.tsx');
+  const { useSystemWorkspace } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
+  const { store } = await vite.ssrLoadModule('/src/store/index.ts');
+  const { setUserInfo } = await vite.ssrLoadModule('/src/store/slices/userSlice.ts');
+  const { createDemoLoginUser } = await vite.ssrLoadModule('/src/mocks/login.ts');
+  const { HttpError } = await vite.ssrLoadModule('/src/http/request.ts');
+  function WorkspaceProbe() {
+    const workspace = useSystemWorkspace();
+    return createElement(
+      'div',
+      null,
+      `当前:${workspace.system.systemName};切换:${workspace.systems.map((item) => item.systemName).join(',')}`,
+    );
+  }
+  t.after(() => queryClient.clear());
+  for (const role of ['0', '1']) {
+    queryClient.clear();
+    store.dispatch(setUserInfo(createDemoLoginUser(role)));
+    const current = role === '0' ? 'demo_1' : 'CAC';
+    queryClient.setQueryData(systemAccessOptions(current).queryKey, { systemName: current });
+    queryClient.setQueryData(mySystemsOptions().queryKey, [{ systemName: 'CAC', role: 'R' }]);
+    queryClient.setQueryData(systemsOptions().queryKey, [
+      { systemName: 'demo_1' },
+      { systemName: 'CAC' },
+    ]);
+    const router = createMemoryRouter(
+      [
+        {
+          path: '/systems/:systemName',
+          Component: SystemLayout,
+          children: [{ index: true, Component: WorkspaceProbe }],
+        },
+      ],
+      { initialEntries: [`/systems/${current}`] },
+    );
+    t.after(() => router.dispose());
+    const render = () =>
+      renderToStaticMarkup(
+        createElement(
+          Provider,
+          { store },
+          createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            createElement(RouterProvider, { router }),
+          ),
+        ),
+      );
+    assert.match(render(), new RegExp(`当前:${current};切换:CAC`));
+    assert.doesNotMatch(render(), /切换:demo_1/);
+    await assert.rejects(
+      queryClient.query({
+        ...systemAccessOptions(current),
+        queryFn: async () => {
+          throw new HttpError(403, '已撤销权限');
+        },
+      }),
+    );
+    assert.doesNotMatch(render(), /当前:/);
   }
 });

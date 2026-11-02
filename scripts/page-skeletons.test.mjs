@@ -81,7 +81,7 @@ function cases() {
       Page: home,
       path: '/',
       routePath: '/',
-      key: ['systems', 'mine'],
+      key: ['systems', 'mine', null],
       message: '系统列表加载中',
       data: [{ ...system, role: 'V', ystId: '' }],
     },

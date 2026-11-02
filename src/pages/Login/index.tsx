@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useAppDispatch } from '@/store/hooks';
 import { setUserInfo } from '@/store/slices/userSlice';
 import { createDemoLoginUser } from '@/mocks/login';
+import { queryClient } from '@/queries/client';
 import { writeLoginUser } from '@/utils/loginStorage';
 import { loginReturnTo } from '@/router/login';
 import type { LoginUser } from '@/types/user';
@@ -26,6 +27,8 @@ export default function Login() {
     try {
       const user = createDemoLoginUser(role, netEnv);
       writeLoginUser(user);
+      // 主动重新登录也会切换角色；释放旧身份业务缓存及在途查询。
+      queryClient.clear();
       dispatch(setUserInfo(user));
       await navigate(loginReturnTo(searchParams.get('redirect')), { replace: true });
     } catch {

@@ -6,12 +6,7 @@ import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router'
 import { queryClient } from '@/queries/client.ts';
 import { preloadRouteQuery } from '@/queries/routeQuery.ts';
 import { applicationEnvironmentsOptions } from '@/queries/applicationEnvironments.ts';
-import {
-  systemsOptions,
-  mySystemsOptions,
-  parameterTypesOptions,
-  requireSystemAccess,
-} from '@/queries/systems.ts';
+import { mySystemsOptions, parameterTypesOptions, requireSystemAccess } from '@/queries/systems.ts';
 import type { ListNode } from '@/components/GroupedList/types.ts';
 import {
   applicationListId,
@@ -63,13 +58,7 @@ export async function preloadSystems(args?: LoaderFunctionArgs) {
   if (systemName) await requireSystemAccess(systemName);
   args?.request?.signal.throwIfAborted();
   // 首页默认我的系统，只预取其全量关系清单；所有系统切到页签后按页请求。
-  if (systemName) {
-    await preloadRouteQuery(queryClient, systemsOptions(), (items) =>
-      items.some((item) => item.systemName === systemName),
-    );
-  } else {
-    await preloadRouteQuery(queryClient, mySystemsOptions());
-  }
+  await preloadRouteQuery(queryClient, mySystemsOptions());
   return null;
 }
 
