@@ -39,6 +39,22 @@ after(async () => {
 
 const match = (path) => matchRoutes(routes, path)?.at(-1);
 
+test('真实路由按分组划分公开页与业务页，根身份恢复不承担登录拦截', async () => {
+  const { loginMiddleware, restoreLoginMiddleware } =
+    await vite.ssrLoadModule('/src/router/login.ts');
+  const middlewares = (path) =>
+    matchRoutes(routes, path).flatMap(({ route }) => route.middleware ?? []);
+  assert.deepEqual(middlewares('/login'), [restoreLoginMiddleware]);
+  for (const path of [
+    '/',
+    '/systems/CAC/overview',
+    '/systems/CAC/application/demo',
+    '/systems/CAC/db',
+  ]) {
+    assert.deepEqual(middlewares(path), [restoreLoginMiddleware, loginMiddleware]);
+  }
+});
+
 test('统一图标可独立静态渲染，保留 SVG 属性、默认回退与多实例裁剪隔离', async () => {
   const { LoadingIndicator } = await vite.ssrLoadModule(
     '/src/components/LoadingIndicator/index.tsx',
@@ -201,8 +217,10 @@ test('切换入口仅保留系统与平台，不带原应用或类型', () => {
 });
 
 test('未知地址进入对应的 404 页面', () => {
-  const site = routes[0].children.find((route) => route.id === 'site');
-  const system = routes[0].children.find((route) => route.id === 'system');
+  const site = matchRoutes(routes, '/').find(({ route }) => route.id === 'site').route;
+  const system = matchRoutes(routes, '/systems/CAC/overview').find(
+    ({ route }) => route.id === 'system',
+  ).route;
   const workspace = system.children.find((route) => route.id === 'workspace');
   const siteNotFound = site.children.find((route) => route.path === '*');
   const systemNotFound = workspace.children.find((route) => route.path === '*');
@@ -469,9 +487,9 @@ test('父子 loader 等待授权后并行预取，与组件共享系统维度缓
     requests.push(options.queryKey);
     return original({ ...options, queryFn: async () => [] });
   });
-  const parent = routes[0].children
-    .find((route) => route.id === 'system')
-    .loader({ params: { systemName: 'CAC' } });
+  const parent = matchRoutes(routes, '/systems/CAC/db')
+    .find(({ route }) => route.id === 'system')
+    .route.loader({ params: { systemName: 'CAC' } });
   const child = match('/systems/CAC/db').route.loader({ params: { systemName: 'CAC' } });
   assert.deepEqual(requests, []);
   await Promise.all([parent, child]);

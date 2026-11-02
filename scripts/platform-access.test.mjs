@@ -1,5 +1,5 @@
 import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
-/** 系统接口回归：不构造登录身份，保留接口错误、请求去重、配置完整性及取消边界。 */
+/** 系统接口回归：登录身份不参与系统授权，保留接口错误、请求去重、配置完整性及取消边界。 */
 import assert from 'node:assert/strict';
 import test, { afterEach } from 'node:test';
 import { mockConfig } from '../src/mocks/config.ts';
@@ -39,7 +39,7 @@ afterEach(() => {
   queryClient.clear();
 });
 
-test('全部目录只包含加入标记，Store 与访问接口不构造登录身份', async () => {
+test('全部目录只包含加入标记，空 Store 不自行构造身份，访问接口不返回登录资料', async () => {
   const items = await loadSystems();
   assert.ok(items.length > 0);
   for (const item of items) {
@@ -47,7 +47,9 @@ test('全部目录只包含加入标记，Store 与访问接口不构造登录�
     assert.equal('role' in item, false);
     assert.equal(typeof item.userRelation, 'boolean');
   }
-  assert.deepEqual(Object.keys(createAppStore().getState()), ['preferences']);
+  const state = createAppStore().getState();
+  assert.deepEqual(Object.keys(state), ['preferences', 'user']);
+  assert.deepEqual(state.user, { userInfo: null });
   await assert.rejects(requestData({ url: '/api/session' }), (error) => error.status === 404);
   await assert.rejects(loadSystemAccess('不存在'), (error) => error.status === 404);
   const access = await loadSystemAccess('CAC');

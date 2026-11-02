@@ -1,18 +1,16 @@
-/** 全局页头：系统与平台切换、平铺展示的快捷工具和显示设置入口。 */
+/** 全局页头：系统与平台切换、快捷工具和收纳账户入口的用户信息菜单。 */
 import { Button, Dropdown, Popover, Tooltip } from 'antd';
 import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import logo from '@/assets/logo.jpg';
 import { SystemContext } from '@/contexts/SystemContext';
 import { platformHome } from '@/router/paths';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { openUserSettings } from '@/store/slices/preferencesSlice';
+import { useAppSelector } from '@/store/hooks';
+import { HeaderUserMenu } from './HeaderUserMenu';
 
 const headerTools = [
   { label: '友情链接', icon: 'i-lucide-panels-top-left', content: '暂无友情链接' },
-  { label: '旧版本', icon: 'i-lucide-history', content: '暂无可用的旧版本入口' },
   { label: '高风险提权', icon: 'i-lucide-shield-alert', content: '暂无待处理的提权申请' },
-  { label: '平台管理', icon: 'i-lucide-users-round', content: '暂无可用的平台管理入口' },
   { label: '快照检视', icon: 'i-lucide-square-terminal', content: '暂无快照检测记录' },
   { label: '小工具', icon: 'i-lucide-wrench', content: '暂无可用工具' },
   { label: '公告', icon: 'i-lucide-megaphone', content: '暂无公告' },
@@ -33,7 +31,6 @@ const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1280px)').mat
 export function AppHeader() {
   const workspace = useContext(SystemContext);
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
   const wideHeader = useSyncExternalStore(subscribeWideHeader, getWideHeaderSnapshot);
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -174,17 +171,7 @@ export function AppHeader() {
         </div>
 
         <div className="flex shrink-0 items-center">
-          <Tooltip title="显示设置">
-            <Button
-              type="text"
-              aria-label="显示设置"
-              onClick={() => dispatch(openUserSettings())}
-              className="h-36px! w-36px! px-0! rounded-control! layout-focus"
-              icon={
-                <span className={`i-lucide-settings-2 ${toolIconSizeClass}`} aria-hidden="true" />
-              }
-            />
-          </Tooltip>
+          <HeaderUserMenu />
         </div>
       </div>
     </header>

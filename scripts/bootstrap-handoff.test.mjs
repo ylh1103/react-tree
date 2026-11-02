@@ -15,6 +15,8 @@ import { defaultUserSettings } from '../src/types/preferences.ts';
 import { createGenerator } from 'unocss';
 import { applicationRouteConfig } from '../src/router/application.ts';
 import { databaseRouteConfig } from '../src/router/database.ts';
+import { createDemoLoginUser } from '../src/mocks/login.ts';
+import { loginStorageKey } from '../src/utils/loginStorage.ts';
 
 // 两个平台独立定义；测试合并枚举入口，保持首屏回退的全量覆盖。
 const routeConfigs = [...applicationRouteConfig, ...databaseRouteConfig];
@@ -56,6 +58,7 @@ function deferred() {
  * actualRoutes=true 时复用完整路由配置；默认将子布局替换为 Outlet，preserveLayouts 可保留真实外壳。
  * pendingRoot 可暂缓根 loader，确保测试根 HydrateFallback 的外壳，而非已就绪的正式站点页头。
  * initialized 控制配置是否结束等待，startup 模拟 HTML 画面是否存在；二者独立于 Router 的加载状态。
+ * 提供有效本地登录资料，使这些用例继续验证已登录页面的启动交接；登录拦截由 login.test.mjs 覆盖。
  * 不派发实际配置请求，每次 render 都从当前 Router/Store 状态重新生成静态标记。
  */
 function setup(
@@ -73,6 +76,20 @@ function setup(
     registeredSkeleton = true,
   } = {},
 ) {
+  const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  t.after(() => {
+    if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
+    else delete globalThis.localStorage;
+  });
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) =>
+        key === loginStorageKey
+          ? JSON.stringify({ version: 1, loggedIn: true, user: createDemoLoginUser('1') })
+          : null,
+    },
+  });
   const page = deferred();
   const parent = deferred();
   const leaf = {

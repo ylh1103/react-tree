@@ -16,6 +16,7 @@ import { RouteSkeleton } from '@/components/RouteSkeleton';
 import { preloadSystems } from './loaders';
 import RouteErrorPage from '@/pages/RouteError';
 import { InitialRouteFallback } from './skeletons';
+import { loginMiddleware, restoreLoginMiddleware } from './login';
 
 /** 默认导出的页面按路由加载，布局外壳保持稳定。 */
 function lazyPage(load: () => Promise<{ default: ComponentType }>) {
@@ -52,39 +53,48 @@ function createWorkspaceRoute(config: WorkspaceRouteConfig): RouteObject {
 export const routes: RouteObject[] = [
   {
     Component: App,
+    middleware: [restoreLoginMiddleware],
     ErrorBoundary: RouteErrorPage,
     // 父 loader 或页面模块未完成时，由根回退保留启动动画；配置等待结束后再按目标 URL 展示骨架。
     HydrateFallback: InitialRouteFallback,
     children: [
+      // 公开页放在此处：登录、小工具、产品介绍等无需登录，也会恢复当前用户资料。
+      { path: 'login', lazy: lazyPage(() => import('@/pages/Login')) },
       {
-        // 仅布局保留显式 ID，供加载骨架定位外壳及 Outlet 范围。
-        id: 'site',
-        Component: SiteLayout,
+        // 无路径分组统一保护业务入口，不增加 URL 层级；新增业务页必须放在此分组内。
+        middleware: [loginMiddleware],
         children: [
           {
-            index: true,
-            loader: preloadSystems,
-            HydrateFallback: RouteSkeleton,
-            ErrorBoundary: RouteErrorPage,
-            lazy: lazyPage(() => import('@/pages/SystemsHome')),
-          },
-          { path: '*', Component: RouteStatusPage },
-        ],
-      },
-      {
-        id: 'system',
-        path: 'systems/:systemName',
-        loader: preloadSystems,
-        Component: SystemLayout,
-        children: [
-          {
-            id: 'workspace',
-            Component: AppLayout,
+            // 仅布局保留显式 ID，供加载骨架定位外壳及 Outlet 范围。
+            id: 'site',
+            Component: SiteLayout,
             children: [
-              { index: true, element: <Navigate to="overview" replace /> },
-              ...applicationRouteConfig.map(createWorkspaceRoute),
-              ...databaseRouteConfig.map(createWorkspaceRoute),
+              {
+                index: true,
+                loader: preloadSystems,
+                HydrateFallback: RouteSkeleton,
+                ErrorBoundary: RouteErrorPage,
+                lazy: lazyPage(() => import('@/pages/SystemsHome')),
+              },
               { path: '*', Component: RouteStatusPage },
+            ],
+          },
+          {
+            id: 'system',
+            path: 'systems/:systemName',
+            loader: preloadSystems,
+            Component: SystemLayout,
+            children: [
+              {
+                id: 'workspace',
+                Component: AppLayout,
+                children: [
+                  { index: true, element: <Navigate to="overview" replace /> },
+                  ...applicationRouteConfig.map(createWorkspaceRoute),
+                  ...databaseRouteConfig.map(createWorkspaceRoute),
+                  { path: '*', Component: RouteStatusPage },
+                ],
+              },
             ],
           },
         ],
