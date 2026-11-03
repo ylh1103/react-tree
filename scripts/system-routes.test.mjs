@@ -720,7 +720,9 @@ test('页面 chunk 失败显示静态恢复入口，并保留父级布局', asyn
   assert.match(html, /persistent-header/);
   assert.match(html, /页面资源加载失败/);
   assert.match(html, /刷新页面/);
-  assert.match(html, /返回系统列表/);
+  // 整页错误统一提供刷新与支持，不承诺路由跳转能恢复公共层异常。
+  assert.match(html, /技术支持/);
+  assert.doesNotMatch(html, /返回系统列表/);
   assert.doesNotMatch(html, /Unexpected Application Error/);
 });
 

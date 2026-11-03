@@ -190,7 +190,9 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
   assert.ok(failureScript.index < html.indexOf('<script type="module"'));
   assert.match(html, /id="bootstrap-reload"/);
   assert.match(html, /id="bootstrap-support" type="button"/, '技术支持保留为无跳转按钮');
-  assert.doesNotMatch(html, /bootstrap-copy|复制详情/, '启动失败页不提供复制按钮');
+  assert.match(html, /id="bootstrap-copy"/, '静态错误页也可复制完整诊断文本');
+  assert.match(html, /id="bootstrap-raw"/, '详情提供格式化与原文切换');
+  assert.match(css[1], /230px/, '动态创建的堆栈行样式也必须内联，不能等待主样式');
   assert.match(css[1], /data-bootstrap-failed/, '失败提示样式必须随 HTML 内联');
   assert.ok(html.indexOf('<meta charset=') < script.index);
   assert.ok(script.index < html.indexOf('<script type="module"'));

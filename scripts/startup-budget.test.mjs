@@ -2,7 +2,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { gzipSync } from 'node:zlib';
-import { collectInitialChunks, createStartupReport } from '../build/startup-budget-plugin.mjs';
+import { createHash } from 'node:crypto';
+import {
+  collectInitialChunks,
+  createStartupReport,
+  startupBudget,
+} from '../build/startup-budget-plugin.mjs';
 
 function chunk(fileName, imports = [], modules = {}) {
   return {
@@ -90,4 +95,24 @@ test('JS、CSS 和启动 HTML 超预算时分别报错，不允许缺少入口�
   assert.throws(() => createStartupReport(bundle), /缺少 index.html/);
   delete bundle['entry.js'];
   assert.throws(() => createStartupReport(bundle), /唯一的应用入口/);
+});
+
+test('HTML 调整预算后仍独立执行 gzip 门禁，等于阈值放行，超过一个字节即报错', () => {
+  const bundle = fixture();
+  // 固定高熵内容避免重复字符串被 gzip 压成极小值，验证真实传输体积而非原始长度。
+  bundle['index.html'].source = Array.from({ length: 400 }, (_, index) =>
+    createHash('sha256').update(String(index)).digest('hex'),
+  ).join('');
+  const report = createStartupReport(bundle);
+  const measured = report.totals.htmlGzip;
+  assert.ok(measured > startupBudget.htmlGzip);
+  assert.deepEqual(report.failures, [`htmlGzip: ${measured} > ${startupBudget.htmlGzip} bytes`]);
+  assert.deepEqual(
+    createStartupReport(bundle, { ...startupBudget, htmlGzip: measured }).failures,
+    [],
+  );
+  assert.deepEqual(
+    createStartupReport(bundle, { ...startupBudget, htmlGzip: measured - 1 }).failures,
+    [`htmlGzip: ${measured} > ${measured - 1} bytes`],
+  );
 });

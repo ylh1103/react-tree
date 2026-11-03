@@ -15,6 +15,8 @@ import { loadingStyleIds } from '../src/types/loading.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import { formatFailureDetails } from '../src/utils/failureDetails.ts';
 import { startBootstrapFailure } from '../src/utils/bootstrapFailure.ts';
+import { parseStackTrace } from '../src/components/FailureDetails/parseStackTrace.ts';
+import { getDiagnosticPreview } from '../src/components/FailureDetails/preview.ts';
 import { startBootstrapStyles } from '../src/utils/bootstrapStyles.ts';
 import { themeVariablesByMode } from '../src/styles/theme.ts';
 import { bootstrapThemeKey, readThemeMode } from '../src/store/preferences/themeBootstrap.ts';
@@ -117,7 +119,7 @@ export function bootstrapPlugin() {
     [
       createThemeScript(),
       createLoadingScript(),
-      `;(${startBootstrapFailure.toString()})(${formatFailureDetails.toString()});`,
+      `;(${startBootstrapFailure.toString()})(${formatFailureDetails.toString()},${parseStackTrace.toString()},${getDiagnosticPreview.toString()});`,
     ].map(async (source, index) => {
       const result = await minify(`bootstrap-${index}.js`, source, { module: false });
       if (result.errors.length) throw new Error('启动脚本压缩失败', { cause: result.errors });
@@ -127,7 +129,11 @@ export function bootstrapPlugin() {
   // React 会把 class 内的 & 转义为实体，提取工具类前恢复，保证祖先属性变体与真实 DOM 一致。
   // 不生成 preflight，避免为临时画面重复注入会影响整个页面的基础样式。
   const css = createGenerator(unoConfig).then((uno) =>
-    uno.generate(markup.replaceAll('&amp;', '&'), { preflights: false, minify: true }),
+    // 详情行按用户展开后创建；把内联控制器中的完整类名一并提取，避免依赖主样式下载。
+    uno.generate(markup.replaceAll('&amp;', '&') + startBootstrapFailure.toString(), {
+      preflights: false,
+      minify: true,
+    }),
   );
   return {
     name: 'html-bootstrap',

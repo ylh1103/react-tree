@@ -50,7 +50,7 @@ test('普通渲染错误提供重试和原因，异常内容作为文本转义',
   assert.doesNotMatch(html, /<img src=x/);
 });
 
-test('整页兜底不依赖业务 Provider，提供技术支持并按路由场景保留返回入口', () => {
+test('整页兜底不依赖业务 Provider，运行与资源异常均只提供刷新和技术支持入口', () => {
   const html = renderToStaticMarkup(
     createElement(AppFailure, { error: new Error('render failure') }),
   );
@@ -62,11 +62,12 @@ test('整页兜底不依赖业务 Provider，提供技术支持并按路由场�
   const routeHtml = renderToStaticMarkup(
     createElement(AppFailure, {
       error: new TypeError('Failed to fetch dynamically imported module: /chunk.js'),
-      onHome() {},
     }),
   );
   assert.match(routeHtml, /页面资源加载失败/);
-  assert.match(routeHtml, /返回系统列表/);
+  assert.match(routeHtml, /刷新页面/);
+  assert.match(routeHtml, /技术支持/);
+  assert.doesNotMatch(routeHtml, /返回系统列表/);
 });
 
 test('整页诊断默认收起堆栈，提供复制操作，错误消息继续按文本转义', () => {

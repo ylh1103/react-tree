@@ -5,7 +5,8 @@ import { FailureDetails } from '@/components/FailureDetails';
 import { FailureIllustration } from '@/components/FailureIllustration';
 import { isResourceError } from '@/components/ComponentFailure/resourceError';
 
-export function AppFailure({ error, onHome }: { error: unknown; onHome?: () => void }) {
+/** 公共层也可能发生异常，统一提供整页刷新，不承诺路由跳转能够恢复。 */
+export function AppFailure({ error }: { error: unknown }) {
   const resourceFailure = isResourceError(error);
 
   return (
@@ -34,7 +35,7 @@ export function AppFailure({ error, onHome }: { error: unknown; onHome?: () => v
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button
                   type="primary"
-                  icon={<span aria-hidden="true" className="i-lucide:rotate-cw" />}
+                  icon={<span aria-hidden="true" className="i-lucide:rotate-cw text-4" />}
                   onClick={() => window.location.reload()}
                   className="h-44px! rounded-8px! border-accent! bg-accent! px-6! text-on-accent! hover:bg-accent-hover! layout-focus"
                 >
@@ -43,13 +44,8 @@ export function AppFailure({ error, onHome }: { error: unknown; onHome?: () => v
                 {/* 支持入口按约定仅预留，不绑定尚未配置的地址或读取已失败的业务上下文。 */}
                 <Button className="h-44px! rounded-8px! border-border-subtle! bg-surface! px-5! text-text! layout-focus">
                   技术支持
-                  <span aria-hidden="true" className="i-lucide:arrow-up-right text-14px" />
+                  <span aria-hidden="true" className="i-lucide:arrow-up-right text-18px" />
                 </Button>
-                {onHome && (
-                  <Button type="link" onClick={onHome} className="px-0! text-accent! layout-focus">
-                    返回系统列表
-                  </Button>
-                )}
               </div>
             </div>
             <div className="mx-auto w-full max-w-480px">

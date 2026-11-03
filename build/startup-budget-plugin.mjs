@@ -3,8 +3,9 @@ import { gzipSync } from 'node:zlib';
 import { Buffer } from 'node:buffer';
 
 /** 预算以每个响应分别 gzip 后求和；这是传输体积估算，不代表浏览器加载耗时。 */
-// HTML 包含独立故障页及内联插画，避免资源失效时再请求图片；完整 React 详情仍按需加载。
-export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 7_500 };
+// HTML 保留五款启动动画、独立故障页及完整静态诊断交互；React 详情模块仍按需加载。
+// 生产基线为 10,762 bytes gzip，当前阈值预留约 4%；JS/CSS 预算保持不变。
+export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 11_200 };
 
 const forbiddenInitialModules = [
   '/src/components/FailureDetails/Details.tsx',
