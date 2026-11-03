@@ -3,6 +3,7 @@
  * 浏览器只保存最近一次确认的 light/dark/system，设置读取成功后以响应配置为准。
  * 乐观输入和读取错误不覆盖缓存；保存失败时保留最近成功值，存储不可用不阻止应用运行。
  */
+import { userStorageKey } from '../../utils/userStorage.ts';
 import type { ThemeMode } from '../../types/preferences.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
 
@@ -34,7 +35,11 @@ export function readThemeMode(
  */
 export function readBootstrapTheme(): ThemeMode {
   try {
-    return readThemeMode(window.localStorage, bootstrapThemeKey, defaultUserSettings.themeMode);
+    return readThemeMode(
+      window.localStorage,
+      userStorageKey(bootstrapThemeKey, window.localStorage),
+      defaultUserSettings.themeMode,
+    );
   } catch {
     return defaultUserSettings.themeMode;
   }

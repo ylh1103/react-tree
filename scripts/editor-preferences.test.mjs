@@ -205,12 +205,12 @@ test('旧相对行号兼容为普通行号，读取不写回，后续保存保�
     theme: 'vs-dark',
     editor: { lineNumbers: 'relative', fontSize: 18, minimap: true },
   });
-  writeMock('display-settings', legacy);
+  writeMock('display-settings:anonymous', legacy);
   const settings = await api.load();
   assert.equal(settings.editor.lineNumbers, 'on');
   assert.equal(settings.editor.fontSize, 18);
   assert.equal(settings.editor.minimap, true);
-  assert.equal(readMock('display-settings', ''), legacy);
+  assert.equal(readMock('display-settings:anonymous', ''), legacy);
   for (const lineNumbers of ['off', 'on']) {
     const saved = await api.save({
       ...settings,
@@ -218,7 +218,7 @@ test('旧相对行号兼容为普通行号，读取不写回，后续保存保�
     });
     assert.equal(saved.editor.lineNumbers, lineNumbers);
     assert.equal((await api.load()).editor.lineNumbers, lineNumbers);
-    assert.equal(JSON.parse(readMock('display-settings', '')).theme, 'vs-dark');
+    assert.equal(JSON.parse(readMock('display-settings:anonymous', '')).theme, 'vs-dark');
   }
 });
 
@@ -231,7 +231,7 @@ test('真实设置 API 保存编辑器选项，保留历史及嵌套未知字段
     future: 1,
     editor: { future: { enabled: true } },
   };
-  writeMock('display-settings', JSON.stringify(original));
+  writeMock('display-settings:anonymous', JSON.stringify(original));
   const editor = {
     ...defaultEditorPreferences,
     wordWrap: 'on',
@@ -241,16 +241,16 @@ test('真实设置 API 保存编辑器选项，保留历史及嵌套未知字段
     minimap: true,
   };
   await api.save({ ...defaultUserSettings, editor });
-  assert.deepEqual(JSON.parse(readMock('display-settings', '')), {
+  assert.deepEqual(JSON.parse(readMock('display-settings:anonymous', '')), {
     ...original,
     ...defaultUserSettings,
     editor: { ...original.editor, ...editor },
   });
   assert.deepEqual((await api.load()).editor, editor);
   for (const broken of ['{', '{"editor":{"wordWrap":true}}']) {
-    writeMock('display-settings', broken);
+    writeMock('display-settings:anonymous', broken);
     await assert.rejects(api.save(defaultUserSettings));
-    assert.equal(readMock('display-settings', ''), broken);
+    assert.equal(readMock('display-settings:anonymous', ''), broken);
   }
 });
 

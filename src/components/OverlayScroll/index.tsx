@@ -69,8 +69,9 @@ export function OverlayScroll({
         aria-label={label}
         tabIndex={0}
         onScroll={syncScroll}
+        // 隔离内容中的渐隐、编辑器等局部层级，确保它们不会越过同级覆盖式滚动条。
         className={`
-          peer/overlay-scroll flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none]
+          peer/overlay-scroll isolate flex-1 min-w-0 min-h-0 layout-focus overscroll-contain [scrollbar-width:none]
           [&::-webkit-scrollbar]:hidden
           ${vertical ? 'overflow-y-auto overflow-x-hidden' : 'flex overflow-x-auto'}
           ${className}

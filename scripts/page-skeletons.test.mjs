@@ -337,7 +337,7 @@ test('页面分栏骨架沿用 URL 解码和历史折叠尺寸，不创建交互
       data: undefined,
     });
     const html = fixture.render();
-    assert.ok(reads.includes(`parameter-management:split-pane:${storageKey}:v1`));
+    assert.ok(reads.includes(`parameter-management:split-pane:${storageKey}:v1:anonymous`));
     assert.match(html, /width:min\(420px/);
     assert.match(html, /aria-label="(?:应用|类型) \/ 100%列表"/);
     assert.doesNotMatch(html, /role="separator"|切换侧边栏|调整.*列表宽度/);

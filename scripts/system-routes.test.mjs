@@ -48,6 +48,7 @@ const match = (path) => matchRoutes(routes, path)?.at(-1);
 test('真实路由按分组划分公开页与业务页，根身份恢复不承担登录拦截', async () => {
   const { loginMiddleware, restoreLoginMiddleware } =
     await vite.ssrLoadModule('/src/router/login.ts');
+  const { systemAccessMiddleware } = await vite.ssrLoadModule('/src/router/systemAccess.ts');
   const middlewares = (path) =>
     matchRoutes(routes, path).flatMap(({ route }) => route.middleware ?? []);
   assert.deepEqual(middlewares('/login'), [restoreLoginMiddleware]);
@@ -57,7 +58,11 @@ test('真实路由按分组划分公开页与业务页，根身份恢复不承�
     '/systems/CAC/application/demo',
     '/systems/CAC/db',
   ]) {
-    assert.deepEqual(middlewares(path), [restoreLoginMiddleware, loginMiddleware]);
+    assert.deepEqual(middlewares(path), [
+      restoreLoginMiddleware,
+      loginMiddleware,
+      ...(path === '/' ? [] : [systemAccessMiddleware]),
+    ]);
   }
 });
 
@@ -479,7 +484,107 @@ test('首次加载及导航使用统一骨架，加载完成显示页面，取�
   assert.doesNotMatch(render(), /third-page/);
 });
 
-test('父子 loader 等待授权后并行预取，与组件共享系统维度缓存', async (t) => {
+test('全局进度订阅覆盖跨布局授权和 loader 等待，完成、失败、取消与清理正确结束', async (t) => {
+  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/RouteOutlet.tsx');
+  const { startRouteProgress } = await vite.ssrLoadModule('/src/router/progress.ts');
+  const deferred = () => {
+    let resolve;
+    const promise = new Promise((done) => {
+      resolve = done;
+    });
+    return { promise, resolve };
+  };
+  let access = deferred();
+  let accessStarted = deferred();
+  let data = deferred();
+  let dataStarted = deferred();
+  let fail = false;
+  const testRoutes = [
+    {
+      children: [
+        {
+          id: 'site',
+          Component: () => createElement(RouteOutlet, { layoutId: 'site' }),
+          children: [{ path: '/', Component: () => createElement('div', null, 'system-list') }],
+        },
+        {
+          id: 'workspace',
+          path: 'systems/:systemName',
+          middleware: [
+            async () => {
+              accessStarted.resolve();
+              await access.promise;
+            },
+          ],
+          ErrorBoundary: () => createElement('div', null, 'navigation-error'),
+          Component: () => createElement(RouteOutlet, { layoutId: 'workspace' }),
+          children: [
+            {
+              path: 'overview',
+              loader: async () => {
+                dataStarted.resolve();
+                await data.promise;
+                if (fail) throw new Error('模拟加载失败');
+                return null;
+              },
+              Component: () => createElement('div', null, 'system-overview'),
+            },
+          ],
+        },
+      ],
+    },
+  ];
+  const router = createMemoryRouter(testRoutes, {
+    initialEntries: ['/'],
+    future: { v8_middleware: true },
+  });
+  t.after(() => router.dispose());
+  const calls = [];
+  const progress = {
+    configure: () => {},
+    start: () => calls.push('start'),
+    done: () => calls.push('done'),
+    remove: () => calls.push('remove'),
+  };
+  const stop = startRouteProgress(router, progress);
+  t.after(stop);
+  assert.deepEqual(calls, []);
+  const navigation = router.navigate('/systems/CAC/overview');
+  await accessStarted.promise;
+  assert.deepEqual(calls, ['start']);
+  const replacement = router.navigate('/systems/SECOND/overview');
+  assert.deepEqual(calls, ['start']);
+  access.resolve();
+  await dataStarted.promise;
+  assert.equal(calls.at(-1), 'start');
+  data.resolve();
+  await Promise.all([navigation, replacement]);
+  assert.deepEqual(calls, ['start', 'done']);
+
+  access = deferred();
+  accessStarted = deferred();
+  data = deferred();
+  dataStarted = deferred();
+  const cancelled = router.navigate('/systems/OTHER/overview');
+  await accessStarted.promise;
+  assert.equal(calls.at(-1), 'start');
+  await router.navigate('/');
+  assert.equal(calls.at(-1), 'done');
+  access.resolve();
+  data.resolve();
+  await cancelled;
+  assert.equal(calls.at(-1), 'done');
+  fail = true;
+  await router.navigate('/systems/FAILED/overview');
+  assert.equal(calls.at(-1), 'done');
+  stop();
+  assert.equal(calls.at(-1), 'remove');
+  const count = calls.length;
+  await router.navigate('/');
+  assert.equal(calls.length, count);
+});
+
+test('middleware 授权后父子 loader 并行预取，与组件共享系统维度缓存', async (t) => {
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   const { mySystemsOptions, parameterTypesOptions } =
     await vite.ssrLoadModule('/src/queries/systems.ts');
@@ -489,21 +594,46 @@ test('父子 loader 等待授权后并行预取，与组件共享系统维度缓
   const original = queryClient.query.bind(queryClient);
   const prefetch = t.mock.method(queryClient, 'query', (options) => {
     // 授权与普通预取共用 query；保留真实授权，只替换本测试关注的业务预取。
-    if (options.queryKey[0] === 'system-access') return original(options);
+    if (options.queryKey[0] === 'system-access' || options.queryKey[1] === 'mine')
+      return original(options);
     requests.push(options.queryKey);
     return original({ ...options, queryFn: async () => [] });
   });
-  const parent = matchRoutes(routes, '/systems/CAC/db')
-    .find(({ route }) => route.id === 'system')
-    .route.loader({ params: { systemName: 'CAC' } });
-  const child = match('/systems/CAC/db').route.loader({ params: { systemName: 'CAC' } });
+  const { createSystemNavigationContext, systemAccessMiddleware } = await vite.ssrLoadModule(
+    '/src/router/systemAccess.ts',
+  );
+  let activeRouter;
+  const router = createMemoryRouter(
+    [
+      { path: '/outside' },
+      {
+        id: 'system',
+        path: '/systems/:systemName',
+        middleware: [systemAccessMiddleware],
+        loader: matchRoutes(routes, '/systems/CAC/db').find(({ route }) => route.id === 'system')
+          .route.loader,
+        children: [{ path: 'db', loader: match('/systems/CAC/db').route.loader }],
+      },
+    ],
+    {
+      initialEntries: ['/outside'],
+      future: { v8_middleware: true },
+      getContext: createSystemNavigationContext(() => activeRouter),
+    },
+  );
+  activeRouter = router;
+  t.after(() => router.dispose());
   assert.deepEqual(requests, []);
-  await Promise.all([parent, child]);
+  await router.navigate('/systems/CAC/db');
+  assert.equal(router.state.errors, null);
   // 缓存复用检查使用真实 query，避免预取替身遮蔽意外重发的请求。
   prefetch.mock.restore();
   assert.deepEqual(
     requests.map(JSON.stringify).sort(),
-    [mySystemsOptions().queryKey, parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
+    [parameterTypesOptions('CAC').queryKey].map(JSON.stringify).sort(),
+  );
+  assert.ok(
+    queryClient.getQueryData(mySystemsOptions().queryKey).some((item) => item.systemName === 'CAC'),
   );
   let refetched = false;
   const data = await queryClient.query({
@@ -535,8 +665,8 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
   await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
   const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
   assert.deepEqual(lock, groupedListKeys.write('applications:CAC'));
-  const { systemAccessOptions } = await vite.ssrLoadModule('/src/queries/systems.ts');
-  assert.deepEqual(requests, [systemAccessOptions('CAC').queryKey]);
+  // loader 只遵守写入锁，授权已由系统路由 middleware 完成。
+  assert.deepEqual(requests, []);
 });
 
 test('页面 chunk 失败显示静态恢复入口，并保留父级布局', async (t) => {

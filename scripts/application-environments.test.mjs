@@ -1,3 +1,4 @@
+import { createSystemTestRouter } from './helpers/systemRouter.mjs';
 /** 环境接口与缓存回归：排序、维度隔离、请求去重、取消和授权失败。 */
 import assert from 'node:assert/strict';
 import test, { beforeEach } from 'node:test';
@@ -83,7 +84,7 @@ test('环境 Mock 保留请求维度、空白配置及负数状态，取消和 4
   );
 });
 
-test('loader 校验访问后预取环境，拒绝访问时不产生环境请求', async (t) => {
+test('middleware 校验访问后 loader 预取环境，拒绝访问时不产生环境请求', async (t) => {
   const original = httpClient.defaults.adapter;
   const delay = mockConfig.delayMs;
   t.after(() => {
@@ -100,15 +101,17 @@ test('loader 校验访问后预取环境，拒绝访问时不产生环境请求'
     return original(config);
   };
   const appName = createMockApplications(3)[0].appName;
-  await preloadApplications({ params: { systemName: 'CACTEST1', appName } });
+  const router = createSystemTestRouter([{ path: ':appName', loader: preloadApplications }]);
+  t.after(() => router.dispose());
+  await router.navigate(`/systems/CACTEST1/${appName}`);
+  assert.equal(router.state.errors, null);
   assert.ok(queryClient.getQueryData(applicationEnvironmentsOptions('CACTEST1', appName).queryKey));
-  assert.equal(calls[0], '/api/systems/page');
+  assert.equal(calls[0], '/api/systems/mine');
   assert.equal(calls.filter((url) => url === '/api/applications/environments').length, 1);
   calls.length = 0;
   mockConfig.systemAccessError = 403;
-  await assert.rejects(
-    preloadApplications({ params: { systemName: 'CACTEST1', appName } }),
-    (error) => error.status === 403,
-  );
-  assert.deepEqual(calls, ['/api/systems/page']);
+  await router.navigate('/outside');
+  await router.navigate(`/systems/CACTEST1/${appName}`);
+  assert.equal(Object.values(router.state.errors)[0].status, 403);
+  assert.deepEqual(calls, ['/api/systems/mine']);
 });

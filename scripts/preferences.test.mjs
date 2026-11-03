@@ -233,7 +233,7 @@ test('统一 Mock 设置请求保留未知字段，错误不覆盖已有文档',
     defaultCheckAllEnvTag: true,
     future: { enabled: true },
   });
-  writeMock('display-settings', document);
+  writeMock('display-settings:anonymous', document);
   const api = createUserSettingsApi('/api/user-settings');
   assert.equal((await api.load()).themeMode, 'system');
   const saved = await api.save({
@@ -244,7 +244,7 @@ test('统一 Mock 设置请求保留未知字段，错误不覆盖已有文档',
   assert.equal(saved.themeMode, 'dark');
   assert.equal(saved.loadingStyle, 'data-comet');
   assert.equal((await api.load()).loadingStyle, 'data-comet');
-  const raw = JSON.parse(readMock('display-settings', ''));
+  const raw = JSON.parse(readMock('display-settings:anonymous', ''));
   assert.equal(raw.theme, 'vs-dark');
   assert.deepEqual(raw.future, { enabled: true });
   assert.equal(raw.defaultCheckAllEnvTag, true);

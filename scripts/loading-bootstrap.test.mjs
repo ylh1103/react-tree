@@ -22,7 +22,7 @@ import {
   resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
 import {
-  bootstrapLoadingKey,
+  bootstrapLoadingKey as bootstrapLoadingKeyResource,
   readBootstrapLoading,
 } from '../src/store/preferences/loadingBootstrap.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
@@ -39,6 +39,8 @@ function deferred() {
   });
   return { promise, resolve, reject };
 }
+
+const bootstrapLoadingKey = `${bootstrapLoadingKeyResource}:anonymous`;
 
 test('启动图标仅接受当前白名单，非法缓存及不可访问的存储使用默认方案', (t) => {
   const values = mockStorage(t);
@@ -211,6 +213,26 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
   );
   assert.match(styled, /href="\/print.css" media="print">/, '显式媒体条件不参与启动交接');
   const { ResourceLoading } = await vite.ssrLoadModule('/src/components/ResourceLoading/index.tsx');
+  for (const ystId of ['A', 'B']) {
+    const records = new Map([
+      [
+        'parameter-management:login',
+        JSON.stringify({ version: 1, loggedIn: true, user: { ystId } }),
+      ],
+      [`${bootstrapLoadingKeyResource}:user:A`, 'data-wave'],
+      [bootstrapLoadingKey, 'data-wave'],
+    ]);
+    const document = { documentElement: { dataset: {} }, addEventListener() {} };
+    runInNewContext(script[1], {
+      window: { localStorage: { getItem: (key) => records.get(key) ?? null } },
+      document,
+    });
+    assert.equal(
+      document.documentElement.dataset.bootstrapLoadingStyle,
+      ystId === 'A' ? 'data-wave' : defaultUserSettings.loadingStyle,
+    );
+  }
+
   for (const cached of [...loadingStyleIds, null, 'invalid', '<script>bad()</script>']) {
     const document = { documentElement: { dataset: {} }, addEventListener() {} };
     runInNewContext(script[1], {

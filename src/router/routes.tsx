@@ -17,6 +17,7 @@ import { preloadSystems } from './loaders';
 import RouteErrorPage from '@/pages/RouteError';
 import { InitialRouteFallback } from './skeletons';
 import { loginMiddleware, restoreLoginMiddleware } from './login';
+import { systemAccessMiddleware } from './systemAccess';
 
 /** 默认导出的页面按路由加载，布局外壳保持稳定。 */
 function lazyPage(load: () => Promise<{ default: ComponentType }>) {
@@ -82,6 +83,7 @@ export const routes: RouteObject[] = [
           {
             id: 'system',
             path: 'systems/:systemName',
+            middleware: [systemAccessMiddleware],
             loader: preloadSystems,
             Component: SystemLayout,
             children: [

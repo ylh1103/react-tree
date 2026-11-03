@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAppStore } from '../src/store/index.ts';
 import { startUserSettingsEffects } from '../src/store/preferences/effects.ts';
-import { bootstrapThemeKey } from '../src/store/preferences/themeBootstrap.ts';
-import { bootstrapLoadingKey } from '../src/store/preferences/loadingBootstrap.ts';
+import { bootstrapThemeKey as bootstrapThemeKeyResource } from '../src/store/preferences/themeBootstrap.ts';
+import { bootstrapLoadingKey as bootstrapLoadingKeyResource } from '../src/store/preferences/loadingBootstrap.ts';
 import {
   loadUserSettings,
   saveUserSettings,
@@ -13,6 +13,10 @@ import {
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import { mockPreferencesBrowser } from './helpers/preferencesBrowser.mjs';
+
+const bootstrapThemeKey = `${bootstrapThemeKeyResource}:anonymous`;
+
+const bootstrapLoadingKey = `${bootstrapLoadingKeyResource}:anonymous`;
 
 test('一个订阅处理两项缓存和保存广播，字段不变时不重写，停止后均不再触发', async (t) => {
   mockPreferencesBrowser(t);

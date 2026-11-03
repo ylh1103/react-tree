@@ -2,6 +2,7 @@
  * HTML 启动插件：统一注入字符集、主题、加载画面和首屏样式交接，避免配置层依赖两个插件的先后顺序。
  * 主题与图标初始化各自独立，只复用正式配置和校验函数；React 接管后仍由原 Provider 管理生命周期。
  */
+import { userStorageKey } from '../src/utils/userStorage.ts';
 import { createGenerator } from 'unocss';
 import unoConfig from '../uno.config.ts';
 import { renderBootstrapLoading } from './loading-bootstrap-view.tsx';
@@ -20,11 +21,11 @@ import { bootstrapThemeKey, readThemeMode } from '../src/store/preferences/theme
  * 不可直接引用本模块的 import 或其他闭包变量，也不能等待网络请求或 React 挂载。
  * 只读缓存并设置最小样式，不安装系统外观监听、不写缓存，生命周期在本次同步执行后结束。
  */
-function initializeTheme(readMode, key, fallback, colors) {
+function initializeTheme(scopeKey, readMode, key, fallback, colors) {
   try {
     let mode = fallback;
     try {
-      mode = readMode(window.localStorage, key, fallback);
+      mode = readMode(window.localStorage, scopeKey(key, window.localStorage), fallback);
     } catch {
       // 获取 localStorage 本身也可能抛错，仍继续按系统主题绘制。
     }
@@ -55,10 +56,10 @@ function initializeTheme(readMode, key, fallback, colors) {
  * 本函数通过 toString 写入 HTML，只能引用参数和浏览器全局对象，不能引用模块中的 import。
  * 缓存仅用于选择本次启动图标；不读取服务端配置，也不把回退值写回存储。
  */
-function initializeLoading(readStyle, key, allowed, fallback) {
+function initializeLoading(scopeKey, readStyle, key, allowed, fallback) {
   let style = fallback;
   try {
-    style = readStyle(window.localStorage, key, allowed, fallback);
+    style = readStyle(window.localStorage, scopeKey(key, window.localStorage), allowed, fallback);
   } catch {
     // 获取存储对象本身也可能失败，使用默认图标。
   }
@@ -79,7 +80,7 @@ function createThemeScript() {
     ]),
   );
   const args = serializeArguments([bootstrapThemeKey, defaultUserSettings.themeMode, colors]);
-  return `;(${initializeTheme.toString()})(${readThemeMode.toString()},${args});`;
+  return `;(${initializeTheme.toString()})(${userStorageKey.toString()},${readThemeMode.toString()},${args});`;
 }
 
 /** 在图标与样式链接解析前选择缓存方案并安装样式监听，与主题脚本分别执行以保持异常隔离。 */
@@ -89,7 +90,7 @@ function createLoadingScript() {
     loadingStyleIds,
     defaultUserSettings.loadingStyle,
   ]);
-  return `;(${initializeLoading.toString()})(${readLoadingStyle.toString()},${args});(${startBootstrapStyles.toString()})();`;
+  return `;(${initializeLoading.toString()})(${userStorageKey.toString()},${readLoadingStyle.toString()},${args});(${startBootstrapStyles.toString()})();`;
 }
 
 /** 开发与生产共用一次 HTML 转换；静态画面、内联脚本和 UnoCSS 在插件创建时生成，后续转换复用。 */

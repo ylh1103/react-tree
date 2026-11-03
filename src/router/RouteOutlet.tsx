@@ -2,7 +2,7 @@ import { Activity, useContext, useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigation } from 'react-router';
 import { matchPageSkeleton, RouteLoadingContext } from './loading';
 
-/** 同一布局内导航时显示目标页面的骨架，保留旧页面直到导航完成。 */
+/** 同一布局内延迟显示目标骨架，跨布局或保留工作区时继续显示原页面；全局进度由 Router 订阅处理。 */
 export function RouteOutlet({ layoutId, delayMs = 250 }: { layoutId: string; delayMs?: number }) {
   const routes = useContext(RouteLoadingContext);
   const navigation = useNavigation();

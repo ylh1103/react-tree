@@ -12,3 +12,6 @@ export interface LoginUser {
   /** 1、2 表示正式员工；其他值原样保留，不用于推导平台角色。 */
   cmbUserType: string;
 }
+
+/** 系统访问只依赖用户标识和平台角色；资料展示字段变化不触发工作区身份订阅。 */
+export type SystemAccessIdentity = Pick<LoginUser, 'openId' | 'userType'>;

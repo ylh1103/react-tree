@@ -2,6 +2,7 @@
  * 启动图标缓存：HTML 头部脚本与 Redux 初始化共用缓存键和校验逻辑，减少刷新前后的图标变化。
  * 确认后的写入由 effects.ts 统一订阅；缓存仅是配置读取前的显示提示；完整用户配置始终以设置接口为准，不据此开放配置保存。
  */
+import { userStorageKey } from '../../utils/userStorage.ts';
 import { loadingStyleIds, type LoadingStyleId } from '../../types/loading.ts';
 import { defaultUserSettings } from '../../types/preferences.ts';
 
@@ -34,7 +35,7 @@ export function readBootstrapLoading(): LoadingStyleId {
   try {
     return readLoadingStyle(
       window.localStorage,
-      bootstrapLoadingKey,
+      userStorageKey(bootstrapLoadingKey, window.localStorage),
       loadingStyleIds,
       defaultUserSettings.loadingStyle,
     );

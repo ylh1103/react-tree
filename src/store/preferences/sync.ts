@@ -2,6 +2,7 @@
  * 跨页签配置通知通道：优先使用 BroadcastChannel，不可用时回退 storage 事件。
  * 只传递变更信号，不传递配置正文；Store 订阅和请求协调由 effects.ts 统一管理。
  */
+import { currentUserStorageKey } from '../../utils/userStorage.ts';
 /** 通知通道契约；取消接收与关闭通道分别释放监听和底层资源。 */
 export interface UserSettingsSyncTransport {
   publish: () => void;
@@ -9,12 +10,14 @@ export interface UserSettingsSyncTransport {
   close: () => void;
 }
 
-const syncKey = 'parameter-management:display-settings:v1';
+const syncResource = 'parameter-management:display-settings:v1';
 const changedMessage = 'user-settings-changed';
 
 /** 只传递变更通知，接收方重新读取设置接口，不在广播中传递配置正文。 */
 export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | null {
   if (typeof window === 'undefined') return null;
+  // 通道固定在创建时的身份，其他用户的保存通知不会触发刷新。
+  const syncKey = currentUserStorageKey(syncResource);
 
   try {
     if (typeof window.BroadcastChannel === 'function') {

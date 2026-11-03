@@ -1,11 +1,8 @@
-/** 临时登录页：独立选择平台角色和网络环境，持久化完整资料并写入 Redux，再回到原目标页面。 */
+/** 临时登录页：独立选择平台角色和网络环境，持久化完整资料并整页返回原目标，重新初始化所属用户状态。 */
 import { useState, type SubmitEvent } from 'react';
 import { Alert, Button, Radio } from 'antd';
-import { useNavigate, useSearchParams } from 'react-router';
-import { useAppDispatch } from '@/store/hooks';
-import { setUserInfo } from '@/store/slices/userSlice';
+import { useSearchParams } from 'react-router';
 import { createDemoLoginUser } from '@/mocks/login';
-import { queryClient } from '@/queries/client';
 import { writeLoginUser } from '@/utils/loginStorage';
 import { loginReturnTo } from '@/router/login';
 import type { LoginUser } from '@/types/user';
@@ -15,11 +12,9 @@ export default function Login() {
   const [netEnv, setNetEnv] = useState<LoginUser['netEnv']>('0');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  async function handleLogin(event: SubmitEvent<HTMLFormElement>) {
+  function handleLogin(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
     setError(null);
@@ -27,10 +22,8 @@ export default function Login() {
     try {
       const user = createDemoLoginUser(role, netEnv);
       writeLoginUser(user);
-      // 主动重新登录也会切换角色；释放旧身份业务缓存及在途查询。
-      queryClient.clear();
-      dispatch(setUserInfo(user));
-      await navigate(loginReturnTo(searchParams.get('redirect')), { replace: true });
+      // 完整重载固定新身份的缓存、同步通道和请求生命周期，释放旧账号页面状态。
+      window.location.replace(loginReturnTo(searchParams.get('redirect')));
     } catch {
       setError('登录失败，请确认浏览器允许本地存储后重试。');
     } finally {

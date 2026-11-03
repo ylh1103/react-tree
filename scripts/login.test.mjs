@@ -63,7 +63,7 @@ function createLoginRouter(protectedRoutes, options, publicRoutes = []) {
         ],
       },
     ],
-    options,
+    { ...options, future: { v8_middleware: true } },
   );
 }
 
@@ -328,4 +328,48 @@ test('首次直达时 Router 移除的锚点由相同浏览器地址补齐', (t)
       return true;
     },
   );
+});
+
+test('重复导航仍检查登录记录，资料相同时不 dispatch 且保留用户引用', async (t) => {
+  writeLoginUser(createDemoLoginUser('1'));
+  const router = createLoginRouter([{ path: '/one' }, { path: '/two' }], {
+    initialEntries: ['/one'],
+  });
+  t.after(() => router.dispose());
+  await waitForIdle(router);
+  const previousState = store.getState();
+  const previousUser = previousState.user.userInfo;
+  let notifications = 0;
+  const unsubscribe = store.subscribe(() => notifications++);
+  t.after(unsubscribe);
+  const read = t.mock.method(localStorage, 'getItem');
+  await router.navigate('/two');
+  await router.navigate('/one');
+  assert.equal(read.mock.callCount(), 2);
+  assert.equal(notifications, 0);
+  assert.equal(store.getState(), previousState);
+  assert.equal(store.getState().user.userInfo, previousUser);
+  // 本地记录失效必须仍被下一次导航发现，不能把“减少写入”变成跳过登录检查。
+  records.delete(loginStorageKey);
+  await router.navigate('/two');
+  assert.equal(store.getState().user.userInfo, null);
+  assert.equal(router.state.location.pathname, '/login');
+  assert.equal(notifications, 1);
+});
+
+test('同一用户任一资料字段变化都能同步，不仅比较用户编号或角色', () => {
+  const original = createDemoLoginUser('1');
+  writeLoginUser(original);
+  restoreLoginMiddleware();
+  for (const [field, value] of Object.entries(original)) {
+    const nextValue = field === 'userType' ? '0' : field === 'netEnv' ? '2' : `${value}-changed`;
+    writeLoginUser({ ...original, [field]: nextValue });
+    const before = store.getState().user.userInfo;
+    restoreLoginMiddleware();
+    assert.notEqual(store.getState().user.userInfo, before);
+    assert.equal(store.getState().user.userInfo[field], nextValue);
+    const restored = store.getState().user.userInfo;
+    restoreLoginMiddleware();
+    assert.equal(store.getState().user.userInfo, restored);
+  }
 });

@@ -9,7 +9,7 @@ import type { SystemInfo, SystemPageParams } from '@/types/systems.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
 import type { ParameterType } from '@/types/systems.ts';
 import { store } from '@/store/index.ts';
-import type { LoginUser } from '@/types/user.ts';
+import type { SystemAccessIdentity } from '@/types/user.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
 
 export const systemsOptions = () =>
@@ -19,11 +19,11 @@ export const systemsOptions = () =>
     queryFn: ({ signal }) => loadSystems(signal),
   });
 
-/** 两份清单使用独立查询键，创建后由 systems 前缀同时失效，不复制进 Redux。 */
-export const mySystemsOptions = () =>
+/** 我的系统按用户隔离；授权显式传入身份快照，避免迟到响应写入另一用户目录。创建后由 systems 前缀失效。 */
+export const mySystemsOptions = (openId = store.getState().user.userInfo?.openId ?? null) =>
   queryOptions({
     ...routeQueryMountOptions,
-    queryKey: ['systems', 'mine', store.getState().user.userInfo?.openId ?? null],
+    queryKey: ['systems', 'mine', openId],
     queryFn: ({ signal }) => loadMySystems(signal),
   });
 
@@ -56,7 +56,7 @@ export function parameterTypesOptions(systemName: string) {
 /** 本地演示授权：平台人员访问存在的系统，普通用户必须在接口成员清单中；真实后端仍须逐请求鉴权。 */
 export function systemAccessOptions(
   systemName: string,
-  user: LoginUser | null = store.getState().user.userInfo,
+  user: SystemAccessIdentity | null = store.getState().user.userInfo,
 ) {
   return queryOptions<SystemInfo>({
     queryKey: ['system-access', systemName, user?.openId ?? null, user?.userType ?? null],
@@ -70,7 +70,7 @@ export function systemAccessOptions(
     refetchOnWindowFocus: 'always',
   });
 }
-/** 并发父子 loader 共用在途查询，每次导航校验新鲜授权，失败不得回退旧缓存。 */
+/** middleware 决定何时调用；显式校验始终读取最新授权，共用在途查询，失败不得回退旧缓存。 */
 export async function requireSystemAccess(systemName: string) {
   return queryClient.query(systemAccessOptions(systemName));
 }

@@ -4,6 +4,7 @@
  * 主题、图标缓存和跨页签同步在入口安装；长期订阅在 HMR 替换时清理。
  * 主样式下载结束后挂载 React；HTML 启动画面继续保留到内容交接边界提交，不在入口直接移除。
  */
+import { startLoginSessionSync } from '@/utils/loginSessionSync';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/queries/client';
 import { Provider } from 'react-redux';
@@ -28,8 +29,25 @@ import { BootstrapLoadingProvider } from '@/providers/BootstrapLoadingProvider';
 
 // 一个 Store 订阅处理启动缓存、跨页签广播与排队刷新；DOM 配色仍由 Provider 管理。
 const stopUserSettingsEffects = startUserSettingsEffects(store);
+// 进度库独立下载，不增加首屏静态包；初始化导航仍由启动画面处理。
+let progressDisposed = false;
+let stopRouteProgress: (() => void) | undefined;
+void import('@/router/progress').then(({ startRouteProgress }) => {
+  if (!progressDisposed) stopRouteProgress = startRouteProgress(router);
+});
+// 共享会话改变后释放旧账号内存并重载，避免其他页签继续展示旧账号工作区。
+const stopLoginSessionSync = startLoginSessionSync(() => {
+  stopUserSettingsEffects();
+  queryClient.clear();
+  window.location.reload();
+});
 // HMR 时统一清理监听并取消配置请求，避免旧入口继续写缓存或应用迟到响应。
-import.meta.hot?.dispose(stopUserSettingsEffects);
+import.meta.hot?.dispose(() => {
+  progressDisposed = true;
+  stopRouteProgress?.();
+  stopLoginSessionSync();
+  stopUserSettingsEffects();
+});
 
 // router 在模块初始化时已启动路由加载；此处立即读取设置，不让它与样式等待形成串行请求。
 // 样式结束并挂载 React 后，根路由/App 先保留 HTML 原动画，首次配置等待结束后再展示骨架或正文。

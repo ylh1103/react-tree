@@ -2,12 +2,12 @@
 import { loadMySystems } from '@/api/systems.ts';
 import { loadSystemAccess } from '@/api/systemAccess.ts';
 import { HttpError } from '@/http/request.ts';
-import type { LoginUser } from '@/types/user.ts';
+import type { SystemAccessIdentity } from '@/types/user.ts';
 
 /** 平台人员无须加入；普通用户每次校验最新关系，V/D/R 本期均允许进入。真实后端仍须逐请求鉴权。 */
 export async function resolveSystemAccess(
   systemName: string,
-  user: LoginUser | null,
+  user: SystemAccessIdentity | null,
   signal: AbortSignal,
 ) {
   signal.throwIfAborted();
@@ -15,7 +15,7 @@ export async function resolveSystemAccess(
   const system = await loadSystemAccess(systemName, signal);
   if (user.userType === '0') return system;
   if (user.userType !== '1') throw new HttpError(403, '无系统访问权限');
-  // 不用目录旧缓存放行；父子 loader 共享外层授权查询去重，取消信号贯穿请求。
+  // 不用目录旧缓存放行；middleware 与布局共享外层授权查询去重，取消信号贯穿请求。
   const mine = await loadMySystems(signal);
   if (!mine.some((item) => item.systemName === systemName))
     throw new HttpError(403, '尚未加入该系统');

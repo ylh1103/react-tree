@@ -1,10 +1,13 @@
 /** 模拟请求执行器：延迟、取消及各业务响应只在首次请求后加载。 */
+import { currentUserStorageKey } from '../utils/userStorage.ts';
 import axios, { AxiosError, CanceledError, type AxiosAdapter, type AxiosResponse } from 'axios';
 import { mockConfig } from './config.ts';
 
 export const executeMockRequest: AxiosAdapter = async (config) => {
   // 显式绝对 URL 用于真实 HTTP 契约测试；模拟 API 只承接本项目相对地址。
   if (/^https?:\/\//.test(config.url!)) return axios.getAdapter(['xhr', 'http'])(config);
+  // 在延迟前固定请求所属用户，防止切换账号后旧请求写入新用户文档。
+  const settingsKey = currentUserStorageKey('display-settings');
   await new Promise<void>((resolve, reject) => {
     if (config.signal?.aborted) {
       reject(new CanceledError());
@@ -61,13 +64,13 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     const failure = config.headers.get('X-Mock-Error');
     if ((method === 'GET' && failure === 'load') || (method === 'PUT' && failure === 'save'))
       fail(503, '模拟设置服务暂时不可用');
-    if (method === 'GET') return response({ userSetting: readMockSettings() });
+    if (method === 'GET') return response({ userSetting: readMockSettings(settingsKey) });
     if (method === 'PUT') {
       const { settingsFromDocument } = await import('@/types/userSettings.ts');
       if (config.signal?.aborted) throw new CanceledError();
       try {
         settingsFromDocument(body?.userSetting ?? '');
-        return response(saveMockSettings(body?.userSetting ?? ''));
+        return response(saveMockSettings(body?.userSetting ?? '', settingsKey));
       } catch {
         return fail(400, '用户设置格式错误');
       }
@@ -77,7 +80,11 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
   const { allSystems, mySystems, systemPage, createSystem, accessSystem } =
     await import('./systemService.ts');
   if (config.signal?.aborted) throw new CanceledError();
-  if (url.pathname === '/api/systems/mine' && method === 'GET') return response(mySystems());
+  if (url.pathname === '/api/systems/mine' && method === 'GET') {
+    if (mockConfig.systemAccessError)
+      return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
+    return response(mySystems());
+  }
   if (url.pathname === '/api/systems/page' && method === 'GET') {
     const param = (name: string) => config.params?.[name] ?? url.searchParams.get(name);
     const pageNum = Number(param('pageNum') ?? 1);

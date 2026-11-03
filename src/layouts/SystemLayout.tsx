@@ -2,6 +2,7 @@
  * 系统工作区入口消费独立授权查询，身份与成员清单不替代访问结果。
  * 不存在、无权限和请求错误分别展示；只有确认有效后才提供 SystemContext 和子路由。
  */
+import { shallowEqual } from 'react-redux';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Spin } from 'antd';
 import { Outlet, useMatch, useParams } from 'react-router';
@@ -15,10 +16,14 @@ import RouteStatusPage from '@/pages/RouteStatus';
 export default function SystemLayout() {
   const { systemName } = useParams();
   const isDatabase = Boolean(useMatch('/systems/:systemName/db/*'));
-  const user = useAppSelector((state) => state.user.userInfo);
+  // 只订阅授权所需字段；姓名、部门等资料变化不触发工作区更新。
+  const user = useAppSelector((state) => {
+    const info = state.user.userInfo;
+    return info ? { openId: info.openId, userType: info.userType } : null;
+  }, shallowEqual);
   const query = useQuery(systemAccessOptions(systemName!, user));
-  // 切换器始终只展示已加入系统；当前系统独立取自 URL 的授权结果。
-  const list = useQuery(mySystemsOptions());
+  // 授权/loader 已填充同用户目录；挂载不重复刷新，失效和手动刷新仍可更新。
+  const list = useQuery({ ...mySystemsOptions(user?.openId ?? null), refetchOnMount: false });
   const system = query.data;
   const systems = list.data ?? [];
   if (query.isPending || (!system && query.isFetching))

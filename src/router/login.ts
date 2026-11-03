@@ -1,5 +1,6 @@
-/** 登录导航与路由前置检查；本地会话只控制入口，系统权限继续由各业务 loader 校验。 */
+/** 登录导航与路由前置检查；本地会话只控制入口，系统权限继续由系统路由 middleware 校验。 */
 import { replace, type MiddlewareFunction } from 'react-router';
+import { shallowEqual } from 'react-redux';
 import { store } from '@/store/index.ts';
 import { setUserInfo } from '@/store/slices/userSlice.ts';
 import { readLoginUser, removeLoginUser } from '@/utils/loginStorage.ts';
@@ -57,14 +58,15 @@ function requestDestination(url: URL) {
   return `${url.pathname}${url.search}${url.hash || hash}`;
 }
 
-/** 根路由每次导航恢复身份，供公开页和业务页共用；只同步资料，不限制访问。 */
+/** 每次导航读取登录记录；当前资料为扁平字段，逐字段相同则保留 Redux 引用，避免无效通知。 */
 export const restoreLoginMiddleware: MiddlewareFunction = () => {
-  store.dispatch(setUserInfo(readLoginUser()));
+  const user = readLoginUser();
+  if (!shallowEqual(store.getState().user.userInfo, user)) store.dispatch(setUserInfo(user));
 };
 
 /**
  * 仅挂在受保护路由分组，消费根 middleware 已恢复的身份，避免重复读取存储。
- * Router 在并行 loader 前完成检查，也覆盖无 loader 的导航；系统权限仍由 requireSystemAccess 校验。
+ * Router 在并行 loader 前完成检查，也覆盖无 loader 的导航；系统权限由后续的系统路由 middleware 统一校验。
  */
 export const loginMiddleware: MiddlewareFunction = ({ request }) => {
   if (!store.getState().user.userInfo)

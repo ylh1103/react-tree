@@ -6,7 +6,7 @@ import type { LoaderFunctionArgs, ShouldRevalidateFunction } from 'react-router'
 import { queryClient } from '@/queries/client.ts';
 import { preloadRouteQuery } from '@/queries/routeQuery.ts';
 import { applicationEnvironmentsOptions } from '@/queries/applicationEnvironments.ts';
-import { mySystemsOptions, parameterTypesOptions, requireSystemAccess } from '@/queries/systems.ts';
+import { mySystemsOptions, parameterTypesOptions } from '@/queries/systems.ts';
 import type { ListNode } from '@/components/GroupedList/types.ts';
 import {
   applicationListId,
@@ -55,16 +55,18 @@ export const revalidateSystemCollection: ShouldRevalidateFunction = ({
 /** 静态 loader 与 route.lazy 并行执行；请求结果沿用页面的 Query 缓存。 */
 export async function preloadSystems(args?: LoaderFunctionArgs) {
   const systemName = args?.params.systemName;
-  if (systemName) await requireSystemAccess(systemName);
   args?.request?.signal.throwIfAborted();
-  // 首页默认我的系统，只预取其全量关系清单；所有系统切到页签后按页请求。
-  await preloadRouteQuery(queryClient, mySystemsOptions());
+  // 系统授权由父路由 middleware 前置执行；工作区内重跑 loader 不重复刷新切换器目录。
+  // 首页仍按原策略刷新我的系统，目录写入可通过失效查询触发更新。
+  await preloadRouteQuery(
+    queryClient,
+    systemName ? { ...mySystemsOptions(), staleTime: Infinity } : mySystemsOptions(),
+  );
   return null;
 }
 
 export async function preloadDatabase({ params, request }: LoaderFunctionArgs) {
   if (params.systemName) {
-    await requireSystemAccess(params.systemName);
     request?.signal.throwIfAborted();
     await preloadRouteQuery(
       queryClient,
@@ -79,7 +81,6 @@ export async function preloadDatabase({ params, request }: LoaderFunctionArgs) {
 
 export async function preloadApplications({ params, request }: LoaderFunctionArgs) {
   if (!params.systemName) return null;
-  await requireSystemAccess(params.systemName);
   request?.signal.throwIfAborted();
   const id = applicationListId(params.systemName);
   // 与页面共用写入锁，避免导航预取读取尚未提交的数据。

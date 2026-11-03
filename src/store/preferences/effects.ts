@@ -3,6 +3,7 @@
  * 启动缓存只保存服务端确认值；跨页签只发通知，再读取服务端配置，避免广播循环。
  * 清理时释放 Store、通知和浏览器监听，并取消在途及排队请求，供应用入口/HMR 使用。
  */
+import { currentUserStorageKey } from '../../utils/userStorage.ts';
 import type { AppStore } from '../index.ts';
 import type { ThemeMode } from '@/types/preferences.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
@@ -16,6 +17,10 @@ export function startUserSettingsEffects(
   store: AppStore,
   transport = createUserSettingsSyncTransport(),
 ) {
+  // 生命周期固定用户键，账号切换重载前不把旧状态写入新账号。
+  const themeKey = currentUserStorageKey(bootstrapThemeKey);
+  const loadingKey = currentUserStorageKey(bootstrapLoadingKey);
+  const isCurrentUser = () => themeKey === currentUserStorageKey(bootstrapThemeKey);
   // 只记录成功写入的值；字段分别处理，某一项存储失败不阻塞另一项，后续更新仍可重试。
   let persistedTheme: ThemeMode | undefined;
   let persistedLoading: LoadingStyleId | undefined;
@@ -30,6 +35,7 @@ export function startUserSettingsEffects(
     const { initialized, status } = store.getState().preferences;
     if (
       stopped ||
+      !isCurrentUser() ||
       !queued ||
       refreshing ||
       !initialized ||
@@ -57,13 +63,14 @@ export function startUserSettingsEffects(
   };
   const unsubscribeTransport = transport?.subscribe(receive);
   const unsubscribeStore = store.subscribe(() => {
+    if (!isCurrentUser()) return;
     const current = store.getState().preferences;
     // initialized 也可能来自读取失败，不能据此确认回退值；重试期间同样不写缓存。
     // 连续保存中较早成功的请求会在 saving 时推进 saved*，必须保留这次已确认的缓存。
     if (current.initialized && current.status !== 'loading' && current.status !== 'load-error') {
       if (persistedTheme !== current.savedThemeMode) {
         try {
-          window.localStorage.setItem(bootstrapThemeKey, current.savedThemeMode);
+          window.localStorage.setItem(themeKey, current.savedThemeMode);
           persistedTheme = current.savedThemeMode;
         } catch {
           // 缓存不可用不影响当前主题或跨页签同步，后续 Store 更新可重试。
@@ -71,7 +78,7 @@ export function startUserSettingsEffects(
       }
       if (persistedLoading !== current.savedLoadingStyle) {
         try {
-          window.localStorage.setItem(bootstrapLoadingKey, current.savedLoadingStyle);
+          window.localStorage.setItem(loadingKey, current.savedLoadingStyle);
           persistedLoading = current.savedLoadingStyle;
         } catch {
           // 图标缓存独立失败，不影响已经写入的主题缓存。

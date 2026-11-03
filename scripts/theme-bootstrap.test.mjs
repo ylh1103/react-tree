@@ -16,9 +16,16 @@ import {
   resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
 import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
-import { bootstrapLoadingKey } from '../src/store/preferences/loadingBootstrap.ts';
+import { bootstrapLoadingKey as bootstrapLoadingKeyResource } from '../src/store/preferences/loadingBootstrap.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
-import { readBootstrapTheme, bootstrapThemeKey } from '../src/store/preferences/themeBootstrap.ts';
+import {
+  readBootstrapTheme,
+  bootstrapThemeKey as bootstrapThemeKeyResource,
+} from '../src/store/preferences/themeBootstrap.ts';
+
+const bootstrapThemeKey = `${bootstrapThemeKeyResource}:anonymous`;
+
+const bootstrapLoadingKey = `${bootstrapLoadingKeyResource}:anonymous`;
 
 test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t) => {
   const values = mockStorage(t);
@@ -247,6 +254,7 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
         if (blocked) throw new Error('blocked');
         return {
           getItem: (key) => {
+            if (key === 'parameter-management:login') return null;
             assert.equal(key, bootstrapThemeKey);
             return cached;
           },
@@ -273,6 +281,25 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
       if (previous) Object.defineProperty(globalThis, 'document', previous);
       else delete globalThis.document;
     }
+  }
+  for (const ystId of ['A', 'B']) {
+    const records = new Map([
+      [
+        'parameter-management:login',
+        JSON.stringify({ version: 1, loggedIn: true, user: { ystId } }),
+      ],
+      [`${bootstrapThemeKeyResource}:user:A`, 'dark'],
+      [bootstrapThemeKey, 'dark'],
+    ]);
+    const root = { dataset: {}, style: { setProperty() {} } };
+    runInNewContext(match[1], {
+      window: {
+        localStorage: { getItem: (key) => records.get(key) ?? null },
+        matchMedia: () => ({ matches: false }),
+      },
+      document: { documentElement: root },
+    });
+    assert.equal(root.dataset.theme, ystId === 'A' ? 'dark' : 'light');
   }
 });
 

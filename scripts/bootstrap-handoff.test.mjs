@@ -124,7 +124,10 @@ function setup(
     ...(route.children ? { children: route.children.map(holdRoute) } : {}),
   });
   const routes = actualRoutes ? [holdRoute(rootRoute)] : fixtureRoutes;
-  const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const router = createMemoryRouter(routes, {
+    initialEntries: [path],
+    future: { v8_middleware: true },
+  });
   t.after(() => router.dispose());
   const store = createAppStore();
   // 直接派发同一 requestId 的生命周期 action，推进真实 reducer，同时避免发出设置接口请求。

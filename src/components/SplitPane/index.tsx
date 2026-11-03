@@ -2,6 +2,7 @@
  * 复用分栏容器：管理宽度、收起状态、键盘操作及拖拽调整。
  * 尺寸按 storageKey 隔离持久化；轻量展示层和只读缓存规则供路由骨架独立复用。
  */
+import { currentUserStorageKey } from '@/utils/userStorage';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Tooltip, Typography } from 'antd';
@@ -50,6 +51,9 @@ export function SplitPane({
   defaultVisible = true,
   storageKey,
 }: SplitPaneProps) {
+  // 生命周期内固定所属用户，账号切换重载前禁止将旧布局写入新用户空间。
+  const [ownerKey] = useState(() => currentUserStorageKey(''));
+  const scopedStorageKey = storageKey ? `${storageKey}${ownerKey}` : undefined;
   const { layoutMode } = useLayoutPreferences();
   const compact = layoutMode === 'compact';
   const separatorWidth = compact ? 1 : 4;
@@ -125,13 +129,13 @@ export function SplitPane({
   const expanded = layout.visible && upper > 0;
 
   useEffect(() => {
-    if (!storageKey || dragging || readOnly) return;
+    if (!scopedStorageKey || dragging || readOnly || ownerKey !== currentUserStorageKey('')) return;
     try {
-      localStorage.setItem(storageKey, JSON.stringify(layout));
+      localStorage.setItem(scopedStorageKey, JSON.stringify(layout));
     } catch {
       /* 禁用存储时仍可使用面板。 */
     }
-  }, [layout, dragging, storageKey, readOnly]);
+  }, [layout, dragging, scopedStorageKey, readOnly, ownerKey]);
 
   // 处理器读取最新边界，尺寸变化时无需重新注册键盘监听。
   useEventListener(
