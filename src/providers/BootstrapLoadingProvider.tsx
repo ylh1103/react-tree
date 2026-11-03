@@ -22,6 +22,8 @@ export function BootstrapLoadingProvider({
     // 调用方在布局 Effect 中触发：先移除外部画面，再让回退组件获知启动阶段已结束。
     // 多个交接边界可能在同次提交中调用；节点不存在及重复设置 false 都可安全处理。
     document.getElementById('bootstrap-loading')?.remove();
+    // 首次可展示内容提交后停止 HTML 监听；后续异常由 React/路由边界局部处理。
+    document.dispatchEvent(new Event('app:bootstrap-complete'));
     setActive(false);
   }, []);
   const value = useMemo(() => ({ active, dismiss }), [active, dismiss]);

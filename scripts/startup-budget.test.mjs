@@ -53,6 +53,8 @@ test('共享依赖和循环只计算一次，动态设置模块不进入首屏�
 test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯一适配入口', () => {
   const bundle = fixture();
   bundle['shell.js'].modules = {
+    '/project/src/components/FailureDetails/Details.tsx': {},
+    '/project/src/utils/failureDetails.ts': {},
     '/project/src/components/SplitPane/index.tsx': {},
     '/project/src/components/CollectionSkeleton/index.tsx': {},
     '/project/src/layouts/UserSettingsDrawer/index.tsx': {},
@@ -65,6 +67,8 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
   };
   const report = createStartupReport(bundle);
   assert.deepEqual(report.forbidden, [
+    'components/FailureDetails/Details.tsx',
+    'utils/failureDetails.ts',
     'components/SplitPane/index.tsx',
     'components/CollectionSkeleton/index.tsx',
     'layouts/UserSettingsDrawer/index.tsx',

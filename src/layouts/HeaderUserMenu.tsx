@@ -1,6 +1,7 @@
 /** 页头身份卡片：集中展示头像、姓名和账号，保留分组菜单的键盘操作与入口授权边界。 */
-import { App, Alert, Button, Dropdown } from 'antd';
-import { Component, lazy, Suspense, useState, type ReactNode } from 'react';
+import { App, Button, Dropdown } from 'antd';
+import { lazy, useState } from 'react';
+import { DeferredPanel } from './DeferredPanel';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { openUserSettings } from '@/store/slices/preferencesSlice';
 import { logoutUser } from '@/router/login';
@@ -17,33 +18,6 @@ function accountMenuItem(key: string, label: string, icon: string, danger = fals
     className: menuItemClass,
     icon: <span className={`${icon} size-4`} aria-hidden="true" />,
   };
-}
-
-/** 详情模块加载失败时保留用户操作，退出和配置入口不受影响。 */
-class UserProfileBoundary extends Component<
-  { children: ReactNode; open: boolean; onClose: () => void },
-  { failed: boolean }
-> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  render() {
-    return this.state.failed ? (
-      this.props.open ? (
-        <div className="fixed right-4 top-16 z-1300 w-320px">
-          <Alert
-            type="warning"
-            showIcon
-            title="个人资料加载失败，请刷新页面重试"
-            closable={{ onClose: this.props.onClose }}
-          />
-        </div>
-      ) : null
-    ) : (
-      this.props.children
-    );
-  }
 }
 
 export function HeaderUserMenu() {
@@ -125,24 +99,9 @@ export function HeaderUserMenu() {
         </Button>
       </Dropdown>
       {profileOpen !== null && (
-        <UserProfileBoundary open={profileOpen} onClose={() => setProfileOpen(false)}>
-          <Suspense
-            fallback={
-              profileOpen ? (
-                <div className="fixed right-4 top-16 z-1300 w-320px">
-                  <Alert
-                    type="info"
-                    showIcon
-                    title="正在加载个人资料…"
-                    closable={{ onClose: () => setProfileOpen(false) }}
-                  />
-                </div>
-              ) : null
-            }
-          >
-            <UserProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-          </Suspense>
-        </UserProfileBoundary>
+        <DeferredPanel open={profileOpen} title="个人资料" onClose={() => setProfileOpen(false)}>
+          <UserProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
+        </DeferredPanel>
       )}
     </>
   );

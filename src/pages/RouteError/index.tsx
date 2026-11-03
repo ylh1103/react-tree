@@ -2,7 +2,7 @@
  * 静态路由错误边界：403/404 使用状态页，其他错误提供刷新与返回首页的恢复入口。
  * 首次配置等待结束前保留启动动画；之后各错误分支在提交后交接，避免错误页先使用未校准的主题。
  */
-import { Button, Result, Space } from 'antd';
+import { AppFailure } from '@/components/AppFailure';
 import { useNavigate, useRouteError } from 'react-router';
 import { HttpError } from '@/http/request';
 import RouteStatusPage from '@/pages/RouteStatus';
@@ -22,24 +22,5 @@ export default function RouteErrorPage() {
         <RouteStatusPage forbidden={error.status === 403} />
       </BootstrapLoadingHandoff>
     );
-  const resourceFailure =
-    error instanceof Error &&
-    /dynamically imported|module script|chunk|Failed to fetch/i.test(error.message);
-  return (
-    <BootstrapLoadingHandoff>
-      <Result
-        status="error"
-        title={resourceFailure ? '页面资源加载失败' : '页面暂时无法打开'}
-        subTitle="请检查网络后刷新页面。若刚刚更新了系统，刷新可获取最新资源。"
-        extra={
-          <Space>
-            <Button type="primary" onClick={() => window.location.reload()}>
-              刷新页面
-            </Button>
-            <Button onClick={() => navigate('/')}>返回系统列表</Button>
-          </Space>
-        }
-      />
-    </BootstrapLoadingHandoff>
-  );
+  return <AppFailure error={error} onHome={() => navigate('/')} />;
 }

@@ -1,4 +1,5 @@
 /** 差异编辑器的轻量入口：与单值编辑器共享运行时，但分别按需加载展示实现。 */
+import { EditorErrorBoundary } from '@/components/MonacoEditor/ErrorBoundary';
 import { lazy, Suspense } from 'react';
 import type { DiffEditorProps } from '@monaco-editor/react';
 import { EditorLoading } from '@/components/MonacoEditor/Loading';
@@ -10,14 +11,20 @@ const LazyDiffEditor = lazy(() => import('./Editor'));
 
 export function MonacoDiffEditor(props: MonacoDiffEditorProps) {
   return (
-    <Suspense
-      fallback={
-        <EditorLoading width={props.width} height={props.height}>
-          {props.loading}
-        </EditorLoading>
-      }
+    <EditorErrorBoundary
+      width={props.width}
+      height={props.height}
+      modelKeys={[props.originalModelPath, props.modifiedModelPath]}
     >
-      <LazyDiffEditor {...props} />
-    </Suspense>
+      <Suspense
+        fallback={
+          <EditorLoading width={props.width} height={props.height}>
+            {props.loading}
+          </EditorLoading>
+        }
+      >
+        <LazyDiffEditor {...props} />
+      </Suspense>
+    </EditorErrorBoundary>
   );
 }

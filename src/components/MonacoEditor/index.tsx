@@ -1,4 +1,5 @@
 /** 参数编辑器的轻量入口：首次展示时才加载 Monaco、语言服务与本地 Worker。 */
+import { EditorErrorBoundary } from '@/components/MonacoEditor/ErrorBoundary';
 import { lazy, Suspense } from 'react';
 import type { EditorProps } from '@monaco-editor/react';
 import { EditorLoading } from './Loading';
@@ -10,14 +11,16 @@ const LazyEditor = lazy(() => import('./Editor'));
 
 export function MonacoEditor(props: MonacoEditorProps) {
   return (
-    <Suspense
-      fallback={
-        <EditorLoading width={props.width} height={props.height}>
-          {props.loading}
-        </EditorLoading>
-      }
-    >
-      <LazyEditor {...props} />
-    </Suspense>
+    <EditorErrorBoundary width={props.width} height={props.height} modelKeys={[props.path]}>
+      <Suspense
+        fallback={
+          <EditorLoading width={props.width} height={props.height}>
+            {props.loading}
+          </EditorLoading>
+        }
+      >
+        <LazyEditor {...props} />
+      </Suspense>
+    </EditorErrorBoundary>
   );
 }

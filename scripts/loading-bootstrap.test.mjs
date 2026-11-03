@@ -185,6 +185,13 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
   const css = /<style id="loading-bootstrap-style">([\s\S]*?)<\/style>/.exec(html);
   assert.ok(script);
   assert.ok(css);
+  const failureScript = /<script id="failure-bootstrap">([\s\S]*?)<\/script>/.exec(html);
+  assert.ok(failureScript, '入口执行前必须安装不依赖 React 的异常兜底');
+  assert.ok(failureScript.index < html.indexOf('<script type="module"'));
+  assert.match(html, /id="bootstrap-reload"/);
+  assert.match(html, /id="bootstrap-support" type="button"/, '技术支持保留为无跳转按钮');
+  assert.doesNotMatch(html, /bootstrap-copy|复制详情/, '启动失败页不提供复制按钮');
+  assert.match(css[1], /data-bootstrap-failed/, '失败提示样式必须随 HTML 内联');
   assert.ok(html.indexOf('<meta charset=') < script.index);
   assert.ok(script.index < html.indexOf('<script type="module"'));
   assert.ok(css.index < html.indexOf('<link'));

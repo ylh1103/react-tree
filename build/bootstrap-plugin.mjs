@@ -4,6 +4,7 @@
  */
 import { userStorageKey } from '../src/utils/userStorage.ts';
 import { createGenerator } from 'unocss';
+import { minify } from 'vite';
 import unoConfig from '../uno.config.ts';
 import { renderBootstrapLoading } from './loading-bootstrap-view.tsx';
 import {
@@ -12,6 +13,8 @@ import {
 } from '../src/store/preferences/loadingBootstrap.ts';
 import { loadingStyleIds } from '../src/types/loading.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
+import { formatFailureDetails } from '../src/utils/failureDetails.ts';
+import { startBootstrapFailure } from '../src/utils/bootstrapFailure.ts';
 import { startBootstrapStyles } from '../src/utils/bootstrapStyles.ts';
 import { themeVariablesByMode } from '../src/styles/theme.ts';
 import { bootstrapThemeKey, readThemeMode } from '../src/store/preferences/themeBootstrap.ts';
@@ -40,8 +43,9 @@ function initializeTheme(scopeKey, readMode, key, fallback, colors) {
     const root = document.documentElement;
     root.dataset.theme = resolved;
     root.style.colorScheme = resolved;
-    root.style.setProperty('--color-canvas', colors[resolved].canvas);
-    root.style.setProperty('--color-text', colors[resolved].text);
+    // 启动失败页也使用正式主题 token，无需等待主样式或 Provider。
+    for (const [name, value] of Object.entries(colors[resolved]))
+      root.style.setProperty(`--color-${name}`, value);
     // UnoCSS 此时可能尚未下载，所以直接设置最小根节点样式；这部分不能依赖外部工具类。
     // 背景引用变量而非固定颜色，Provider 后续更新变量时，画布也会随之变化。
     root.style.backgroundColor = 'var(--color-canvas)';
@@ -76,7 +80,19 @@ function createThemeScript() {
   const colors = Object.fromEntries(
     Object.entries(themeVariablesByMode).map(([mode, variables]) => [
       mode,
-      { canvas: variables['--color-canvas'], text: variables['--color-text'] },
+      Object.fromEntries(
+        [
+          'canvas',
+          'text',
+          'surface',
+          'text-secondary',
+          'border-subtle',
+          'accent',
+          'accent-hover',
+          'on-accent',
+          'danger',
+        ].map((name) => [name, variables[`--color-${name}`]]),
+      ),
     ]),
   );
   const args = serializeArguments([bootstrapThemeKey, defaultUserSettings.themeMode, colors]);
@@ -96,12 +112,22 @@ function createLoadingScript() {
 /** 开发与生产共用一次 HTML 转换；静态画面、内联脚本和 UnoCSS 在插件创建时生成，后续转换复用。 */
 export function bootstrapPlugin() {
   const markup = renderBootstrapLoading();
-  const themeScript = createThemeScript();
-  const loadingScript = createLoadingScript();
+  // 复用当前 Vite 的压缩器，缩小三个独立同步脚本；不混淆 DOM 属性或引入运行时依赖。
+  const scripts = Promise.all(
+    [
+      createThemeScript(),
+      createLoadingScript(),
+      `;(${startBootstrapFailure.toString()})(${formatFailureDetails.toString()});`,
+    ].map(async (source, index) => {
+      const result = await minify(`bootstrap-${index}.js`, source, { module: false });
+      if (result.errors.length) throw new Error('启动脚本压缩失败', { cause: result.errors });
+      return result.code;
+    }),
+  );
   // React 会把 class 内的 & 转义为实体，提取工具类前恢复，保证祖先属性变体与真实 DOM 一致。
   // 不生成 preflight，避免为临时画面重复注入会影响整个页面的基础样式。
   const css = createGenerator(unoConfig).then((uno) =>
-    uno.generate(markup.replaceAll('&amp;', '&'), { preflights: false }),
+    uno.generate(markup.replaceAll('&amp;', '&'), { preflights: false, minify: true }),
   );
   return {
     name: 'html-bootstrap',
@@ -109,6 +135,7 @@ export function bootstrapPlugin() {
       // 生产主样式链接由 Vite 注入；在常规转换之后处理，才能把这些链接纳入启动等待。
       order: 'post',
       async handler(html) {
+        const [themeScript, loadingScript, failureScript] = await scripts;
         return {
           html: html
             // 统一在头部最前面补齐 UTF-8 声明，避免大段内联内容将其推到文档最初的 1024 字节之外。
@@ -123,10 +150,16 @@ export function bootstrapPlugin() {
                 ? tag
                 : tag.replace(/\s*\/?>$/, ' media="print" data-bootstrap-stylesheet>'),
             ),
-          // 在同一批标签内固定顺序：字符集 → 最小配色 → 图标选择和样式监听 → 图标样式。
-          // 保留两个普通同步脚本及原有 ID，使主题异常不阻断图标初始化，并兼容现有定位与验证。
+          // 固定顺序：字符集 → 启动异常监听 → 最小配色 → 图标和样式监听 → 内联样式。
+          // 各同步脚本独立执行，使主题异常不阻断图标初始化，并保留原有 ID 供定位与验证。
           tags: [
             { tag: 'meta', attrs: { charset: 'UTF-8' }, injectTo: 'head-prepend' },
+            {
+              tag: 'script',
+              attrs: { id: 'failure-bootstrap' },
+              children: failureScript,
+              injectTo: 'head-prepend',
+            },
             {
               tag: 'script',
               attrs: { id: 'theme-bootstrap' },

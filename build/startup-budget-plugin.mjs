@@ -3,9 +3,12 @@ import { gzipSync } from 'node:zlib';
 import { Buffer } from 'node:buffer';
 
 /** 预算以每个响应分别 gzip 后求和；这是传输体积估算，不代表浏览器加载耗时。 */
-export const startupBudget = { javascriptGzip: 300_000, cssGzip: 20_000, htmlGzip: 6_000 };
+// HTML 包含独立故障页及内联插画，避免资源失效时再请求图片；完整 React 详情仍按需加载。
+export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 7_500 };
 
 const forbiddenInitialModules = [
+  '/src/components/FailureDetails/Details.tsx',
+  '/src/utils/failureDetails.ts',
   '/src/components/SplitPane/index.tsx',
   '/src/components/CollectionSkeleton/',
   '/src/components/LayoutSettings/',
@@ -85,7 +88,7 @@ export function startupBudgetPlugin() {
           source: JSON.stringify(report, null, 2),
         });
         this.info(
-          `首屏静态 JS gzip ${(report.totals.javascriptGzip / 1000).toFixed(2)} KB / 300 KB`,
+          `首屏静态 JS gzip ${(report.totals.javascriptGzip / 1000).toFixed(2)} KB / ${report.budget.javascriptGzip / 1000} KB`,
         );
       },
     },

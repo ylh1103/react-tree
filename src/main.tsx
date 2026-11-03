@@ -4,6 +4,8 @@
  * 主题、图标缓存和跨页签同步在入口安装；长期订阅在 HMR 替换时清理。
  * 主样式下载结束后挂载 React；HTML 启动画面继续保留到内容交接边界提交，不在入口直接移除。
  */
+import { ErrorBoundary } from 'react-error-boundary';
+import { AppFailure } from '@/components/AppFailure';
 import { startLoginSessionSync } from '@/utils/loginSessionSync';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/queries/client';
@@ -32,9 +34,12 @@ const stopUserSettingsEffects = startUserSettingsEffects(store);
 // 进度库独立下载，不增加首屏静态包；初始化导航仍由启动画面处理。
 let progressDisposed = false;
 let stopRouteProgress: (() => void) | undefined;
-void import('@/router/progress').then(({ startRouteProgress }) => {
-  if (!progressDisposed) stopRouteProgress = startRouteProgress(router);
-});
+void import('@/router/progress')
+  .then(({ startRouteProgress }) => {
+    if (!progressDisposed) stopRouteProgress = startRouteProgress(router);
+  })
+  // 进度提示是可选增强，下载失败只记录错误，不阻断启动或业务导航。
+  .catch(console.error);
 // 共享会话改变后释放旧账号内存并重载，避免其他页签继续展示旧账号工作区。
 const stopLoginSessionSync = startLoginSessionSync(() => {
   stopUserSettingsEffects();
@@ -57,12 +62,10 @@ const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixT
 
 // 等标记样式结束后再挂载，减少样式尚未应用时的页面闪现；失败的链接也会结束等待。
 // 无需在入口串行等待配置或整个 Router 初始化：各显示分支在首次配置等待结束后再交接 HTML 画面。
-void waitForBootstrapStyles().then(
-  () => {
-    createRoot(document.getElementById('root')!).render(
-      <BootstrapLoadingProvider
-        initialActive={Boolean(document.getElementById('bootstrap-loading'))}
-      >
+void waitForBootstrapStyles().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <BootstrapLoadingProvider initialActive={Boolean(document.getElementById('bootstrap-loading'))}>
+      <ErrorBoundary FallbackComponent={AppFailure}>
         <StyleProvider hashPriority="high" transformers={legacyStyleTransformers}>
           <QueryClientProvider client={queryClient}>
             <Provider store={store}>
@@ -74,11 +77,7 @@ void waitForBootstrapStyles().then(
             </Provider>
           </QueryClientProvider>
         </StyleProvider>
-      </BootstrapLoadingProvider>,
-    );
-  },
-  (error: unknown) => {
-    // 样式资源的 load/error 均由等待函数正常处理；此处仅传播意外异常。
-    throw error;
-  },
-);
+      </ErrorBoundary>
+    </BootstrapLoadingProvider>,
+  );
+});
