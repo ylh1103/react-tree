@@ -40,3 +40,21 @@ export const systemPageSizes = [12, 24, 48];
 export function riskLevelLabel(value: string | undefined) {
   return value ? `重要性 ${value}` : '重要性未配置';
 }
+
+/** 信号格数：A→4、B→3、C→2、D 及以后→1；未配置或非字母等级为 0，只影响视觉强度。 */
+export const riskLevelMax = 4;
+export function riskLevelRank(value: string | undefined) {
+  const letter = value?.trim().charAt(0).toUpperCase();
+  if (!letter || letter < 'A' || letter > 'Z') return 0;
+  return Math.max(1, riskLevelMax - (letter.charCodeAt(0) - 65));
+}
+
+/** 负责人拆为姓名列表，供头像组展示；完整原文仍由提示与详情承载。 */
+export function peopleList(value: string | undefined) {
+  return (
+    value
+      ?.split(',')
+      .map((person) => person.trim().split('/')[0].trim())
+      .filter(Boolean) ?? []
+  );
+}

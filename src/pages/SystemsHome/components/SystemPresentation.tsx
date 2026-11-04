@@ -1,10 +1,17 @@
 /** 系统目录以名称识别、参数快捷入口和负责人分层展示；角色与关系标签不参与授权。 */
-import { Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
+import { Avatar, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
 import { platformHome } from '@/router/paths';
-import { peopleNames, riskLevelLabel, systemRoleLabels } from '../model/presentation';
+import {
+  peopleList,
+  peopleNames,
+  riskLevelLabel,
+  riskLevelMax,
+  riskLevelRank,
+  systemRoleLabels,
+} from '../model/presentation';
 
 /** 未接入的管理操作集中收纳并禁用，避免与可用的参数入口争夺注意力。 */
 function MySystemActions({ systemName }: { systemName: string }) {
@@ -35,7 +42,7 @@ function MySystemActions({ systemName }: { systemName: string }) {
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+    <div className="grid grid-cols-2 border-t border-t-solid border-divider bg-canvas [&>*+*]:border-l [&>*+*]:border-l-solid [&>*+*]:border-l-divider">
       {(
         [
           {
@@ -59,27 +66,108 @@ function SystemEntries({ system }: { system: SystemInfo }) {
           block
           type="text"
           className={`
-            group/entry h-auto! min-w-0! flex! flex-col! items-stretch! gap-1! px-3! py-2.5!
-            rounded-control! bg-canvas! hover:bg-accent-bg-hover! [&>span]:min-w-0
+            group/entry h-auto! min-w-0! flex! items-center! gap-3! px-4! py-3!
+            rounded-none! bg-transparent! hover:bg-hover! [&>span]:min-w-0
+            focus-visible:outline-2! focus-visible:outline-solid! focus-visible:outline-accent!
+            focus-visible:outline-offset-[-2px]!
           `}
           onClick={() => navigate(platformHome(system.systemName, platform))}
           aria-label={`进入 ${system.systemName} ${label}`}
         >
-          <span className="flex items-center gap-1.5 min-w-0 text-12px leading-18px text-text-secondary group-hover/entry:text-accent-text">
-            <span className={`${icon} w-14px h-14px shrink-0`} aria-hidden="true" />
-            <span className="truncate">{label}</span>
-            <span
-              className="i-lucide-arrow-right ml-auto w-14px h-14px shrink-0 opacity-0 transition-opacity group-hover/entry:opacity-100 group-focus-visible/entry:opacity-100"
-              aria-hidden="true"
-            />
+          <span
+            className={`
+              flex h-32px w-32px shrink-0 items-center justify-center rounded-control
+              bg-surface text-text-secondary border border-solid border-border-subtle transition-colors
+              group-hover/entry:bg-accent group-hover/entry:text-on-accent group-hover/entry:border-accent
+            `}
+            aria-hidden="true"
+          >
+            <span className={`${icon} w-16px h-16px`} />
           </span>
-          <span className="flex items-baseline gap-1 min-w-0 text-12px leading-24px text-text-muted">
-            <strong className="text-20px font-600 tabular-nums text-text">{count ?? '—'}</strong>
-            <span className="truncate">{unit}</span>
+          <span className="flex flex-col items-start flex-1 min-w-0 text-left">
+            <span className="flex items-baseline gap-1 max-w-full">
+              <strong className="text-18px leading-24px font-600 tabular-nums text-text group-hover/entry:text-accent-text">
+                {count ?? '—'}
+              </strong>
+              <span className="truncate text-12px text-text-muted">{unit}</span>
+            </span>
+            <span className="max-w-full truncate text-12px leading-18px text-text-secondary">
+              {label}
+            </span>
           </span>
+          <span
+            className="i-lucide-chevron-right w-16px h-16px shrink-0 text-text-muted transition-transform group-hover/entry:translate-x-0.5 group-hover/entry:text-accent-text"
+            aria-hidden="true"
+          />
         </Button>
       ))}
     </div>
+  );
+}
+
+/** 重要性以信号格呈现，A 级最满；文字等级同时保留，色彩不是唯一信息来源。 */
+function RiskSignal({ level }: { level: string | undefined }) {
+  const rank = riskLevelRank(level);
+  const label = riskLevelLabel(level);
+  return (
+    <span
+      className="flex items-center gap-1.5 shrink-0 text-12px leading-20px text-text-secondary"
+      title="系统重要性等级"
+      aria-label={label}
+    >
+      <span className="flex items-end gap-2px h-12px" aria-hidden="true">
+        {Array.from({ length: riskLevelMax }, (_, index) => (
+          <span
+            key={index}
+            className={`w-3px rounded-1px ${index < rank ? 'bg-accent' : 'bg-border'}`}
+            style={{ height: `${((index + 1) / riskLevelMax) * 100}%` }}
+          />
+        ))}
+      </span>
+      <span aria-hidden="true">{level ? `${level} 级` : '未分级'}</span>
+    </span>
+  );
+}
+
+/** 负责人以姓名首字头像叠放，最多露出 3 位；完整姓名/编号保留在提示里。 */
+function Owners({ value }: { value: string | undefined }) {
+  const people = peopleList(value);
+  return (
+    <Tooltip title={value || '暂未配置'} placement="topLeft">
+      <div className="flex items-center gap-2 mt-4 min-w-0 text-12px leading-20px">
+        {people.length ? (
+          <Avatar.Group
+            size={22}
+            max={{
+              count: 3,
+              style: {
+                background: 'var(--color-canvas)',
+                color: 'var(--color-text-secondary)',
+                fontSize: 11,
+              },
+            }}
+          >
+            {people.map((name, index) => (
+              <Avatar
+                key={`${name}-${index}`}
+                className="bg-accent-bg-hover! text-accent-text! text-11px! font-600! border-surface!"
+              >
+                {Array.from(name)[0]}
+              </Avatar>
+            ))}
+          </Avatar.Group>
+        ) : (
+          <span
+            className="flex h-22px w-22px shrink-0 items-center justify-center rounded-full bg-canvas text-text-muted"
+            aria-hidden="true"
+          >
+            <span className="i-lucide-user-round w-12px h-12px" />
+          </span>
+        )}
+        <span className="shrink-0 text-text-muted">负责人</span>
+        <span className="truncate text-text-secondary">{peopleNames(value)}</span>
+      </div>
+    </Tooltip>
   );
 }
 
@@ -93,20 +181,32 @@ export function SystemCard({
 }) {
   const description = descriptionText(system.systemDesc);
   const isMine = 'role' in system;
+  const joined = isMine || Boolean(system.userRelation);
   // 名称缩写只帮助视觉定位，不生成持久标识或推导系统类别。
   const initials = Array.from(system.systemName).slice(0, 2).join('').toUpperCase();
   return (
     <article
       className={`
-        workspace-panel flex flex-col min-w-0 overflow-hidden transition-colors
-        hover:border-accent-border-hover focus-within:border-accent
+        group/card workspace-panel relative flex flex-col min-w-0 overflow-hidden
+        transition-[border-color,box-shadow,transform] duration-200
+        hover:border-accent-border-hover hover:-translate-y-0.5
+        hover:shadow-[0_10px_24px_-12px_var(--color-tree-filter-shadow),0_2px_6px_-2px_var(--color-tree-preview-shadow)]
+        focus-within:border-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex-1 px-4 pt-4 pb-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex-1 px-5 pt-5 pb-4">
+        <div className="flex items-start gap-3 min-w-0">
           <span
-            className="flex h-40px w-40px shrink-0 items-center justify-center rounded-control bg-accent-bg-hover text-accent-text text-15px font-600"
+            className={`
+              flex h-44px w-44px shrink-0 items-center justify-center rounded-ui font-mono
+              text-15px font-600 tracking-wide transition-colors
+              ${
+                joined
+                  ? 'bg-accent text-on-accent'
+                  : 'bg-hover text-accent-text border border-solid border-accent-border'
+              }
+            `}
             aria-hidden="true"
           >
             {initials}
@@ -137,49 +237,40 @@ export function SystemCard({
           </div>
           {isMine && <MySystemActions systemName={system.systemName} />}
         </div>
-        <div className="flex items-center gap-1.5 mt-3 min-w-0">
+        <div className="flex items-center gap-2 mt-4 min-w-0">
           <Tag
             variant="filled"
-            className={`m-0! shrink-0! text-12px! leading-20px! ${
-              isMine || system.userRelation ? 'bg-accent-bg-hover! text-accent-text!' : ''
+            className={`m-0! shrink-0! inline-flex! items-center! gap-1! text-12px! leading-20px! ${
+              joined ? 'bg-accent-bg-hover! text-accent-text!' : 'text-text-secondary!'
             }`}
           >
+            <span
+              className={`h-6px w-6px rounded-full ${joined ? 'bg-accent' : 'bg-handle'}`}
+              aria-hidden="true"
+            />
             {isMine
               ? systemRoleLabels[system.role] || '角色未配置'
               : system.userRelation
                 ? '已加入'
                 : '未加入'}
           </Tag>
-          <Tag
-            variant="filled"
-            className="m-0! shrink-0! text-12px! leading-20px! text-text-secondary!"
-            title="系统重要性等级"
-          >
-            {riskLevelLabel(system.sysRiskLevel)}
-          </Tag>
+          <RiskSignal level={system.sysRiskLevel} />
           <span
-            className="flex items-center gap-1 min-w-0 ml-auto text-12px leading-20px text-text-muted"
+            className="flex items-center min-w-0 ml-auto px-1.5 rounded-control border border-solid border-border-subtle text-11px leading-18px text-text-muted font-mono"
             title={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
             aria-label={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
           >
-            <span className="i-lucide-hash w-12px h-12px shrink-0" aria-hidden="true" />
-            <span className="truncate font-mono">{system.systemArchNo || '未配置'}</span>
+            <span className="truncate">{system.systemArchNo || '未配置'}</span>
           </span>
         </div>
         <Tooltip title={description}>
-          <p className="m-0 mt-3 h-40px text-13px leading-20px text-text-secondary line-clamp-2 break-words">
+          <p className="m-0 mt-3 h-44px text-13px leading-22px text-text-secondary line-clamp-2 break-words">
             {description}
           </p>
         </Tooltip>
+        <Owners value={system.systemCharges} />
       </div>
       <SystemEntries system={system} />
-      <Tooltip title={system.systemCharges || '暂未配置'} placement="topLeft">
-        <div className="flex items-center gap-1.5 min-w-0 px-4 py-2.5 border-t border-t-solid border-divider text-12px leading-20px text-text-muted">
-          <span className="i-lucide-user-round h-14px w-14px shrink-0" aria-hidden="true" />
-          <span className="shrink-0">负责人</span>
-          <span className="truncate text-text-secondary">{peopleNames(system.systemCharges)}</span>
-        </div>
-      </Tooltip>
     </article>
   );
 }
