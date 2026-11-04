@@ -49,12 +49,21 @@ export function riskLevelRank(value: string | undefined) {
   return Math.max(1, riskLevelMax - (letter.charCodeAt(0) - 65));
 }
 
-/** 负责人拆为姓名列表，供头像组展示；完整原文仍由提示与详情承载。 */
-export function peopleList(value: string | undefined) {
-  return (
-    value
-      ?.split(',')
-      .map((person) => person.trim().split('/')[0].trim())
-      .filter(Boolean) ?? []
-  );
+/**
+ * 标签色只用 Ant Design 预设色，深浅主题由组件算法自动适配；
+ * 颜色仅辅助辨识，文字仍完整表达角色与等级，不参与授权判断。
+ */
+export const systemRoleTags: Record<SystemRole, { color: string; icon: string }> = {
+  R: { color: 'gold', icon: 'i-lucide-crown' },
+  D: { color: 'blue', icon: 'i-lucide-code-xml' },
+  V: { color: 'cyan', icon: 'i-lucide-eye' },
+};
+
+/** A 最高重要性用最醒目的红色，逐级减弱；D 及以后、未配置回到中性色。 */
+export function riskLevelColor(value: string | undefined) {
+  const rank = riskLevelRank(value);
+  if (rank >= 4) return 'red';
+  if (rank === 3) return 'orange';
+  if (rank === 2) return 'gold';
+  return 'default';
 }

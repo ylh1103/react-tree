@@ -1,16 +1,17 @@
 /** 系统目录以名称识别、参数快捷入口和负责人分层展示；角色与关系标签不参与授权。 */
-import { Avatar, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
+import { Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
 import { platformHome } from '@/router/paths';
 import {
-  peopleList,
   peopleNames,
+  riskLevelColor,
   riskLevelLabel,
   riskLevelMax,
   riskLevelRank,
   systemRoleLabels,
+  systemRoleTags,
 } from '../model/presentation';
 
 /** 未接入的管理操作集中收纳并禁用，避免与可用的参数入口争夺注意力。 */
@@ -38,17 +39,21 @@ function MySystemActions({ systemName }: { systemName: string }) {
   );
 }
 
-/** 数量与对应参数入口一起展示；零数量和缺失数量不影响进入工作区。 */
+/**
+ * 参数入口是卡片的主操作：两种平台用不同预设色的填充按钮区分，数量作为按钮内徽标；
+ * 零数量和缺失数量不影响进入工作区。
+ */
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 border-t border-t-solid border-divider bg-canvas [&>*+*]:border-l [&>*+*]:border-l-solid [&>*+*]:border-l-divider">
+    <div className="grid grid-cols-2 gap-2 px-4 pb-4">
       {(
         [
           {
             platform: 'application',
             label: '应用参数',
             icon: 'i-lucide-file-code-2',
+            color: 'primary',
             count: system.appCount,
             unit: '个应用',
           },
@@ -56,114 +61,97 @@ function SystemEntries({ system }: { system: SystemInfo }) {
             platform: 'database',
             label: '数据库参数',
             icon: 'i-lucide-database',
+            color: 'cyan',
             count: system.paramTypeCount,
             unit: '种参数类型',
           },
         ] as const
-      ).map(({ platform, label, icon, count, unit }) => (
-        <Button
-          key={platform}
-          block
-          type="text"
-          className={`
-            group/entry h-auto! min-w-0! flex! items-center! gap-3! px-4! py-3!
-            rounded-none! bg-transparent! hover:bg-hover! [&>span]:min-w-0
-            focus-visible:outline-2! focus-visible:outline-solid! focus-visible:outline-accent!
-            focus-visible:outline-offset-[-2px]!
-          `}
-          onClick={() => navigate(platformHome(system.systemName, platform))}
-          aria-label={`进入 ${system.systemName} ${label}`}
-        >
-          <span
+      ).map(({ platform, label, icon, color, count, unit }) => (
+        <Tooltip key={platform} title={`${count ?? '—'} ${unit}`}>
+          <Button
+            block
+            color={color}
+            variant="filled"
             className={`
-              flex h-32px w-32px shrink-0 items-center justify-center rounded-control
-              bg-surface text-text-secondary border border-solid border-border-subtle transition-colors
-              group-hover/entry:bg-accent group-hover/entry:text-on-accent group-hover/entry:border-accent
+              group/entry h-40px! min-w-0! px-3! justify-start! gap-2! font-500!
+              [&>span:not(.ant-btn-icon)]:min-w-0 [&>span:not(.ant-btn-icon)]:flex-1
             `}
-            aria-hidden="true"
+            icon={<span className={`${icon} w-16px h-16px`} aria-hidden="true" />}
+            onClick={() => navigate(platformHome(system.systemName, platform))}
+            aria-label={`进入 ${system.systemName} ${label}，${count ?? '—'} ${unit}`}
           >
-            <span className={`${icon} w-16px h-16px`} />
-          </span>
-          <span className="flex flex-col items-start flex-1 min-w-0 text-left">
-            <span className="flex items-baseline gap-1 max-w-full">
-              <strong className="text-18px leading-24px font-600 tabular-nums text-text group-hover/entry:text-accent-text">
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className="truncate">{label}</span>
+              <span className="ml-auto shrink-0 text-12px leading-18px font-600 tabular-nums opacity-75">
                 {count ?? '—'}
-              </strong>
-              <span className="truncate text-12px text-text-muted">{unit}</span>
+              </span>
+              <span
+                className="i-lucide-arrow-right w-14px h-14px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
+                aria-hidden="true"
+              />
             </span>
-            <span className="max-w-full truncate text-12px leading-18px text-text-secondary">
-              {label}
-            </span>
-          </span>
-          <span
-            className="i-lucide-chevron-right w-16px h-16px shrink-0 text-text-muted transition-transform group-hover/entry:translate-x-0.5 group-hover/entry:text-accent-text"
-            aria-hidden="true"
-          />
-        </Button>
+          </Button>
+        </Tooltip>
       ))}
     </div>
   );
 }
 
-/** 重要性以信号格呈现，A 级最满；文字等级同时保留，色彩不是唯一信息来源。 */
-function RiskSignal({ level }: { level: string | undefined }) {
+/** 重要性用预设色标签 + 信号格呈现，A 级最满最醒目；文字等级同时保留，色彩不是唯一信息来源。 */
+function RiskTag({ level }: { level: string | undefined }) {
   const rank = riskLevelRank(level);
-  const label = riskLevelLabel(level);
   return (
-    <span
-      className="flex items-center gap-1.5 shrink-0 text-12px leading-20px text-text-secondary"
+    <Tag
+      variant="filled"
+      color={riskLevelColor(level)}
+      className="m-0! shrink-0! inline-flex! items-center! gap-1.5! text-12px! leading-20px!"
       title="系统重要性等级"
-      aria-label={label}
+      aria-label={riskLevelLabel(level)}
     >
-      <span className="flex items-end gap-2px h-12px" aria-hidden="true">
+      <span className="flex items-end gap-2px h-10px" aria-hidden="true">
         {Array.from({ length: riskLevelMax }, (_, index) => (
           <span
             key={index}
-            className={`w-3px rounded-1px ${index < rank ? 'bg-accent' : 'bg-border'}`}
+            className={`w-2px rounded-1px bg-current ${index < rank ? '' : 'opacity-25'}`}
             style={{ height: `${((index + 1) / riskLevelMax) * 100}%` }}
           />
         ))}
       </span>
       <span aria-hidden="true">{level ? `${level} 级` : '未分级'}</span>
-    </span>
+    </Tag>
   );
 }
 
-/** 负责人以姓名首字头像叠放，最多露出 3 位；完整姓名/编号保留在提示里。 */
+/** 我的角色或加入状态；颜色只辅助辨识，不推导访问权限。 */
+function RelationTag({ system }: { system: MySystemInfo | AllSystemInfo }) {
+  const tag =
+    'role' in system
+      ? {
+          color: systemRoleTags[system.role]?.color ?? 'default',
+          icon: systemRoleTags[system.role]?.icon ?? 'i-lucide-user-round',
+          text: systemRoleLabels[system.role] || '角色未配置',
+        }
+      : system.userRelation
+        ? { color: 'green', icon: 'i-lucide-circle-check', text: '已加入' }
+        : { color: 'default', icon: 'i-lucide-circle-dashed', text: '未加入' };
+  return (
+    <Tag
+      variant="filled"
+      color={tag.color}
+      className="m-0! shrink-0! inline-flex! items-center! gap-1! text-12px! leading-20px!"
+    >
+      <span className={`${tag.icon} w-12px h-12px`} aria-hidden="true" />
+      {tag.text}
+    </Tag>
+  );
+}
+
+/** 负责人只展示一次姓名；完整姓名/编号保留在提示里。 */
 function Owners({ value }: { value: string | undefined }) {
-  const people = peopleList(value);
   return (
     <Tooltip title={value || '暂未配置'} placement="topLeft">
-      <div className="flex items-center gap-2 mt-4 min-w-0 text-12px leading-20px">
-        {people.length ? (
-          <Avatar.Group
-            size={22}
-            max={{
-              count: 3,
-              style: {
-                background: 'var(--color-canvas)',
-                color: 'var(--color-text-secondary)',
-                fontSize: 11,
-              },
-            }}
-          >
-            {people.map((name, index) => (
-              <Avatar
-                key={`${name}-${index}`}
-                className="bg-accent-bg-hover! text-accent-text! text-11px! font-600! border-surface!"
-              >
-                {Array.from(name)[0]}
-              </Avatar>
-            ))}
-          </Avatar.Group>
-        ) : (
-          <span
-            className="flex h-22px w-22px shrink-0 items-center justify-center rounded-full bg-canvas text-text-muted"
-            aria-hidden="true"
-          >
-            <span className="i-lucide-user-round w-12px h-12px" />
-          </span>
-        )}
+      <div className="flex items-center gap-1.5 mt-3 min-w-0 text-12px leading-20px">
+        <span className="i-lucide-users-round w-14px h-14px shrink-0 text-text-muted" aria-hidden="true" />
         <span className="shrink-0 text-text-muted">负责人</span>
         <span className="truncate text-text-secondary">{peopleNames(value)}</span>
       </div>
@@ -195,7 +183,7 @@ export function SystemCard({
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex-1 px-5 pt-5 pb-4">
+      <div className="flex-1 px-5 pt-5 pb-3">
         <div className="flex items-start gap-3 min-w-0">
           <span
             className={`
@@ -238,23 +226,8 @@ export function SystemCard({
           {isMine && <MySystemActions systemName={system.systemName} />}
         </div>
         <div className="flex items-center gap-2 mt-4 min-w-0">
-          <Tag
-            variant="filled"
-            className={`m-0! shrink-0! inline-flex! items-center! gap-1! text-12px! leading-20px! ${
-              joined ? 'bg-accent-bg-hover! text-accent-text!' : 'text-text-secondary!'
-            }`}
-          >
-            <span
-              className={`h-6px w-6px rounded-full ${joined ? 'bg-accent' : 'bg-handle'}`}
-              aria-hidden="true"
-            />
-            {isMine
-              ? systemRoleLabels[system.role] || '角色未配置'
-              : system.userRelation
-                ? '已加入'
-                : '未加入'}
-          </Tag>
-          <RiskSignal level={system.sysRiskLevel} />
+          <RelationTag system={system} />
+          <RiskTag level={system.sysRiskLevel} />
           <span
             className="flex items-center min-w-0 ml-auto px-1.5 rounded-control border border-solid border-border-subtle text-11px leading-18px text-text-muted font-mono"
             title={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
