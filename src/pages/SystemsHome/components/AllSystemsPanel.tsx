@@ -33,12 +33,12 @@ export default function AllSystemsPanel({
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
     <section aria-label="所有系统">
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <Input
           allowClear
           aria-label="筛选所有系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-420px! max-w-full!"
+          className="w-420px! min-w-0! max-[640px]:flex-1"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onPressEnter={search}
@@ -48,7 +48,7 @@ export default function AllSystemsPanel({
         />
         <Button
           type="primary"
-          className="shadow-none! bg-accent-active! hover:bg-accent-active!"
+          className="shrink-0 shadow-none! bg-accent-active! hover:bg-accent-active!"
           onClick={search}
           icon={<span className="i-lucide-search w-14px h-14px" aria-hidden="true" />}
         >

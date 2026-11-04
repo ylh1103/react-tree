@@ -106,9 +106,9 @@ function cases() {
       Page: AllSystemsFixture,
       path: '/catalog-test',
       routePath: '/catalog-test',
-      key: ['systems', 'catalog', { pageNum: 1, pageSize: 12, keyword: '' }],
+      key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }],
       message: '系统列表加载中',
-      data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 12 },
+      data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 8 },
     },
   ];
 }
@@ -375,9 +375,7 @@ test('业务骨架布局工具类有实际样式，系统卡片保持与正文�
   assert.ok(grid, '系统卡片占位必须有独立的布局容器');
   const { css } = await uno.generate(grid[1], { preflights: false });
   assert.match(css, /display:grid/);
-  assert.match(css, /grid-template-columns:repeat\(1,minmax\(0,1fr\)\)/);
-  assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+  // auto-fill 随可用宽度填列，min(100%,360px) 允许手机收窄且保留桌面卡片的最小阅读宽度。
+  assert.match(css, /grid-template-columns:repeat\(auto-fill,minmax\(min\(100%,360px\),1fr\)\)/);
   assert.match(css, /gap:1.25rem/);
 });

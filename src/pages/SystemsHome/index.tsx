@@ -14,7 +14,7 @@ export default function SystemsHomePage() {
   const [details, setDetails] = useState<MySystemInfo | AllSystemInfo | null>(null);
   return (
     <section
-      className="max-w-1680px mx-auto px-8 py-8 max-[640px]:p-4 [&_.ant-btn]:shadow-none!"
+      className="max-w-1680px min-w-0 mx-auto p-4 min-[641px]:p-6 min-[961px]:p-8 [&_.ant-btn]:shadow-none!"
       aria-label="系统列表"
     >
       <Tabs

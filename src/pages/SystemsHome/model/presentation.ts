@@ -44,17 +44,17 @@ export function organizationName(value: string | undefined) {
 }
 
 /**
- * 页面不设最小宽度，列数按容器宽度计算（窄窗口逐级降到 2 列、1 列），不受视口断点和侧边内容影响；
- * 骨架与正文共用同一容器与网格，避免加载时跳动。
+ * 原生网格按可用宽度自动填列，每张多列卡片至少保留 360px，窄屏允许缩到容器宽度。
+ * 避免依赖任意容器断点的生成顺序；auto-fill 保留不足一行时的列宽，骨架与正文共用布局。
  * `auto-rows-fr` 让所有行取最高卡片的高度：描述按实际行数排版不留空白，
  * 多出的高度由卡片内 `mt-auto` 吸收到入口上方，整页卡片等高、入口对齐。
  */
 export const systemCardContainer = '@container';
 export const systemCardGrid =
-  'grid grid-cols-1 auto-rows-fr @[600px]:grid-cols-2 @[900px]:grid-cols-3 @[1240px]:grid-cols-4 gap-5';
+  'grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] auto-rows-fr gap-5';
 
-/** 12 可被 3、4 列整除，常见宽度下末行不留空位。 */
-export const systemPageSizes = [12, 24, 48];
+/** 两份系统目录默认每页 8 条，保留已有的每页数量选项。 */
+export const systemPageSizes = [8, 12, 24, 48];
 
 /** 风险等级仅作展示标记；A 为最高重要性。 */
 export function riskLevelLabel(value: string | undefined) {

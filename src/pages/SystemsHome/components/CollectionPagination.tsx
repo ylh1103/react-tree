@@ -15,12 +15,13 @@ export default function CollectionPagination({
 }) {
   if (!total) return null;
   return (
-    <div className="flex justify-end mt-5 [&_.ant-pagination]:flex-wrap">
+    <div className="flex justify-end mt-5 max-[640px]:justify-center [&_.ant-pagination]:flex-wrap [&_.ant-pagination]:gap-y-2 max-[640px]:[&_.ant-pagination]:justify-center max-[480px]:[&_.ant-pagination-total-text]:w-full max-[480px]:[&_.ant-pagination-options]:ml-0!">
       <Pagination
         current={page}
         pageSize={pageSize}
         total={total}
         showSizeChanger
+        responsive
         pageSizeOptions={systemPageSizes}
         showTotal={(count) => `共 ${count} 个系统`}
         onChange={onChange}

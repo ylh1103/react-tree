@@ -38,57 +38,66 @@ export default function MySystemsPanel({
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
     <section aria-label="我的系统">
-      <div className="flex flex-wrap items-center gap-3 mb-5">
-        <Input
-          allowClear
-          aria-label="筛选我的系统"
-          placeholder="系统名称、架构编码、组织或人员"
-          className="w-340px! max-w-full!"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value);
-            setPage(1);
-          }}
-          prefix={
-            <span className="i-lucide-search w-14px h-14px text-text-muted" aria-hidden="true" />
-          }
-        />
-        <Select
-          aria-label="筛选我的系统角色"
-          className="w-150px"
-          value={role}
-          onChange={(value) => {
-            setRole(value);
-            setPage(1);
-          }}
-          options={[
-            { value: 'all', label: '全部角色' },
-            ...Object.entries(systemRoleLabels).map(([value, label]) => ({ value, label })),
-          ]}
-        />
-        <Button
-          loading={query.isFetching}
-          onClick={() => void query.refetch()}
-          icon={<span className="i-lucide-refresh-cw w-14px h-14px" aria-hidden="true" />}
-        >
-          刷新
-        </Button>
-        <Button
-          type="primary"
-          className="ml-auto max-[640px]:ml-0"
-          onClick={onCreate}
-          icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
-        >
-          新增系统
-        </Button>
-        {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
-        <Tooltip title="新增记录查询（待接入）">
-          <Button
-            icon={<span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />}
-          >
-            新增记录
-          </Button>
-        </Tooltip>
+      <div className="@container mb-5">
+        {/* 按工具栏实际可用宽度换行；桌面搜索框上限 420px，不随整页空白继续拉长。 */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="grid w-full @[520px]:w-auto max-w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] @[520px]:grid-cols-[minmax(0,420px)_150px_auto] items-center gap-3">
+            <Input
+              allowClear
+              aria-label="筛选我的系统"
+              placeholder="系统名称、架构编码、组织或人员"
+              className="col-span-2 @[520px]:col-span-1 w-full! min-w-0!"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
+              prefix={
+                <span
+                  className="i-lucide-search w-14px h-14px text-text-muted"
+                  aria-hidden="true"
+                />
+              }
+            />
+            <Select
+              aria-label="筛选我的系统角色"
+              className="w-full! min-w-0!"
+              value={role}
+              onChange={(value) => {
+                setRole(value);
+                setPage(1);
+              }}
+              options={[
+                { value: 'all', label: '全部角色' },
+                ...Object.entries(systemRoleLabels).map(([value, label]) => ({ value, label })),
+              ]}
+            />
+            <Button
+              loading={query.isFetching}
+              onClick={() => void query.refetch()}
+              icon={<span className="i-lucide-refresh-cw w-14px h-14px" aria-hidden="true" />}
+            >
+              刷新
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 ml-auto w-full @[520px]:w-auto">
+            <Button
+              type="primary"
+              onClick={onCreate}
+              icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
+            >
+              新增系统
+            </Button>
+            {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
+            <Tooltip title="新增记录查询（待接入）">
+              <Button
+                icon={<span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />}
+              >
+                新增记录
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
       </div>
       {query.error && (
         <Alert

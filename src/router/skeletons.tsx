@@ -24,7 +24,7 @@ function InitialLayoutSkeleton({ children }: { children: ReactNode }) {
     <AppViewport>
       {workspace ? (
         <WorkspaceFrame
-          header={<HeaderSkeleton />}
+          header={<HeaderSkeleton workspace />}
           navigation={
             <NavigationSkeleton items={database ? databaseNavigationItems : navigationItems} />
           }

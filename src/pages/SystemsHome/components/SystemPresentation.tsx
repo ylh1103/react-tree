@@ -3,7 +3,17 @@
  * 紧跟醒目的参数入口，角色与负责人收进底部轻量元信息栏；彩色只留给重要性和参数入口，
  * 角色与关系标签不参与授权。
  */
-import { Avatar, Badge, Button, Descriptions, Dropdown, Modal, Tag, Tooltip, Typography } from 'antd';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Descriptions,
+  Dropdown,
+  Modal,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
@@ -49,7 +59,7 @@ function MySystemActions({ systemName }: { systemName: string }) {
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-1 @[320px]/system-card:grid-cols-2 gap-2">
       {(
         [
           {
@@ -76,7 +86,7 @@ function SystemEntries({ system }: { system: SystemInfo }) {
             color={color}
             variant="filled"
             className={`
-              group/entry h-60px! min-w-0! px-3.5! justify-start! gap-3!
+              group/entry h-60px! min-w-0! px-3! justify-start! gap-2!
               [&>span:not(.ant-btn-icon)]:min-w-0 [&>span:not(.ant-btn-icon)]:flex-1
             `}
             icon={<span className={`${icon} w-20px h-20px`} aria-hidden="true" />}
@@ -91,7 +101,7 @@ function SystemEntries({ system }: { system: SystemInfo }) {
                 </span>
               </span>
               <span
-                className="i-lucide-arrow-right w-16px h-16px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
+                className="i-lucide-arrow-right hidden! @[360px]/system-card:inline-block! w-16px h-16px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
                 aria-hidden="true"
               />
             </span>
@@ -196,7 +206,7 @@ export function SystemCard({
   return (
     <article
       className={`
-        workspace-panel flex flex-col min-w-0 overflow-hidden
+        workspace-panel [container-type:inline-size] [container-name:system-card] flex flex-col min-w-0 overflow-hidden
         transition-[border-color,box-shadow] duration-200
         hover:border-accent-border-hover
         hover:shadow-[0_8px_20px_-14px_var(--color-tree-filter-shadow)]
@@ -204,7 +214,7 @@ export function SystemCard({
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex flex-col flex-1 gap-3 p-5">
+      <div className="flex flex-col flex-1 gap-3 p-4 @[360px]/system-card:p-5">
         <div className="flex items-start gap-3 min-w-0">
           <span
             className={`
@@ -259,7 +269,7 @@ export function SystemCard({
           <SystemEntries system={system} />
         </div>
       </div>
-      <div className="flex items-center justify-between gap-3 min-w-0 h-44px px-5 border-t border-t-solid border-t-border-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 min-w-0 min-h-44px px-4 py-2 @[360px]/system-card:px-5 border-t border-t-solid border-t-border-subtle">
         <RelationBadge system={system} />
         <Owners value={system.systemCharges} />
       </div>
