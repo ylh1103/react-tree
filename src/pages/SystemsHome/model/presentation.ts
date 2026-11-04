@@ -27,7 +27,12 @@ export function peopleList(value: string | undefined) {
     .map((raw) => {
       const [name = '', ...rest] = raw.split('/');
       const displayName = name.trim() || raw;
-      return { key: raw, name: displayName, id: rest.join('/').trim(), initial: Array.from(displayName)[0] ?? '?' };
+      return {
+        key: raw,
+        name: displayName,
+        id: rest.join('/').trim(),
+        initial: Array.from(displayName)[0] ?? '?',
+      };
     });
 }
 

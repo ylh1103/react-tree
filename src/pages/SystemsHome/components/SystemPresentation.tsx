@@ -1,5 +1,8 @@
-/** 系统目录以名称识别、参数快捷入口和负责人分层展示；角色与关系标签不参与授权。 */
-import { Avatar, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
+/**
+ * 系统目录卡片：参照 Vercel Projects / GitHub 仓库卡片的克制层级——身份与重要性在上，描述居中，
+ * 角色与负责人收为一行轻量元信息，彩色只留给重要性和参数入口；角色与关系标签不参与授权。
+ */
+import { Avatar, Badge, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
@@ -9,8 +12,6 @@ import {
   peopleNames,
   riskLevelColor,
   riskLevelLabel,
-  riskLevelMax,
-  riskLevelRank,
   systemRoleLabels,
   systemRoleTags,
 } from '../model/presentation';
@@ -47,7 +48,7 @@ function MySystemActions({ systemName }: { systemName: string }) {
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+    <div className="grid grid-cols-2 gap-2 px-3 pb-3">
       {(
         [
           {
@@ -98,99 +99,78 @@ function SystemEntries({ system }: { system: SystemInfo }) {
   );
 }
 
-/** 重要性用预设色标签 + 信号格呈现，A 级最满最醒目；文字等级同时保留，色彩不是唯一信息来源。 */
+/** 重要性只用一枚小号预设色标签表达，A 级最醒目；文字等级保留，色彩不是唯一信息来源。 */
 function RiskTag({ level }: { level: string | undefined }) {
-  const rank = riskLevelRank(level);
   return (
     <Tag
       variant="filled"
       color={riskLevelColor(level)}
-      className="m-0! shrink-0! inline-flex! items-center! gap-1.5! text-12px! leading-20px!"
+      className="m-0! shrink-0! px-1.5! text-12px! leading-20px! font-500!"
       title="系统重要性等级"
       aria-label={riskLevelLabel(level)}
     >
-      <span className="flex items-end gap-2px h-10px" aria-hidden="true">
-        {Array.from({ length: riskLevelMax }, (_, index) => (
-          <span
-            key={index}
-            className={`w-2px rounded-1px bg-current ${index < rank ? '' : 'opacity-25'}`}
-            style={{ height: `${((index + 1) / riskLevelMax) * 100}%` }}
-          />
-        ))}
-      </span>
-      <span aria-hidden="true">{level ? `${level} 级` : '未分级'}</span>
+      {level ? `${level} 级` : '未分级'}
     </Tag>
   );
 }
 
-/** 我的角色或加入状态；颜色只辅助辨识，不推导访问权限。 */
-function RelationTag({ system }: { system: MySystemInfo | AllSystemInfo }) {
-  const tag =
+/** 我的角色或加入状态以色点 + 文字呈现，比实心标签更轻；颜色只辅助辨识，不推导访问权限。 */
+function RelationBadge({ system }: { system: MySystemInfo | AllSystemInfo }) {
+  const badge =
     'role' in system
       ? {
           color: systemRoleTags[system.role]?.color ?? 'default',
-          icon: systemRoleTags[system.role]?.icon ?? 'i-lucide-user-round',
           text: systemRoleLabels[system.role] || '角色未配置',
         }
       : system.userRelation
-        ? { color: 'green', icon: 'i-lucide-circle-check', text: '已加入' }
-        : { color: 'default', icon: 'i-lucide-circle-dashed', text: '未加入' };
+        ? { color: 'green', text: '已加入' }
+        : { color: 'default', text: '未加入' };
   return (
-    <Tag
-      variant="filled"
-      color={tag.color}
-      className="m-0! shrink-0! inline-flex! items-center! gap-1! text-12px! leading-20px!"
-    >
-      <span className={`${tag.icon} w-12px h-12px`} aria-hidden="true" />
-      {tag.text}
-    </Tag>
+    <Badge
+      color={badge.color === 'default' ? 'var(--color-text-muted)' : badge.color}
+      text={badge.text}
+      className="min-w-0 [&_.ant-badge-status-text]:text-12px! [&_.ant-badge-status-text]:text-text-secondary!"
+    />
   );
 }
 
-/** 负责人以姓氏头像堆叠展示；姓名与编号放在悬停提示里，单人时补充姓名便于直接识别。 */
+/** 负责人以姓氏头像堆叠展示，超出部分收进 +N；姓名与编号放在悬停提示里。 */
 function Owners({ value }: { value: string | undefined }) {
   const people = peopleList(value);
+  if (people.length === 0) {
+    return <span className="shrink-0 text-12px text-text-muted">负责人未配置</span>;
+  }
   return (
-    <div className="flex items-center gap-2 mt-3 min-w-0 h-28px text-12px leading-20px">
-      <span className="shrink-0 text-text-muted">负责人</span>
-      {people.length === 0 ? (
-        <span className="text-text-muted">暂未配置</span>
-      ) : (
-        <>
-          <Avatar.Group
-            size={24}
-            max={{
-              count: 4,
-              style: {
-                background: 'var(--color-hover)',
-                color: 'var(--color-accent-text)',
-                fontSize: 11,
-                cursor: 'pointer',
-              },
-              popover: { title: `全部负责人（${people.length}）` },
-            }}
-            aria-label={`负责人：${peopleNames(value)}`}
+    <Avatar.Group
+      size={22}
+      max={{
+        count: 3,
+        style: {
+          background: 'var(--color-hover)',
+          color: 'var(--color-accent-text)',
+          fontSize: 11,
+          cursor: 'pointer',
+        },
+        popover: { title: `全部负责人（${people.length}）` },
+      }}
+      aria-label={`负责人：${peopleNames(value)}`}
+      className="shrink-0"
+    >
+      {people.map((person) => (
+        <Tooltip
+          key={person.key}
+          title={`负责人：${person.id ? `${person.name} · ${person.id}` : person.name}`}
+        >
+          <Avatar
+            size={22}
+            className="bg-hover! text-accent-text! text-11px! font-600! cursor-default"
+            aria-label={person.name}
           >
-            {people.map((person) => (
-              <Tooltip key={person.key} title={person.id ? `${person.name} · ${person.id}` : person.name}>
-                <Avatar
-                  size={24}
-                  className="bg-accent! text-on-accent! text-11px! font-600! cursor-default"
-                  aria-label={person.name}
-                >
-                  {person.initial}
-                </Avatar>
-              </Tooltip>
-            ))}
-          </Avatar.Group>
-          {people.length === 1 ? (
-            <span className="truncate text-text-secondary">{people[0].name}</span>
-          ) : (
-            <span className="shrink-0 text-text-muted">{`${people.length} 人`}</span>
-          )}
-        </>
-      )}
-    </div>
+            {person.initial}
+          </Avatar>
+        </Tooltip>
+      ))}
+    </Avatar.Group>
   );
 }
 
@@ -207,42 +187,41 @@ export function SystemCard({
   const joined = isMine || Boolean(system.userRelation);
   // 名称缩写只帮助视觉定位，不生成持久标识或推导系统类别。
   const initials = Array.from(system.systemName).slice(0, 2).join('').toUpperCase();
+  const subtitle = [system.systemChineseName || '暂无中文名称', system.systemArchNo]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <article
       className={`
-        group/card workspace-panel relative flex flex-col min-w-0 overflow-hidden
-        transition-[border-color,box-shadow,transform] duration-200
-        hover:border-accent-border-hover hover:-translate-y-0.5
-        hover:shadow-[0_10px_24px_-12px_var(--color-tree-filter-shadow),0_2px_6px_-2px_var(--color-tree-preview-shadow)]
-        focus-within:border-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0
+        workspace-panel flex flex-col min-w-0 overflow-hidden
+        transition-[border-color,box-shadow] duration-200
+        hover:border-accent-border-hover
+        hover:shadow-[0_8px_20px_-14px_var(--color-tree-filter-shadow)]
+        focus-within:border-accent motion-reduce:transition-none
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex-1 px-5 pt-5 pb-3">
+      <div className="flex flex-col flex-1 gap-3 p-5">
         <div className="flex items-start gap-3 min-w-0">
           <span
             className={`
-              flex h-44px w-44px shrink-0 items-center justify-center rounded-ui font-mono
-              text-15px font-600 tracking-wide transition-colors
-              ${
-                joined
-                  ? 'bg-accent text-on-accent'
-                  : 'bg-hover text-accent-text border border-solid border-accent-border'
-              }
+              flex h-36px w-36px shrink-0 items-center justify-center rounded-ui font-mono
+              text-13px font-600 tracking-wide
+              ${joined ? 'bg-hover text-accent-text' : 'border border-solid border-border-subtle text-text-muted'}
             `}
             aria-hidden="true"
           >
             {initials}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="m-0 min-w-0 text-16px leading-24px font-600">
+            <h2 className="m-0 min-w-0 text-15px leading-20px font-600">
               <Tooltip title={`${system.systemName} · 查看系统详情`}>
                 <Button
                   type="text"
                   onClick={onDetails}
                   aria-label={`查看 ${system.systemName} 详情`}
                   className={`
-                    block! max-w-full! h-auto! p-0! text-text! text-16px! font-600! leading-24px!
+                    block! max-w-full! h-auto! p-0! text-text! text-15px! font-600! leading-20px!
                     hover:text-accent-text! hover:bg-transparent! focus-visible:outline-2
                     focus-visible:outline-solid focus-visible:outline-accent [&>span]:truncate
                   `}
@@ -252,31 +231,26 @@ export function SystemCard({
               </Tooltip>
             </h2>
             <p
-              className="m-0 text-12px leading-20px text-text-secondary truncate"
-              title={system.systemChineseName}
+              className="m-0 mt-0.5 text-12px leading-16px text-text-muted truncate"
+              title={`${system.systemChineseName || '暂无中文名称'} · 架构办子系统编码：${system.systemArchNo || '未配置'}`}
             >
-              {system.systemChineseName || '暂无中文名称'}
+              {subtitle}
             </p>
           </div>
-          {isMine && <MySystemActions systemName={system.systemName} />}
-        </div>
-        <div className="flex items-center gap-2 mt-4 min-w-0">
-          <RelationTag system={system} />
-          <RiskTag level={system.sysRiskLevel} />
-          <span
-            className="flex items-center min-w-0 ml-auto px-1.5 rounded-control border border-solid border-border-subtle text-11px leading-18px text-text-muted font-mono"
-            title={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
-            aria-label={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
-          >
-            <span className="truncate">{system.systemArchNo || '未配置'}</span>
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            <RiskTag level={system.sysRiskLevel} />
+            {isMine && <MySystemActions systemName={system.systemName} />}
+          </div>
         </div>
         <Tooltip title={description}>
-          <p className="m-0 mt-3 h-44px text-13px leading-22px text-text-secondary line-clamp-2 break-words">
+          <p className="m-0 h-40px text-13px leading-20px text-text-secondary line-clamp-2 break-words">
             {description}
           </p>
         </Tooltip>
-        <Owners value={system.systemCharges} />
+        <div className="flex items-center justify-between gap-3 min-w-0 h-22px mt-auto">
+          <RelationBadge system={system} />
+          <Owners value={system.systemCharges} />
+        </div>
       </div>
       <SystemEntries system={system} />
     </article>

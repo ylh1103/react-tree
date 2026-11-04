@@ -1,4 +1,4 @@
-/** 卡片骨架对应身份、摘要、参数入口和页脚的实际尺寸，减少加载交接时的布局跳动。 */
+/** 卡片骨架对应身份、描述、元信息行和参数入口的实际尺寸，减少加载交接时的布局跳动。 */
 import { Skeleton } from 'antd';
 import { systemCardContainer, systemCardGrid, systemPageSizes } from '../model/presentation';
 
@@ -10,34 +10,31 @@ export default function SystemsHomeSkeleton() {
       </span>
       <div className={systemCardGrid} aria-hidden="true">
         {Array.from({ length: systemPageSizes[0] }, (_, index) => (
-          <div key={index} className="workspace-panel overflow-hidden">
-            <div className="px-5 pt-5 pb-3">
-              <div className="flex items-start gap-3 h-44px">
-                <Skeleton.Avatar shape="square" size={44} />
+          <div key={index} className="workspace-panel flex flex-col overflow-hidden">
+            <div className="flex flex-col gap-3 p-5">
+              <div className="flex items-start gap-3 h-36px">
+                <Skeleton.Avatar shape="square" size={36} />
                 <Skeleton
-                  title={{ width: '55%' }}
-                  paragraph={{ rows: 1, width: '80%' }}
-                  className="[&_.ant-skeleton-title]:m-0! [&_.ant-skeleton-paragraph]:mt-2! [&_.ant-skeleton-paragraph]:mb-0!"
+                  title={{ width: '50%' }}
+                  paragraph={{ rows: 1, width: '75%' }}
+                  className="[&_.ant-skeleton-title]:m-0! [&_.ant-skeleton-title]:h-14px! [&_.ant-skeleton-paragraph]:mt-2! [&_.ant-skeleton-paragraph]:mb-0! [&_.ant-skeleton-paragraph>li]:h-12px!"
                 />
-              </div>
-              <div className="flex gap-2 mt-4 h-22px [&_.ant-skeleton-button]:h-22px! [&_.ant-skeleton-button]:min-w-56px!">
-                <Skeleton.Button size="small" />
-                <Skeleton.Button size="small" />
               </div>
               <Skeleton
                 title={false}
-                paragraph={{ rows: 2, width: ['100%', '75%'] }}
-                className="mt-3 h-44px [&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li+li]:mt-2!"
+                paragraph={{ rows: 2, width: ['100%', '70%'] }}
+                className="h-40px [&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px! [&_.ant-skeleton-paragraph>li+li]:mt-3!"
               />
-              <div className="flex items-center mt-3 h-20px">
+              <div className="flex items-center justify-between h-22px">
                 <Skeleton
                   title={false}
-                  paragraph={{ rows: 1, width: '60%' }}
+                  paragraph={{ rows: 1, width: 72 }}
                   className="[&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px!"
                 />
+                <Skeleton.Avatar size={22} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 px-4 pb-4 [&_.ant-skeleton-button]:h-40px! [&_.ant-skeleton-button]:w-full!">
+            <div className="grid grid-cols-2 gap-2 px-3 pb-3 [&_.ant-skeleton-button]:h-40px! [&_.ant-skeleton-button]:w-full!">
               <Skeleton.Button active={false} block />
               <Skeleton.Button active={false} block />
             </div>
