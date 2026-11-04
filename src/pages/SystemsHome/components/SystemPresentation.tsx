@@ -3,7 +3,7 @@
  * 紧跟醒目的参数入口，角色与负责人收进底部轻量元信息栏；彩色只留给重要性和参数入口，
  * 角色与关系标签不参与授权。
  */
-import { Avatar, Badge, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
+import { Avatar, Badge, Button, Descriptions, Dropdown, Modal, Tag, Tooltip, Typography } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
@@ -233,23 +233,27 @@ export function SystemCard({
                 </Button>
               </Tooltip>
             </h2>
-            <p
-              className="m-0 mt-0.5 text-12px leading-16px text-text-muted truncate"
-              title={`${system.systemChineseName || '暂无中文名称'} · 架构办子系统编码：${system.systemArchNo || '未配置'}`}
+            <Typography.Paragraph
+              ellipsis={{
+                rows: 1,
+                tooltip: `${system.systemChineseName || '暂无中文名称'} · 架构办子系统编码：${system.systemArchNo || '未配置'}`,
+              }}
+              className="m-0! mt-0.5! text-12px! leading-16px! text-text-muted!"
             >
               {subtitle}
-            </p>
+            </Typography.Paragraph>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <RiskTag level={system.sysRiskLevel} />
             {isMine && <MySystemActions systemName={system.systemName} />}
           </div>
         </div>
-        <Tooltip title={description}>
-          <p className="m-0 h-40px text-13px leading-20px text-text-secondary line-clamp-2 break-words">
-            {description}
-          </p>
-        </Tooltip>
+        <Typography.Paragraph
+          ellipsis={{ rows: 2, tooltip: { title: description, placement: 'top' } }}
+          className="m-0! h-40px text-13px! leading-20px! text-text-secondary! break-words"
+        >
+          {description}
+        </Typography.Paragraph>
         <SystemEntries system={system} />
       </div>
       <div className="flex items-center justify-between gap-3 min-w-0 h-44px px-5 border-t border-t-solid border-t-border-subtle">
