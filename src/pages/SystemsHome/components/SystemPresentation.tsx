@@ -250,11 +250,14 @@ export function SystemCard({
         </div>
         <Typography.Paragraph
           ellipsis={{ rows: 2, tooltip: { title: description, placement: 'top' } }}
-          className="m-0! h-40px text-13px! leading-20px! text-text-secondary! break-words"
+          className="m-0! text-13px! leading-20px! text-text-secondary! break-words"
         >
           {description}
         </Typography.Paragraph>
-        <SystemEntries system={system} />
+        {/* 描述按实际行数排版；同行卡片等高时把剩余高度放在入口上方，入口仍逐行对齐。 */}
+        <div className="mt-auto">
+          <SystemEntries system={system} />
+        </div>
       </div>
       <div className="flex items-center justify-between gap-3 min-w-0 h-44px px-5 border-t border-t-solid border-t-border-subtle">
         <RelationBadge system={system} />
