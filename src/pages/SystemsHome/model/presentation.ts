@@ -18,6 +18,19 @@ export function peopleNames(value: string | undefined) {
   );
 }
 
+/** 负责人契约为“姓名/编号”逗号分隔；头像只取姓名首字，完整值保留给提示。 */
+export function peopleList(value: string | undefined) {
+  return (value ?? '')
+    .split(',')
+    .map((person) => person.trim())
+    .filter(Boolean)
+    .map((raw) => {
+      const [name = '', ...rest] = raw.split('/');
+      const displayName = name.trim() || raw;
+      return { key: raw, name: displayName, id: rest.join('/').trim(), initial: Array.from(displayName)[0] ?? '?' };
+    });
+}
+
 /** 组织契约为编号/名称；只移除首个编号段，兼容名称本身包含斜线。 */
 export function organizationName(value: string | undefined) {
   if (!value) return '暂未配置';

@@ -1,10 +1,11 @@
 /** 系统目录以名称识别、参数快捷入口和负责人分层展示；角色与关系标签不参与授权。 */
-import { Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
+import { Avatar, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
 import { platformHome } from '@/router/paths';
 import {
+  peopleList,
   peopleNames,
   riskLevelColor,
   riskLevelLabel,
@@ -146,16 +147,50 @@ function RelationTag({ system }: { system: MySystemInfo | AllSystemInfo }) {
   );
 }
 
-/** 负责人只展示一次姓名；完整姓名/编号保留在提示里。 */
+/** 负责人以姓氏头像堆叠展示；姓名与编号放在悬停提示里，单人时补充姓名便于直接识别。 */
 function Owners({ value }: { value: string | undefined }) {
+  const people = peopleList(value);
   return (
-    <Tooltip title={value || '暂未配置'} placement="topLeft">
-      <div className="flex items-center gap-1.5 mt-3 min-w-0 text-12px leading-20px">
-        <span className="i-lucide-users-round w-14px h-14px shrink-0 text-text-muted" aria-hidden="true" />
-        <span className="shrink-0 text-text-muted">负责人</span>
-        <span className="truncate text-text-secondary">{peopleNames(value)}</span>
-      </div>
-    </Tooltip>
+    <div className="flex items-center gap-2 mt-3 min-w-0 h-28px text-12px leading-20px">
+      <span className="shrink-0 text-text-muted">负责人</span>
+      {people.length === 0 ? (
+        <span className="text-text-muted">暂未配置</span>
+      ) : (
+        <>
+          <Avatar.Group
+            size={24}
+            max={{
+              count: 4,
+              style: {
+                background: 'var(--color-hover)',
+                color: 'var(--color-accent-text)',
+                fontSize: 11,
+                cursor: 'pointer',
+              },
+              popover: { title: `全部负责人（${people.length}）` },
+            }}
+            aria-label={`负责人：${peopleNames(value)}`}
+          >
+            {people.map((person) => (
+              <Tooltip key={person.key} title={person.id ? `${person.name} · ${person.id}` : person.name}>
+                <Avatar
+                  size={24}
+                  className="bg-accent! text-on-accent! text-11px! font-600! cursor-default"
+                  aria-label={person.name}
+                >
+                  {person.initial}
+                </Avatar>
+              </Tooltip>
+            ))}
+          </Avatar.Group>
+          {people.length === 1 ? (
+            <span className="truncate text-text-secondary">{people[0].name}</span>
+          ) : (
+            <span className="shrink-0 text-text-muted">{`${people.length} 人`}</span>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -247,7 +282,7 @@ export function SystemCard({
     </article>
   );
 }
-/** 长文本与人员编号在详情中完整显示；描述仅以安全文本展示，绝不注入接口 HTML。 */
+/** 长文本与人员编号在详情中完整显示；���述仅以安全文本展示，绝不注入接口 HTML。 */
 export function SystemDetailsModal({
   system,
   onClose,
