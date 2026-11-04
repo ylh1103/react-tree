@@ -13,7 +13,7 @@ export function AppViewport({ children }: { children: ReactNode }) {
   return (
     <div className="h-full overflow-auto">
       <div
-        className="h-full min-w-1280px [&[data-layout=compact]]:[--layout-gap:0px]"
+        className="h-full min-w-1024px [&[data-layout=compact]]:[--layout-gap:0px]"
         data-layout={layoutMode}
         style={{ '--layout-gap': `${layoutMode === 'compact' ? 0 : layoutGap}px` } as CSSProperties}
       >
