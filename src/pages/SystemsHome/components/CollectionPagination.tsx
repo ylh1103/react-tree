@@ -1,5 +1,6 @@
 /** 仅负责分页交互和总量展示；我的目录传本地总量，全部目录必须传接口 total。 */
 import { Pagination } from 'antd';
+import { systemPageSizes } from '../model/presentation';
 
 export default function CollectionPagination({
   page,
@@ -20,7 +21,7 @@ export default function CollectionPagination({
         pageSize={pageSize}
         total={total}
         showSizeChanger
-        pageSizeOptions={[8, 16, 32]}
+        pageSizeOptions={systemPageSizes}
         showTotal={(count) => `共 ${count} 个系统`}
         onChange={onChange}
         locale={{

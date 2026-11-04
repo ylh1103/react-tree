@@ -6,7 +6,12 @@ import { mySystemsOptions } from '@/queries/systems';
 import { filterSystems, isAccessDenied } from '@/utils/systems';
 import type { MySystemInfo, SystemRole } from '@/types/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
-import { systemCardGrid, systemRoleLabels } from '../model/presentation';
+import {
+  systemCardContainer,
+  systemCardGrid,
+  systemPageSizes,
+  systemRoleLabels,
+} from '../model/presentation';
 import { SystemCard } from './SystemPresentation';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import CollectionPagination from './CollectionPagination';
@@ -24,7 +29,7 @@ export default function MySystemsPanel({
   const [search, setSearch] = useState('');
   const [role, setRole] = useState<SystemRole | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(systemPageSizes[0]);
   const filtered = filterSystems(query.data ?? [], search).filter(
     (system) => role === 'all' || system.role === role,
   );
@@ -98,14 +103,16 @@ export default function MySystemsPanel({
       {query.isPending ? (
         <SystemsHomeSkeleton />
       ) : visible.length ? (
-        <div className={systemCardGrid}>
-          {visible.map((system) => (
-            <SystemCard
-              key={system.systemName}
-              system={system}
-              onDetails={() => onDetails(system)}
-            />
-          ))}
+        <div className={systemCardContainer}>
+          <div className={systemCardGrid}>
+            {visible.map((system) => (
+              <SystemCard
+                key={system.systemName}
+                system={system}
+                onDetails={() => onDetails(system)}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         !query.error && (
