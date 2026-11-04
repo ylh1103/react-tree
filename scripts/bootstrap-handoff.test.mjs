@@ -183,7 +183,7 @@ for (const path of [
     const html = fixture.render();
     assert.equal([...html.matchAll(/<header\b/g)].length, 1, '首屏应保留一个页头占位');
     assert.equal([...html.matchAll(/<main\b/g)].length, 1, '页面骨架应位于基础布局的主区域');
-    assert.match(html, /min-w-1024px/, '首屏应沿用根应用的最小宽度');
+    assert.doesNotMatch(html, /min-w-1024px/, '外壳不应设置全局最小宽度');
     if (path !== '/') assert.match(html, /aria-label="主导航加载中"/, '工作区应保留主导航占位');
     else assert.doesNotMatch(html, /aria-label="主导航加载中"/, '首页不应出现工作区导航');
   });

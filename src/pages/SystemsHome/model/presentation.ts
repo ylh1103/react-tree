@@ -26,7 +26,7 @@ export function organizationName(value: string | undefined) {
 }
 
 /**
- * 页面最小宽度为 1024px，视口媒体查询无法反映真实内容宽度，因此列数按容器宽度计算；
+ * 页面不设最小宽度，列数按容器宽度计算（窄窗口逐级降到 2 列、1 列），不受视口断点和侧边内容影响；
  * 骨架与正文共用同一容器与网格，避免加载时跳动。
  */
 export const systemCardContainer = '@container';

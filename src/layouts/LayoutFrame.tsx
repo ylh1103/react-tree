@@ -7,13 +7,16 @@ import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 import { useAppSelector } from '@/store/hooks';
 import { navigationThemeVariables } from '@/styles/theme';
 
-/** 根应用与根路由回退使用同一最小宽度及布局间距，配置未返回时也有完整尺寸约束。 */
+/**
+ * 根应用与根路由回退共用的视口及布局间距。外壳随窗口自适应，不设全局最小宽度；
+ * 排不下的区域（如应用参数三栏）自行声明最小宽度，并只在内容区内横向滚动。
+ */
 export function AppViewport({ children }: { children: ReactNode }) {
   const { layoutMode, layoutGap } = useLayoutPreferences();
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-hidden">
       <div
-        className="h-full min-w-1024px [&[data-layout=compact]]:[--layout-gap:0px]"
+        className="h-full [&[data-layout=compact]]:[--layout-gap:0px]"
         data-layout={layoutMode}
         style={{ '--layout-gap': `${layoutMode === 'compact' ? 0 : layoutGap}px` } as CSSProperties}
       >

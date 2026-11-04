@@ -109,100 +109,103 @@ function ApplicationParametersPage() {
     query.error && (query.data === undefined || (appName && !selected)),
   );
   return (
-    <SplitPane
-      storageKey="parameter-management:split-pane:application:v1"
-      defaultWidth={290}
-      sidebarLabel="应用列表"
-      title={appName}
-      integratedHeader={!appName}
-      toolbar={
-        selected && !blockingError && environments.length > 0 && !environmentMissing ? (
-          <ApplicationParametersToolbar key={appName} {...selection} />
-        ) : null
-      }
-      sidebar={
-        <ApplicationList
-          systemName={system.systemName}
-          service={service}
-          selectedAppName={appName ?? null}
-          embedded
-        />
-      }
-    >
-      {checkingTarget ? (
-        <div
-          className="grid place-items-center min-h-240px"
-          role="status"
-          aria-label="正在加载应用"
-        >
-          <Spin />
-        </div>
-      ) : blockingError ? null : !appName ? (
-        <div className="grid min-h-full min-w-0 place-items-center px-6 py-12">
-          <ApplicationParametersEmptyState
-            applicationCount={query.data?.length ?? 0}
-            onRefresh={() => void query.refetch()}
-            refreshing={query.isFetching}
+    // 侧栏、参数编辑区与环境面板并排时的下限；窗口更窄时仅内容区横向滚动，页头与主导航保持可用。
+    <div className="h-full min-w-880px">
+      <SplitPane
+        storageKey="parameter-management:split-pane:application:v1"
+        defaultWidth={290}
+        sidebarLabel="应用列表"
+        title={appName}
+        integratedHeader={!appName}
+        toolbar={
+          selected && !blockingError && environments.length > 0 && !environmentMissing ? (
+            <ApplicationParametersToolbar key={appName} {...selection} />
+          ) : null
+        }
+        sidebar={
+          <ApplicationList
+            systemName={system.systemName}
+            service={service}
+            selectedAppName={appName ?? null}
+            embedded
           />
-        </div>
-      ) : !selected ? (
-        <div className="py-16 text-center">
-          <Empty description={`应用「${appName}」不存在或已移除`} />
-          <Button className="mt-5" onClick={() => navigate(applicationPath(system.systemName))}>
-            返回应用首页
-          </Button>
-        </div>
-      ) : (
-        <div className="min-w-0 h-full">
-          {environmentQuery.isPending ? (
-            <div
-              className="grid min-h-280px place-items-center"
-              role="status"
-              aria-label="正在加载应用环境"
-            >
-              <Spin />
-            </div>
-          ) : environmentMissing ? (
-            <Empty description="应用或环境不存在，可能已被移除" />
-          ) : (
-            <>
-              {environmentQuery.error && (
-                <Alert
-                  type="error"
-                  showIcon
-                  title={
-                    environmentQuery.data ? '环境刷新失败，正在显示已有数据' : '环境参数加载失败'
-                  }
-                  description={environmentQuery.error.message}
-                  action={
-                    <Button
-                      loading={environmentQuery.isFetching}
-                      onClick={() => void environmentQuery.refetch()}
-                    >
-                      重试
-                    </Button>
-                  }
-                />
-              )}
-              {environmentQuery.data && (
-                <div className="flex h-full min-h-0 flex-col">
-                  {environments.length ? (
-                    <div className="flex-1 min-h-0 overflow-auto">
-                      <ApplicationParametersWorkspace
-                        {...selection}
-                        appType={selected.appType ?? '0'}
-                      />
-                    </div>
-                  ) : (
-                    <Empty description="该应用暂无环境" />
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
-    </SplitPane>
+        }
+      >
+        {checkingTarget ? (
+          <div
+            className="grid place-items-center min-h-240px"
+            role="status"
+            aria-label="正在加载应用"
+          >
+            <Spin />
+          </div>
+        ) : blockingError ? null : !appName ? (
+          <div className="grid min-h-full min-w-0 place-items-center px-6 py-12">
+            <ApplicationParametersEmptyState
+              applicationCount={query.data?.length ?? 0}
+              onRefresh={() => void query.refetch()}
+              refreshing={query.isFetching}
+            />
+          </div>
+        ) : !selected ? (
+          <div className="py-16 text-center">
+            <Empty description={`应用「${appName}」不存在或已移除`} />
+            <Button className="mt-5" onClick={() => navigate(applicationPath(system.systemName))}>
+              返回应用首页
+            </Button>
+          </div>
+        ) : (
+          <div className="min-w-0 h-full">
+            {environmentQuery.isPending ? (
+              <div
+                className="grid min-h-280px place-items-center"
+                role="status"
+                aria-label="正在加载应用环境"
+              >
+                <Spin />
+              </div>
+            ) : environmentMissing ? (
+              <Empty description="应用或环境不存在，可能已被移除" />
+            ) : (
+              <>
+                {environmentQuery.error && (
+                  <Alert
+                    type="error"
+                    showIcon
+                    title={
+                      environmentQuery.data ? '环境刷新失败，正在显示已有数据' : '环境参数加载失败'
+                    }
+                    description={environmentQuery.error.message}
+                    action={
+                      <Button
+                        loading={environmentQuery.isFetching}
+                        onClick={() => void environmentQuery.refetch()}
+                      >
+                        重试
+                      </Button>
+                    }
+                  />
+                )}
+                {environmentQuery.data && (
+                  <div className="flex h-full min-h-0 flex-col">
+                    {environments.length ? (
+                      <div className="flex-1 min-h-0 overflow-auto">
+                        <ApplicationParametersWorkspace
+                          {...selection}
+                          appType={selected.appType ?? '0'}
+                        />
+                      </div>
+                    ) : (
+                      <Empty description="该应用暂无环境" />
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </SplitPane>
+    </div>
   );
 }
 
@@ -211,7 +214,7 @@ function applicationLeaves(nodes: ListNode[]): ListNode[] {
   return nodes.flatMap((node) => (node.children ? applicationLeaves(node.children) : [node]));
 }
 
-/** 稳定的 select 映射，查询数据未变时不重复创建环境视图和测量工具栏。 */
+/** 稳定的 select 映射，查询数据未变时不重复创建环境视��和测量工具栏。 */
 function environmentViews(items: ApplicationEnvironment[]) {
   return items.map((item) => ({ ...item, key: item.envTag, name: item.envDesc }));
 }
