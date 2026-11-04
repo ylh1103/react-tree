@@ -46,10 +46,12 @@ export function organizationName(value: string | undefined) {
 /**
  * 页面不设最小宽度，列数按容器宽度计算（窄窗口逐级降到 2 列、1 列），不受视口断点和侧边内容影响；
  * 骨架与正文共用同一容器与网格，避免加载时跳动。
+ * `auto-rows-fr` 让所有行取最高卡片的高度：描述按实际行数排版不留空白，
+ * 多出的高度由卡片内 `mt-auto` 吸收到入口上方，整页卡片等高、入口对齐。
  */
 export const systemCardContainer = '@container';
 export const systemCardGrid =
-  'grid grid-cols-1 @[600px]:grid-cols-2 @[900px]:grid-cols-3 @[1240px]:grid-cols-4 gap-5';
+  'grid grid-cols-1 auto-rows-fr @[600px]:grid-cols-2 @[900px]:grid-cols-3 @[1240px]:grid-cols-4 gap-5';
 
 /** 12 可被 3、4 列整除，常见宽度下末行不留空位。 */
 export const systemPageSizes = [12, 24, 48];
