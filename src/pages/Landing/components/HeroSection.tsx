@@ -1,82 +1,60 @@
-import { Button } from 'antd';
 import { useNavigate } from 'react-router';
 import { palette } from '../palette';
-import { Squares } from '../reactbits/Squares';
+import { AnimatedContent } from '../reactbits/AnimatedContent';
 import { BlurText } from '../reactbits/BlurText';
 import { GradientText } from '../reactbits/GradientText';
 import { ShinyText } from '../reactbits/ShinyText';
-import { AnimatedContent } from '../reactbits/AnimatedContent';
-import { ConfigTerminal } from './ConfigTerminal';
-
-const pillars = ['自动化发布', '可视化运维', '版本化管理'];
+import { ActionButton } from './ActionButton';
+import { ProductStage } from './stage/ProductStage';
 
 export function HeroSection() {
   const navigate = useNavigate();
   return (
-    <section id="top" aria-labelledby="hero-title" className="relative overflow-hidden">
-      <Squares
-        className="absolute inset-0 h-full w-full"
-        borderColor="rgba(14,26,43,0.07)"
-        hoverFillColor="rgba(22,119,255,0.08)"
-      />
-      <div className="relative mx-auto grid max-w-1200px items-center gap-14 px-5 pb-20 pt-16 md:px-8 lg:grid-cols-[1.05fr_1fr] lg:pb-28 lg:pt-24">
-        <div className="flex flex-col items-start gap-7">
-          <AnimatedContent distance={12}>
-            <p className="m-0 inline-flex items-center gap-2 rounded-full border border-solid border-[var(--lp-line)] bg-[var(--lp-surface)] px-3.5 py-1.5 text-13px">
-              <span aria-hidden="true" className="i-lucide-sparkles h-3.5 w-3.5 text-[var(--lp-red)]" />
-              <ShinyText
-                text="面向行内开发人员的技术参数管理工具集"
-                baseColor={palette.muted}
-                shineColor={palette.blue}
-              />
-            </p>
-          </AnimatedContent>
-          <h1 id="hero-title" className="m-0 flex flex-col gap-3 font-800 leading-[1.08] tracking-tight">
-            <GradientText
-              colors={[palette.blue, palette.red, palette.blue]}
-              animationSpeed={7}
-              className="text-48px md:text-68px"
-            >
-              灵动 · 参数管家
-            </GradientText>
-            <BlurText
-              text="一站式参数管理平台"
-              delay={70}
-              className="text-36px text-[var(--lp-ink)] md:text-52px"
-            />
-          </h1>
-          <AnimatedContent delay={0.5} distance={16}>
-            <p className="m-0 max-w-520px text-pretty text-17px leading-relaxed text-[var(--lp-muted)]">
-              实现参数发布的自动化、可视化、版本化管理。降低参数修改的风险，提升操作效率，配置中心异常也不影响系统运行。
-            </p>
-          </AnimatedContent>
-          <AnimatedContent delay={0.65} distance={16} className="flex flex-wrap gap-3">
-            <Button type="primary" size="large" onClick={() => void navigate('/')}>
-              开始使用
-              <span aria-hidden="true" className="i-lucide-arrow-right h-4 w-4" />
-            </Button>
-            <Button size="large" href="#intro">
-              产品介绍
-            </Button>
-            <Button size="large" type="text" href="#workflow">
-              核心功能
-            </Button>
-          </AnimatedContent>
-          <AnimatedContent delay={0.8} distance={8}>
-            <ul className="m-0 flex list-none flex-wrap gap-x-6 gap-y-2 p-0 text-14px text-[var(--lp-muted)]">
-              {pillars.map((item) => (
-                <li key={item} className="flex items-center gap-2">
-                  <span aria-hidden="true" className="i-lucide-check h-4 w-4 text-[var(--lp-blue)]" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </AnimatedContent>
+    <section id="top" aria-labelledby="hero-title" className="mx-auto max-w-1200px px-4 pt-12 md:px-8 md:pt-20">
+      <AnimatedContent distance={12}>
+        <a
+          href="#features"
+          className="inline-flex items-center gap-2 rounded-full border border-solid border-[var(--lp-line)] bg-[var(--lp-panel)] py-1 pl-1 pr-3 text-13px no-underline transition-colors hover:border-[rgba(255,255,255,0.2)]"
+        >
+          <span className="rounded-full bg-[var(--lp-fg)] px-2 py-0.5 text-12px font-600 text-[var(--lp-bg)]">新</span>
+          <ShinyText text="参数热更新已支持灰度" baseColor={palette.muted} shineColor={palette.fg} />
+          <span aria-hidden="true" className="i-lucide-arrow-right h-3.5 w-3.5 text-[var(--lp-muted)]" />
+        </a>
+      </AnimatedContent>
+
+      <h1
+        id="hero-title"
+        className="m-0 mt-6 text-balance text-40px font-700 leading-[1.15] tracking-tight md:text-64px"
+      >
+        <BlurText text="每一次参数变更" delay={45} />
+        <br />
+        <GradientText colors={[palette.blue, '#a9c2ff', palette.red, palette.blue]} animationSpeed={7}>
+          都可追溯、可回退
+        </GradientText>
+      </h1>
+
+      <AnimatedContent
+        delay={0.3}
+        distance={16}
+        className="mt-8 flex flex-col-reverse gap-6 md:flex-row md:items-end md:justify-between"
+      >
+        <div className="flex flex-wrap gap-3">
+          <ActionButton onClick={() => void navigate('/')}>
+            开始使用
+            <span aria-hidden="true" className="i-lucide-arrow-right h-4 w-4" />
+          </ActionButton>
+          <ActionButton variant="ghost" href="#features">
+            了解核心功能
+          </ActionButton>
         </div>
-        <AnimatedContent delay={0.3} distance={40} className="lg:[transform:perspective(1600px)_rotateY(-6deg)]">
-          <ConfigTerminal />
-        </AnimatedContent>
-      </div>
+        <p className="m-0 max-w-380px text-pretty text-15px leading-relaxed text-[var(--lp-muted)]">
+          面向行内开发人员的一站式技术参数管理平台。快照发布、一键回退、热更新、运行时比对，一处完成。
+        </p>
+      </AnimatedContent>
+
+      <AnimatedContent delay={0.45} distance={40} className="mt-12 md:mt-14">
+        <ProductStage />
+      </AnimatedContent>
     </section>
   );
 }
