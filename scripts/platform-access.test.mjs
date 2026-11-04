@@ -7,6 +7,7 @@ import test, { beforeEach, afterEach } from 'node:test';
 import { mockConfig } from '../src/mocks/config.ts';
 import { writeMock, readMock } from '../src/mocks/storage.ts';
 import { loadSystems, loadMySystems, loadSystemPage, createSystem } from '../src/api/systems.ts';
+import { SystemAccessError } from '../src/api/systemAccessError.ts';
 import { loadSystemAccess } from '../src/api/systemAccess.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
 import { createSystemApplicationApi } from '../src/api/applications.ts';
@@ -53,7 +54,8 @@ test('全部目录只包含加入标记，空 Store 不自行构造身份，访�
   await assert.rejects(requestData({ url: '/api/session' }), (error) => error.status === 404);
   await assert.rejects(loadSystemAccess('不存在'), (error) => error.status === 404);
   const access = await loadSystemAccess('CAC');
-  for (const field of ['ystId', 'role', 'userRelation']) assert.equal(field in access, false);
+  for (const field of ['ystId', 'role']) assert.equal(field in access, false);
+  assert.equal(access.userRelation, true);
 });
 
 test('创建系统保留业务校验和空清单，不从虚构用户填充负责人或角色', async () => {
@@ -208,15 +210,15 @@ test('系统 middleware 在并行父子 loader 前统一授权，接口拒绝时
   t.after(() => router.dispose());
   await router.navigate('/systems/CAC/db');
   assert.equal(router.state.errors, null);
-  assert.equal(requests.filter((url) => url === '/api/systems/page').length, 0);
-  assert.equal(requests[0], '/api/systems/mine');
-  assert.equal(requests.filter((url) => url === '/api/systems/mine').length, 1);
+  assert.equal(requests.filter((url) => url === '/api/systems/page').length, 1);
+  assert.equal(requests[0], '/api/systems/page');
+  assert.equal(requests.filter((url) => url === '/api/systems/mine').length, 0);
   assert.equal(requests.includes('/api/session'), false);
   requests.length = 0;
   mockConfig.systemAccessError = 403;
   await router.navigate('/systems/ParamPlat/db');
   assert.equal(Object.values(router.state.errors)[0].status, 403);
-  assert.deepEqual(requests, ['/api/systems/mine']);
+  assert.deepEqual(requests, ['/api/systems/page']);
 });
 
 test('接口返回 403 时传播错误，系统与业务缓存不再由全局监听改写', async () => {
@@ -383,7 +385,7 @@ test('存在性检索每页 999 条并精确匹配，跨页候选及取消、服
   await assert.rejects(pending, (error) => error.code === 'ERR_CANCELED');
 });
 
-test('鉴权按平台角色选择请求，普通用户命中成员列表只请求一次并共享目录', async (t) => {
+test('两种平台角色均只查询所有系统，普通用户依据 userRelation 放行', async (t) => {
   const requests = [];
   const original = httpClient.request.bind(httpClient);
   t.mock.method(httpClient, 'request', (config) => {
@@ -392,23 +394,22 @@ test('鉴权按平台角色选择请求，普通用户命中成员列表只请�
     return original(config);
   });
   const system = await requireSystemAccess('CAC');
-  assert.deepEqual(requests, [{ url: '/api/systems/mine', keyword: undefined }]);
+  assert.deepEqual(requests, [{ url: '/api/systems/page', keyword: 'CAC' }]);
   assert.equal(system.systemName, 'CAC');
-  assert.equal('role' in system, false);
-  assert.equal('ystId' in system, false);
-  const mine = await queryClient.query({ ...mySystemsOptions(), staleTime: Infinity });
-  assert.ok(mine.some((item) => item.systemName === 'CAC' && item.role === 'R'));
-  assert.equal(requests.length, 1);
-  // 重新进入的显式鉴权仍读取最新关系，不能因为目录缓存已有数据就跳过。
+  assert.equal(system.userRelation, true);
+  assert.equal(queryClient.getQueryData(mySystemsOptions().queryKey), undefined);
+  // 显式重新校验仍读取最新加入状态，不能因为已有成功缓存就跳过。
   await requireSystemAccess('CAC');
   assert.equal(requests.length, 2);
   requests.length = 0;
   store.dispatch(setUserInfo(createDemoLoginUser('0')));
-  assert.equal((await requireSystemAccess('demo_1')).systemName, 'demo_1');
+  const platformSystem = await requireSystemAccess('demo_1');
+  assert.equal(platformSystem.systemName, 'demo_1');
+  assert.equal(platformSystem.userRelation, false);
   assert.deepEqual(requests, [{ url: '/api/systems/page', keyword: 'demo_1' }]);
 });
 
-test('普通用户未加入时才追加存在性查询，分别返回 403 和 404', async (t) => {
+test('普通用户未加入和系统不存在均只查询所有系统，分别返回 403 和 404', async (t) => {
   const requests = [];
   const original = httpClient.request.bind(httpClient);
   t.mock.method(httpClient, 'request', (config) => {
@@ -420,44 +421,44 @@ test('普通用户未加入时才追加存在性查询，分别返回 403 和 40
     ['NOT_EXISTING', 404],
   ]) {
     requests.length = 0;
-    await assert.rejects(requireSystemAccess(name), (error) => error.status === status);
-    assert.deepEqual(requests, [
-      { url: '/api/systems/mine', keyword: undefined },
-      { url: '/api/systems/page', keyword: name },
-    ]);
+    await assert.rejects(
+      requireSystemAccess(name),
+      (error) => error instanceof SystemAccessError && error.status === status,
+    );
+    assert.deepEqual(requests, [{ url: '/api/systems/page', keyword: name }]);
   }
 });
 
-test('成员读取失败不使用旧缓存放行，存在性服务失败不误报无权限或不存在', async (t) => {
+test('鉴权查询失败不使用旧缓存放行，网络失败不误报无权限或不存在', async (t) => {
   await requireSystemAccess('CAC');
   mockConfig.systemAccessError = 503;
   await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 503);
-  assert.ok(queryClient.getQueryData(mySystemsOptions().queryKey).length > 0);
+  assert.ok(queryClient.getQueryData(systemAccessOptions('CAC').queryKey));
   mockConfig.systemAccessError = null;
   const original = httpClient.defaults.adapter;
   httpClient.defaults.adapter = (config) => {
-    if (config.url === '/api/systems/page') throw new Error('存在性服务网络失败');
+    if (config.url === '/api/systems/page') throw new Error('系统检索网络失败');
     return original(config);
   };
   t.after(() => {
     httpClient.defaults.adapter = original;
   });
-  await assert.rejects(requireSystemAccess('demo_1'), /存在性服务网络失败/);
+  await assert.rejects(requireSystemAccess('demo_1'), /系统检索网络失败/);
 });
 
-test('共享成员查询取消会取消 HTTP，不能继续存在性查询或返回授权成功', async (t) => {
+test('取消系统鉴权会取消 HTTP，不能继续返回授权成功', async (t) => {
   let started;
   const ready = new Promise((resolve) => {
     started = resolve;
   });
   const original = httpClient.request.bind(httpClient);
   const requests = [];
-  let membershipSignal;
+  let requestSignal;
   t.mock.method(httpClient, 'request', (config) => {
     requests.push(config.url);
     const pending = original(config);
-    if (config.url === '/api/systems/mine') {
-      membershipSignal = config.signal;
+    if (config.url === '/api/systems/page') {
+      requestSignal = config.signal;
       started();
     }
     return pending;
@@ -466,14 +467,14 @@ test('共享成员查询取消会取消 HTTP，不能继续存在性查询或返
   const pending = requireSystemAccess('demo_1');
   const rejected = assert.rejects(pending, (error) => error instanceof CancelledError);
   await ready;
-  await queryClient.cancelQueries({ queryKey: mySystemsOptions().queryKey });
+  await queryClient.cancelQueries({ queryKey: systemAccessOptions('demo_1').queryKey });
   await rejected;
-  assert.equal(membershipSignal.aborted, true);
-  assert.deepEqual(requests, ['/api/systems/mine']);
+  assert.equal(requestSignal.aborted, true);
+  assert.deepEqual(requests, ['/api/systems/page']);
   assert.equal(queryClient.getQueryData(systemAccessOptions('demo_1').queryKey), undefined);
 });
 
-test('身份切换清理查询后，迟到的成员响应不会填充新用户目录或恢复旧授权', async (t) => {
+test('身份切换清理查询后，迟到的系统响应不会填充新用户缓存或恢复旧授权', async (t) => {
   const firstUser = store.getState().user.userInfo;
   const otherUser = { ...firstUser, openId: 'another-login-user' };
   let release;
@@ -490,7 +491,7 @@ test('身份切换清理查询后，迟到的成员响应不会填充新用户�
   });
   let hold = true;
   httpClient.defaults.adapter = async (config) => {
-    if (hold && config.url === '/api/systems/mine') {
+    if (hold && config.url === '/api/systems/page') {
       hold = false;
       started();
       await gate;
@@ -504,9 +505,54 @@ test('身份切换清理查询后，迟到的成员响应不会填充新用户�
   store.dispatch(setUserInfo(otherUser));
   release();
   await rejected;
-  assert.equal(queryClient.getQueryData(mySystemsOptions(firstUser.openId).queryKey), undefined);
-  assert.equal(queryClient.getQueryData(mySystemsOptions(otherUser.openId).queryKey), undefined);
   assert.equal(queryClient.getQueryData(systemAccessOptions('CAC', firstUser).queryKey), undefined);
+  assert.equal(queryClient.getQueryData(systemAccessOptions('CAC', otherUser).queryKey), undefined);
   assert.equal((await requireSystemAccess('CAC')).systemName, 'CAC');
-  assert.ok(queryClient.getQueryData(mySystemsOptions(otherUser.openId).queryKey).length > 0);
+  assert.equal(queryClient.getQueryData(mySystemsOptions(otherUser.openId).queryKey), undefined);
+});
+
+test('鉴权保留接口额外字段，普通用户只有明确的 userRelation=true 才放行', async (t) => {
+  const sample = (await loadSystems())[0];
+  const original = httpClient.defaults.adapter;
+  t.after(() => {
+    httpClient.defaults.adapter = original;
+  });
+  let relation = true;
+  httpClient.defaults.adapter = async (config) => {
+    assert.equal(config.url, '/api/systems/page');
+    return {
+      data: {
+        records: [{ ...sample, role: 'D', ystId: 'member-id', userRelation: relation }],
+        total: 1,
+        pageNum: 1,
+        pageSize: 999,
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+    };
+  };
+  const system = await requireSystemAccess(sample.systemName);
+  assert.equal(system.role, 'D');
+  assert.equal(system.ystId, 'member-id');
+  assert.equal(system.userRelation, true);
+  for (const value of [false, undefined, 'false']) {
+    relation = value;
+    await assert.rejects(requireSystemAccess(sample.systemName), (error) => error.status === 403);
+  }
+});
+
+test('鉴权以最新 userRelation 为准，我的系统旧缓存不能授予或阻止访问', async (t) => {
+  const requests = [];
+  const original = httpClient.request.bind(httpClient);
+  t.mock.method(httpClient, 'request', (config) => {
+    requests.push(config.url);
+    return original(config);
+  });
+  queryClient.setQueryData(mySystemsOptions().queryKey, []);
+  assert.equal((await requireSystemAccess('CAC')).userRelation, true);
+  queryClient.setQueryData(mySystemsOptions().queryKey, [{ systemName: 'demo_1', role: 'R' }]);
+  await assert.rejects(requireSystemAccess('demo_1'), (error) => error.status === 403);
+  assert.deepEqual(requests, ['/api/systems/page', '/api/systems/page']);
 });

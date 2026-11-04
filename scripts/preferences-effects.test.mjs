@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAppStore } from '../src/store/index.ts';
 import { startUserSettingsEffects } from '../src/store/preferences/effects.ts';
-import { bootstrapThemeKey as bootstrapThemeKeyResource } from '../src/store/preferences/themeBootstrap.ts';
+import {
+  bootstrapControlRadiusKey,
+  bootstrapThemeKey as bootstrapThemeKeyResource,
+} from '../src/store/preferences/themeBootstrap.ts';
 import { bootstrapLoadingKey as bootstrapLoadingKeyResource } from '../src/store/preferences/loadingBootstrap.ts';
 import {
   loadUserSettings,
@@ -18,7 +21,7 @@ const bootstrapThemeKey = `${bootstrapThemeKeyResource}:anonymous`;
 
 const bootstrapLoadingKey = `${bootstrapLoadingKeyResource}:anonymous`;
 
-test('一个订阅处理两项缓存和保存广播，字段不变时不重写，停止后均不再触发', async (t) => {
+test('一个订阅处理主题、图标、圆角缓存和保存广播，字段不变时不重写，停止后均不再触发', async (t) => {
   mockPreferencesBrowser(t);
   const writes = t.mock.method(globalThis.window.localStorage, 'setItem');
   const publish = t.mock.fn();
@@ -39,25 +42,32 @@ test('一个订阅处理两项缓存和保存广播，字段不变时不重写�
     [
       [bootstrapThemeKey, defaultUserSettings.themeMode],
       [bootstrapLoadingKey, defaultUserSettings.loadingStyle],
+      [`${bootstrapControlRadiusKey}:anonymous`, String(defaultUserSettings.controlBorderRadius)],
     ],
   );
   assert.equal(publish.mock.callCount(), 0);
   store.dispatch(openUserSettings());
-  assert.equal(writes.mock.callCount(), 2);
-  await store.dispatch(saveUserSettings({ themeMode: 'dark' })).unwrap();
   assert.equal(writes.mock.callCount(), 3);
-  assert.deepEqual(writes.mock.calls[2].arguments, [bootstrapThemeKey, 'dark']);
-  await store.dispatch(saveUserSettings({ loadingStyle: 'data-wave' })).unwrap();
+  await store.dispatch(saveUserSettings({ themeMode: 'dark' })).unwrap();
   assert.equal(writes.mock.callCount(), 4);
-  assert.deepEqual(writes.mock.calls[3].arguments, [bootstrapLoadingKey, 'data-wave']);
-  assert.equal(publish.mock.callCount(), 2);
+  assert.deepEqual(writes.mock.calls[3].arguments, [bootstrapThemeKey, 'dark']);
+  await store.dispatch(saveUserSettings({ loadingStyle: 'data-wave' })).unwrap();
+  assert.equal(writes.mock.callCount(), 5);
+  assert.deepEqual(writes.mock.calls[4].arguments, [bootstrapLoadingKey, 'data-wave']);
+  await store.dispatch(saveUserSettings({ controlBorderRadius: 12 })).unwrap();
+  assert.equal(writes.mock.callCount(), 6);
+  assert.deepEqual(writes.mock.calls[5].arguments, [
+    `${bootstrapControlRadiusKey}:anonymous`,
+    '12',
+  ]);
+  assert.equal(publish.mock.callCount(), 3);
   stop();
   stop();
   assert.equal(unsubscribe.mock.callCount(), 1);
   assert.equal(close.mock.callCount(), 1);
   await store.dispatch(saveUserSettings(defaultUserSettings)).unwrap();
-  assert.equal(writes.mock.callCount(), 4);
-  assert.equal(publish.mock.callCount(), 2);
+  assert.equal(writes.mock.callCount(), 6);
+  assert.equal(publish.mock.callCount(), 3);
 });
 
 test('主题缓存写入失败不阻塞图标和广播，恢复后只补写失败字段', async (t) => {

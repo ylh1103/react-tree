@@ -68,6 +68,7 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
     '/project/src/mocks/applications.ts': {},
     '/project/src/pages/RouteError/index.tsx': {},
     '/project/src/pages/RouteStatus/index.tsx': {},
+    '/project/src/pages/RouteStatus/StatusIllustration.tsx': {},
     '/project/src/pages/FutureBusiness/index.tsx': {},
   };
   const report = createStartupReport(bundle);

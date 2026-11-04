@@ -5,7 +5,7 @@
 import { queryOptions } from '@tanstack/react-query';
 import { loadSystems, loadMySystems, loadSystemPage } from '@/api/systems.ts';
 import { queryClient } from './client.ts';
-import type { SystemInfo, SystemPageParams } from '@/types/systems.ts';
+import type { SystemAccessInfo, SystemPageParams } from '@/types/systems.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
 import type { ParameterType } from '@/types/systems.ts';
 import { store } from '@/store/index.ts';
@@ -19,7 +19,7 @@ export const systemsOptions = () =>
     queryFn: ({ signal }) => loadSystems(signal),
   });
 
-/** 我的系统按用户隔离；授权显式传入身份快照，避免迟到响应写入另一用户目录。创建后由 systems 前缀失效。 */
+/** 我的系统按用户隔离；消费者可显式传入身份快照，避免迟到响应写入另一用户目录。创建后由 systems 前缀失效。 */
 export const mySystemsOptions = (openId = store.getState().user.userInfo?.openId ?? null) =>
   queryOptions({
     ...routeQueryMountOptions,
@@ -58,7 +58,7 @@ export function systemAccessOptions(
   systemName: string,
   user: SystemAccessIdentity | null = store.getState().user.userInfo,
 ) {
-  return queryOptions<SystemInfo>({
+  return queryOptions<SystemAccessInfo>({
     queryKey: ['system-access', systemName, user?.openId ?? null, user?.userType ?? null],
     queryFn: async ({ signal }) => {
       const { resolveSystemAccess } = await import('./systemAccess.ts');

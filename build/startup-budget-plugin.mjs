@@ -4,8 +4,8 @@ import { Buffer } from 'node:buffer';
 
 /** 预算以每个响应分别 gzip 后求和；这是传输体积估算，不代表浏览器加载耗时。 */
 // HTML 保留五款启动动画、独立故障页及完整静态诊断交互；React 详情模块仍按需加载。
-// 生产基线为 10,762 bytes gzip，当前阈值预留约 4%；JS/CSS 预算保持不变。
-export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 11_200 };
+// 启动按钮主题交互及按用户隔离的圆角提示使 HTML 达约 11.56 KB gzip，预留约 2%；JS/CSS 预算保持不变。
+export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 11_800 };
 
 const forbiddenInitialModules = [
   '/src/components/FailureDetails/Details.tsx',
@@ -18,12 +18,13 @@ const forbiddenInitialModules = [
   '/src/pages/',
 ];
 // 唯一 HTTP 模拟适配器和轻量配置需要同步接入；模拟数据及处理模块仍必须按请求加载。
-// 静态错误与状态页必须能在业务 chunk 加载失败时使用，其余业务页面保持动态入口。
+// 静态错误、状态页及小体积插画必须能在业务 chunk 加载失败时使用，其余业务页面保持动态入口。
 const allowedInitialModules = new Set([
   'mocks/adapter.ts',
   'mocks/config.ts',
   'pages/RouteError/index.tsx',
   'pages/RouteStatus/index.tsx',
+  'pages/RouteStatus/StatusIllustration.tsx',
 ]);
 
 /** 沿静态 imports 去重遍历，不把 dynamicImports 算入入口；同时处理共享依赖和循环引用。 */

@@ -14,7 +14,7 @@ import type { WorkspaceRouteConfig } from './types';
 import type { ComponentType } from 'react';
 import { RouteSkeleton } from '@/components/RouteSkeleton';
 import { preloadSystems } from './loaders';
-import RouteErrorPage from '@/pages/RouteError';
+import RouteErrorPage, { RootRouteErrorPage, SystemRouteErrorPage } from '@/pages/RouteError';
 import { InitialRouteFallback } from './skeletons';
 import { loginMiddleware, restoreLoginMiddleware } from './login';
 import { systemAccessMiddleware } from './systemAccess';
@@ -55,7 +55,7 @@ export const routes: RouteObject[] = [
   {
     Component: App,
     middleware: [restoreLoginMiddleware],
-    ErrorBoundary: RouteErrorPage,
+    ErrorBoundary: RootRouteErrorPage,
     // 父 loader 或页面模块未完成时，由根回退保留启动动画；配置等待结束后再按目标 URL 展示骨架。
     HydrateFallback: InitialRouteFallback,
     children: [
@@ -86,6 +86,7 @@ export const routes: RouteObject[] = [
             middleware: [systemAccessMiddleware],
             loader: preloadSystems,
             Component: SystemLayout,
+            ErrorBoundary: SystemRouteErrorPage,
             children: [
               {
                 id: 'workspace',

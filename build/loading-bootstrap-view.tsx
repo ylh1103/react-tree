@@ -38,6 +38,9 @@ function BootstrapIcon({
  * 此处只使用项目内的固定方案；浏览器缓存不参与 HTML 拼接，也不会在配置返回时重建这组 SVG。
  */
 export function renderBootstrapLoading() {
+  // React 不可用时保留原生按钮，交互色和阴影由构建插件从同一 Ant Design 主题提取。
+  const buttonClass =
+    'inline-flex h-44px cursor-pointer touch-manipulation select-none items-center justify-center gap-2 whitespace-nowrap rounded-control border border-solid text-14px font-normal leading-normal outline-none [transition:all_0.2s_cubic-bezier(0.645,0.045,0.355,1)] focus-visible:outline-3 focus-visible:outline-solid focus-visible:outline-accent-border focus-visible:outline-offset-1';
   return renderToStaticMarkup(
     <div id="bootstrap-loading" className="fixed inset-0 overflow-auto font-sans">
       <div className="[[data-bootstrap-failed]_&]:hidden">
@@ -59,9 +62,9 @@ export function renderBootstrapLoading() {
         aria-labelledby="bootstrap-failure-title"
         className="box-border hidden min-h-screen flex-col bg-canvas px-6 py-8 text-text desktop:px-12 desktop:py-10 [[data-bootstrap-failed]_&]:flex"
       >
-        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center py-12 desktop:py-16">
+        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center [@media(min-height:700px)]:-translate-y-8 py-12 desktop:py-16">
           <div className="grid items-center gap-10 desktop:grid-cols-[1fr_480px] desktop:gap-16">
-            <div className="min-w-0 desktop:self-start desktop:pt-6">
+            <div className="min-w-0">
               <h1
                 id="bootstrap-failure-title"
                 className="m-0 text-32px font-600 leading-12 tracking-tight desktop:text-40px desktop:leading-14"
@@ -77,7 +80,7 @@ export function renderBootstrapLoading() {
                 <button
                   id="bootstrap-reload"
                   type="button"
-                  className="inline-flex h-44px cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-8px border border-solid border-accent bg-accent px-6 text-14px font-normal leading-normal text-on-accent shadow-sm hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-3"
+                  className={`${buttonClass} border-accent bg-accent px-6 text-[var(--color-button-primary-text)] [box-shadow:var(--color-button-primary-shadow)] hover:border-accent-hover hover:bg-accent-hover active:border-accent-active active:bg-accent-active`}
                 >
                   <BootstrapIcon name="rotate-cw" size={16} className="shrink-0" />
                   刷新页面
@@ -86,7 +89,7 @@ export function renderBootstrapLoading() {
                 <button
                   id="bootstrap-support"
                   type="button"
-                  className="inline-flex h-44px cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-8px border border-solid border-border-subtle bg-surface px-5 text-14px font-normal leading-normal text-text shadow-sm hover:border-accent focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-3"
+                  className={`${buttonClass} border-[var(--color-button-border)] bg-[var(--color-button-bg)] px-5 text-[var(--color-button-text)] [box-shadow:var(--color-button-shadow)] hover:border-accent-hover hover:bg-[var(--color-button-hover-bg)] hover:text-accent-hover active:border-accent-active active:bg-[var(--color-button-active-bg)] active:text-accent-active`}
                 >
                   技术支持
                   <BootstrapIcon name="arrow-up-right" size={18} className="shrink-0" />

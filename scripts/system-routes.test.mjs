@@ -240,6 +240,142 @@ test('未知地址进入对应的 404 页面', () => {
   assert.equal(match('/systems/CAC/db/type/extra').route, systemNotFound);
 });
 
+test('状态页区分页面不存在、系统不存在和访问权限', async () => {
+  const { default: RouteStatusPage } = await vite.ssrLoadModule('/src/pages/RouteStatus/index.tsx');
+  for (const [props, title, description] of [
+    [{}, '页面不存在', '检查页面地址'],
+    [{ scope: 'system' }, '系统不存在', '检查系统地址'],
+    [{ scope: 'system', forbidden: true }, '无系统访问权限', '联系系统管理员'],
+    [{ forbidden: true }, '无访问权限', '联系管理员'],
+  ]) {
+    const router = createMemoryRouter([
+      { path: '/', element: createElement(RouteStatusPage, props) },
+    ]);
+    try {
+      const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+      assert.ok(html.includes(title), `${title}: ${html}`);
+      assert.ok(html.includes(description));
+      assert.ok(html.includes('返回系统列表'));
+      assert.ok(html.includes('技术支持'));
+      assert.ok(!html.includes('页面或系统不存在'));
+    } finally {
+      router.dispose();
+    }
+  }
+});
+
+test('异常页显示目标系统，只有已授权工作区的页面 404 提供概览入口', async () => {
+  const { default: RouteStatusPage } = await vite.ssrLoadModule('/src/pages/RouteStatus/index.tsx');
+  const { SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
+  for (const [scope, forbidden, authorized, overview] of [
+    ['system', false, false, false],
+    ['system', true, false, false],
+    ['page', false, false, false],
+    ['page', false, true, true],
+    ['page', true, true, false],
+  ]) {
+    const page = createElement(RouteStatusPage, { scope, forbidden });
+    const router = createMemoryRouter(
+      [
+        {
+          path: '*',
+          element: authorized
+            ? createElement(
+                SystemContext,
+                {
+                  value: { system: { systemName: 'CAC' }, systems: [], platform: 'application' },
+                },
+                page,
+              )
+            : page,
+        },
+      ],
+      { initialEntries: ['/systems/CAC/unknown'] },
+    );
+    try {
+      const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+      assert.ok(html.includes('目标系统'));
+      assert.ok(html.includes('CAC'));
+      assert.equal(html.includes('返回系统总览'), overview);
+      assert.ok(html.includes('返回系统列表'));
+      assert.ok(html.includes('技术支持'));
+      const links = [...html.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)].map(([link]) => link);
+      assert.ok(links.some((link) => link.includes('href="/"') && link.includes('返回系统列表')));
+      if (overview) {
+        const overviewLink = links.find((link) => link.includes('返回系统总览'));
+        assert.ok(overviewLink?.includes('href="/systems/CAC/overview"'));
+        assert.ok(overviewLink?.includes('i-lucide-layout-grid'));
+      }
+    } finally {
+      router.dispose();
+    }
+  }
+});
+
+test('系统 middleware 的 403/404 在系统边界展示站点页头，不挂载工作区', async (t) => {
+  const { QueryClientProvider } = await import('@tanstack/react-query');
+  const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
+  const { store } = await vite.ssrLoadModule('/src/store/index.ts');
+  const { loadUserSettings } = await vite.ssrLoadModule('/src/store/slices/preferencesSlice.ts');
+  const { defaultUserSettings } = await vite.ssrLoadModule('/src/types/preferences.ts');
+  const { createSystemNavigationContext } = await vite.ssrLoadModule('/src/router/systemAccess.ts');
+  store.dispatch(loadUserSettings.pending('error-layout'));
+  store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'error-layout'));
+  // 保留真实路由层级与边界，只跳过依赖浏览器存储的登录恢复；授权 middleware 仍照常执行。
+  const routeTree = (route) => ({
+    ...route,
+    middleware: route.id === 'system' ? route.middleware : undefined,
+    children: route.children?.map(routeTree),
+  });
+  t.after(() => queryClient.clear());
+  for (const [systemName, code, title] of [
+    ['demo_1', 403, '无系统访问权限'],
+    ['NOT_EXISTING', 404, '系统不存在'],
+  ]) {
+    queryClient.clear();
+    let activeRouter;
+    const router = createMemoryRouter(routes.map(routeTree), {
+      initialEntries: [`/systems/${systemName}/overview`],
+      future: { v8_middleware: true },
+      getContext: createSystemNavigationContext(() => activeRouter),
+    });
+    activeRouter = router;
+    try {
+      if (!router.state.initialized) {
+        await new Promise((resolve) => {
+          const unsubscribe = router.subscribe((state) => {
+            if (state.initialized) {
+              unsubscribe();
+              resolve();
+            }
+          });
+        });
+      }
+      assert.equal(Object.values(router.state.errors)[0].status, code);
+      const html = renderToStaticMarkup(
+        createElement(
+          Provider,
+          { store },
+          createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            createElement(RouterProvider, { router }),
+          ),
+        ),
+      );
+      assert.equal([...html.matchAll(/<header\b/g)].length, 1);
+      assert.ok(html.includes('灵动参数管家'));
+      assert.ok(html.includes(title));
+      assert.ok(html.includes('返回系统列表'));
+      assert.ok(!html.includes('切换系统'));
+      assert.ok(!html.includes('主导航'));
+      assert.ok(!html.includes('workspace-content'));
+    } finally {
+      router.dispose();
+    }
+  }
+});
+
 test('系统搜索覆盖英文名、中文名和编号', () => {
   assert.equal(filterSystems(mockSystems, ' cac ')[0].systemName, 'CAC');
   assert.equal(filterSystems(mockSystems, 'LL57.CAC')[0].systemName, 'CAC');
@@ -954,6 +1090,10 @@ test('工作区切换列表对两种平台角色均只使用我的系统，403 �
         },
       }),
     );
-    assert.doesNotMatch(render(), /当前:/);
+    const deniedHtml = render();
+    assert.doesNotMatch(deniedHtml, /当前:/);
+    assert.match(deniedHtml, /<header\b/);
+    assert.match(deniedHtml, /无系统访问权限/);
+    assert.doesNotMatch(deniedHtml, /切换系统|主导航/);
   }
 });

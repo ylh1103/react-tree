@@ -27,12 +27,18 @@ function subscribeWideHeader(onChange: () => void) {
   return () => media.removeEventListener('change', onChange);
 }
 const getWideHeaderSnapshot = () => window.matchMedia('(min-width: 1280px)').matches;
+// 无浏览器渲染时使用紧凑页头；实际挂载后由媒体查询提供窗口状态。
+const getServerWideHeaderSnapshot = () => false;
 
 export function AppHeader() {
   const workspace = useContext(SystemContext);
   const navigate = useNavigate();
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
-  const wideHeader = useSyncExternalStore(subscribeWideHeader, getWideHeaderSnapshot);
+  const wideHeader = useSyncExternalStore(
+    subscribeWideHeader,
+    getWideHeaderSnapshot,
+    getServerWideHeaderSnapshot,
+  );
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const showToolTips = headerToolsIconOnly || !wideHeader;
   const contextControlClass = 'h-36px! px-2.5! gap-2! text-13px! rounded-control! layout-focus';

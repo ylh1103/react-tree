@@ -16,9 +16,9 @@ export function AppFailure({ error }: { error: unknown }) {
         aria-labelledby="app-failure-title"
         className="box-border flex min-h-screen flex-col bg-canvas px-6 py-8 text-text desktop:px-12 desktop:py-10"
       >
-        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center py-12 desktop:py-16">
+        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center [@media(min-height:700px)]:-translate-y-8 py-12 desktop:py-16">
           <div className="grid items-center gap-10 desktop:grid-cols-[1fr_480px] desktop:gap-16">
-            <div className="min-w-0 desktop:self-start desktop:pt-6">
+            <div className="min-w-0">
               <h1
                 id="app-failure-title"
                 className="m-0 text-32px font-600 leading-12 tracking-tight desktop:text-40px desktop:leading-14"
@@ -37,12 +37,12 @@ export function AppFailure({ error }: { error: unknown }) {
                   type="primary"
                   icon={<span aria-hidden="true" className="i-lucide:rotate-cw text-4" />}
                   onClick={() => window.location.reload()}
-                  className="h-44px! rounded-8px! border-accent! bg-accent! px-6! text-on-accent! hover:bg-accent-hover! layout-focus"
+                  className="h-44px! px-6!"
                 >
                   刷新页面
                 </Button>
                 {/* 支持入口按约定仅预留，不绑定尚未配置的地址或读取已失败的业务上下文。 */}
-                <Button className="h-44px! rounded-8px! border-border-subtle! bg-surface! px-5! text-text! layout-focus">
+                <Button className="h-44px! px-5!">
                   技术支持
                   <span aria-hidden="true" className="i-lucide:arrow-up-right text-18px" />
                 </Button>

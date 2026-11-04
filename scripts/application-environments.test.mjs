@@ -106,12 +106,12 @@ test('middleware 校验访问后 loader 预取环境，拒绝访问时不产生�
   await router.navigate(`/systems/CACTEST1/${appName}`);
   assert.equal(router.state.errors, null);
   assert.ok(queryClient.getQueryData(applicationEnvironmentsOptions('CACTEST1', appName).queryKey));
-  assert.equal(calls[0], '/api/systems/mine');
+  assert.equal(calls[0], '/api/systems/page');
   assert.equal(calls.filter((url) => url === '/api/applications/environments').length, 1);
   calls.length = 0;
   mockConfig.systemAccessError = 403;
   await router.navigate('/outside');
   await router.navigate(`/systems/CACTEST1/${appName}`);
   assert.equal(Object.values(router.state.errors)[0].status, 403);
-  assert.deepEqual(calls, ['/api/systems/mine']);
+  assert.deepEqual(calls, ['/api/systems/page']);
 });

@@ -12,6 +12,7 @@ import { HttpError } from '@/http/request';
 import { SystemContext } from '@/contexts/SystemContext';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
+import SiteLayout from './SiteLayout';
 
 export default function SystemLayout() {
   const { systemName } = useParams();
@@ -33,8 +34,18 @@ export default function SystemLayout() {
       </div>
     );
   // 授权失败优先于旧数据；失效的工作区不能继续保留 Outlet。
-  if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
-  if (query.error instanceof HttpError && query.error.status === 404) return <RouteStatusPage />;
+  if (isAccessDenied(query.error))
+    return (
+      <SiteLayout>
+        <RouteStatusPage scope="system" forbidden />
+      </SiteLayout>
+    );
+  if (query.error instanceof HttpError && query.error.status === 404)
+    return (
+      <SiteLayout>
+        <RouteStatusPage scope="system" />
+      </SiteLayout>
+    );
   if (query.error && !system) {
     return (
       <div className="p-6">
@@ -48,7 +59,12 @@ export default function SystemLayout() {
       </div>
     );
   }
-  if (!system) return <RouteStatusPage />;
+  if (!system)
+    return (
+      <SiteLayout>
+        <RouteStatusPage scope="system" />
+      </SiteLayout>
+    );
   return (
     <SystemContext value={{ system, systems, platform: isDatabase ? 'database' : 'application' }}>
       <div className="flex flex-col h-full min-h-0">

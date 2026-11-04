@@ -15,17 +15,73 @@ import {
   openUserSettings,
   resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
-import { themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
+import { appThemes, themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
 import { bootstrapLoadingKey as bootstrapLoadingKeyResource } from '../src/store/preferences/loadingBootstrap.ts';
-import { defaultUserSettings } from '../src/types/preferences.ts';
+import { borderRadiusRange, defaultUserSettings } from '../src/types/preferences.ts';
 import {
   readBootstrapTheme,
   bootstrapThemeKey as bootstrapThemeKeyResource,
+  bootstrapControlRadiusKey,
+  readControlRadius,
 } from '../src/store/preferences/themeBootstrap.ts';
 
 const bootstrapThemeKey = `${bootstrapThemeKeyResource}:anonymous`;
 
 const bootstrapLoadingKey = `${bootstrapLoadingKeyResource}:anonymous`;
+
+test('启动控件圆角接受零值和边界，非法值或存储异常回退且不修改缓存', (t) => {
+  const values = mockStorage(t);
+  const key = `${bootstrapControlRadiusKey}:anonymous`;
+  const read = () => readControlRadius(globalThis.window.localStorage, key, 6, borderRadiusRange);
+  assert.equal(read(), 6);
+  for (const value of ['0', '12', '24']) {
+    values.set(key, value);
+    assert.equal(read(), Number(value));
+  }
+  for (const value of ['', ' ', '-1', '25', '1.5', 'bad']) {
+    values.set(key, value);
+    assert.equal(read(), 6);
+    assert.equal(values.get(key), value);
+  }
+  globalThis.window.localStorage.getItem = () => {
+    throw new Error('blocked');
+  };
+  assert.equal(read(), 6);
+});
+
+test('启动圆角缓存只跟随确认配置，失败读取和乐观保存不覆盖缓存', async (t) => {
+  const values = mockStorage(t);
+  const key = `${bootstrapControlRadiusKey}:anonymous`;
+  values.set(key, '12');
+  let failLoad = true;
+  let finishSave;
+  mockUserSettingsApi(t, {
+    load: async () => {
+      if (failLoad) throw new Error('unavailable');
+      return { ...defaultUserSettings, controlBorderRadius: 18 };
+    },
+    save: (settings) =>
+      new Promise((resolve, reject) => {
+        finishSave = { resolve: () => resolve(settings), reject };
+      }),
+  });
+  const store = createAppStore();
+  t.after(startUserSettingsEffects(store, null));
+  await store.dispatch(loadUserSettings());
+  assert.equal(values.get(key), '12');
+  failLoad = false;
+  await store.dispatch(loadUserSettings());
+  assert.equal(values.get(key), '18');
+  const failed = store.dispatch(saveUserSettings({ controlBorderRadius: 0 }));
+  assert.equal(values.get(key), '18');
+  finishSave.reject(new Error('save failed'));
+  await failed;
+  assert.equal(values.get(key), '18');
+  const saved = store.dispatch(saveUserSettings({ controlBorderRadius: 0 }));
+  finishSave.resolve();
+  await saved;
+  assert.equal(values.get(key), '0');
+});
 
 test('首屏主题缓存仅接受有效模式，存储不可用安全回退', (t) => {
   const values = mockStorage(t);
@@ -268,6 +324,16 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
     assert.equal(root.style.backgroundColor, 'var(--color-canvas)');
     assert.equal(values.get('--color-canvas'), themeVariablesByMode[expected]['--color-canvas']);
     assert.equal(values.get('--color-text'), themeVariablesByMode[expected]['--color-text']);
+    assert.equal(values.get('--control-radius'), `${defaultUserSettings.controlBorderRadius}px`);
+    assert.equal(
+      values.get('--color-accent-active'),
+      themeVariablesByMode[expected]['--color-accent-active'],
+    );
+    assert.equal(
+      values.get('--color-button-primary-text'),
+      appThemes[expected].components?.Button?.primaryColor ??
+        themeVariablesByMode[expected]['--color-on-accent'],
+    );
 
     const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
     globalThis.document = { documentElement: root };
@@ -289,9 +355,11 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
         JSON.stringify({ version: 1, loggedIn: true, user: { ystId } }),
       ],
       [`${bootstrapThemeKeyResource}:user:A`, 'dark'],
+      [`${bootstrapControlRadiusKey}:user:A`, '18'],
       [bootstrapThemeKey, 'dark'],
     ]);
-    const root = { dataset: {}, style: { setProperty() {} } };
+    const styles = new Map();
+    const root = { dataset: {}, style: { setProperty: (name, value) => styles.set(name, value) } };
     runInNewContext(match[1], {
       window: {
         localStorage: { getItem: (key) => records.get(key) ?? null },
@@ -300,6 +368,7 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
       document: { documentElement: root },
     });
     assert.equal(root.dataset.theme, ystId === 'A' ? 'dark' : 'light');
+    assert.equal(styles.get('--control-radius'), ystId === 'A' ? '18px' : '6px');
   }
 });
 

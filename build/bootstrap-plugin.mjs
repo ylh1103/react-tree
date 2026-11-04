@@ -12,21 +12,37 @@ import {
   readLoadingStyle,
 } from '../src/store/preferences/loadingBootstrap.ts';
 import { loadingStyleIds } from '../src/types/loading.ts';
-import { defaultUserSettings } from '../src/types/preferences.ts';
+import { borderRadiusRange, defaultUserSettings } from '../src/types/preferences.ts';
 import { formatFailureDetails } from '../src/utils/failureDetails.ts';
 import { startBootstrapFailure } from '../src/utils/bootstrapFailure.ts';
 import { parseStackTrace } from '../src/components/FailureDetails/parseStackTrace.ts';
 import { getDiagnosticPreview } from '../src/components/FailureDetails/preview.ts';
 import { startBootstrapStyles } from '../src/utils/bootstrapStyles.ts';
-import { themeVariablesByMode } from '../src/styles/theme.ts';
-import { bootstrapThemeKey, readThemeMode } from '../src/store/preferences/themeBootstrap.ts';
+import { appThemes, themeVariablesByMode } from '../src/styles/theme.ts';
+import { theme } from 'antd';
+import {
+  bootstrapControlRadiusKey,
+  bootstrapThemeKey,
+  readControlRadius,
+  readThemeMode,
+} from '../src/store/preferences/themeBootstrap.ts';
 
 /**
  * 浏览器首屏函数，源码会经 toString 内联；只能引用参数、函数内变量和浏览器全局对象。
  * 不可直接引用本模块的 import 或其他闭包变量，也不能等待网络请求或 React 挂载。
  * 只读缓存并设置最小样式，不安装系统外观监听、不写缓存，生命周期在本次同步执行后结束。
  */
-function initializeTheme(scopeKey, readMode, key, fallback, colors) {
+function initializeTheme(
+  scopeKey,
+  readMode,
+  key,
+  fallback,
+  colors,
+  readRadius,
+  radiusKey,
+  radiusDefault,
+  radiusRange,
+) {
   try {
     let mode = fallback;
     try {
@@ -45,6 +61,18 @@ function initializeTheme(scopeKey, readMode, key, fallback, colors) {
     const root = document.documentElement;
     root.dataset.theme = resolved;
     root.style.colorScheme = resolved;
+    let radius = radiusDefault;
+    try {
+      radius = readRadius(
+        window.localStorage,
+        scopeKey(radiusKey, window.localStorage),
+        radiusDefault,
+        radiusRange,
+      );
+    } catch {
+      // 首次访问或存储不可读时沿用默认控件圆角，不影响启动恢复操作。
+    }
+    root.style.setProperty('--control-radius', `${radius}px`);
     // 启动失败页也使用正式主题 token，无需等待主样式或 Provider。
     for (const [name, value] of Object.entries(colors[resolved]))
       root.style.setProperty(`--color-${name}`, value);
@@ -80,25 +108,57 @@ function serializeArguments(values) {
 /** 从正式主题提取最小配色，校验函数作为参数内联，避免脚本依赖模块作用域或携带完整主题库。 */
 function createThemeScript() {
   const colors = Object.fromEntries(
-    Object.entries(themeVariablesByMode).map(([mode, variables]) => [
-      mode,
-      Object.fromEntries(
-        [
-          'canvas',
-          'text',
-          'surface',
-          'text-secondary',
-          'border-subtle',
-          'accent',
-          'accent-hover',
-          'on-accent',
-          'danger',
-        ].map((name) => [name, variables[`--color-${name}`]]),
-      ),
-    ]),
+    Object.entries(themeVariablesByMode).map(([mode, variables]) => {
+      // 只在构建时读取公开主题 token 与 Button 覆盖项；浏览器无需加载组件或 CSS-in-JS。
+      const config = appThemes[mode];
+      const tokens = theme.getDesignToken(config);
+      const button = config.components?.Button ?? {};
+      return [
+        mode,
+        Object.fromEntries(
+          [
+            'canvas',
+            'text',
+            'surface',
+            'text-secondary',
+            'border-subtle',
+            'accent',
+            'accent-hover',
+            'accent-active',
+            'accent-border',
+            'on-accent',
+            'danger',
+          ]
+            .map((name) => [name, variables[`--color-${name}`]])
+            .concat([
+              ['button-bg', button.defaultBg ?? tokens.colorBgContainer],
+              ['button-text', button.defaultColor ?? tokens.colorText],
+              ['button-border', button.defaultBorderColor ?? tokens.colorBorder],
+              ['button-hover-bg', button.defaultHoverBg ?? tokens.colorBgContainer],
+              ['button-active-bg', button.defaultActiveBg ?? tokens.colorBgContainer],
+              ['button-primary-text', button.primaryColor ?? tokens.colorTextLightSolid],
+              [
+                'button-shadow',
+                button.defaultShadow ??
+                  `0 ${tokens.controlOutlineWidth}px 0 ${tokens.controlTmpOutline}`,
+              ],
+              [
+                'button-primary-shadow',
+                button.primaryShadow ??
+                  `0 ${tokens.controlOutlineWidth}px 0 ${tokens.controlOutline}`,
+              ],
+            ]),
+        ),
+      ];
+    }),
   );
   const args = serializeArguments([bootstrapThemeKey, defaultUserSettings.themeMode, colors]);
-  return `;(${initializeTheme.toString()})(${userStorageKey.toString()},${readThemeMode.toString()},${args});`;
+  const radiusArgs = serializeArguments([
+    bootstrapControlRadiusKey,
+    defaultUserSettings.controlBorderRadius,
+    borderRadiusRange,
+  ]);
+  return `;(${initializeTheme.toString()})(${userStorageKey.toString()},${readThemeMode.toString()},${args},${readControlRadius.toString()},${radiusArgs});`;
 }
 
 /** 在图标与样式链接解析前选择缓存方案并安装样式监听，与主题脚本分别执行以保持异常隔离。 */

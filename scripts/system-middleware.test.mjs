@@ -53,8 +53,7 @@ function fixture(t, options = {}) {
     { loader: preloadSystems, ...options },
   );
   t.after(() => router.dispose());
-  const accessRequests = () =>
-    requests.filter((item) => ['/api/systems/page', '/api/systems/mine'].includes(item.url));
+  const accessRequests = () => requests.filter((item) => item.url === '/api/systems/page');
   return { router, requests, loaders, accessRequests };
 }
 
@@ -105,7 +104,7 @@ test('跨系统、返回历史系统和离开后重进都重新校验', async (t
   assert.equal(router.state.errors, null);
   assert.deepEqual(
     accessRequests().map((item) => item.url),
-    Array(4).fill('/api/systems/mine'),
+    Array(4).fill('/api/systems/page'),
   );
 });
 
@@ -163,7 +162,7 @@ test('重定向以已提交来源判断，跨系统目标必须独立校验', as
   assert.equal(router.state.location.pathname, '/systems/CACTEST1/application/redirected');
   assert.deepEqual(
     accessRequests().map((item) => item.url),
-    ['/api/systems/mine', '/api/systems/mine'],
+    ['/api/systems/page', '/api/systems/page'],
   );
 });
 
@@ -181,7 +180,7 @@ test('取消的跨系统授权即使迟到成功，也不运行业务 loader 或
   const original = httpClient.request.bind(httpClient);
   let hold = true;
   t.mock.method(httpClient, 'request', async (config) => {
-    if (hold && config.url === '/api/systems/mine') {
+    if (hold && config.url === '/api/systems/page' && config.params.keyword === 'CACTEST1') {
       hold = false;
       started();
       await gate;
@@ -202,7 +201,7 @@ test('取消的跨系统授权即使迟到成功，也不运行业务 loader 或
   );
   await router.navigate('/systems/CACTEST1/application/confirmed');
   assert.equal(router.state.errors, null);
-  assert.equal(accessRequests().filter((item) => item.url === '/api/systems/mine').length, 3);
+  assert.equal(accessRequests().filter((item) => item.url === '/api/systems/page').length, 3);
 });
 
 test('布局订阅不在挂载时重复授权，窗口恢复焦点仍强制复查并暴露 403', async (t) => {
@@ -277,26 +276,26 @@ test('同一次表单导航的 action 和 loader 阶段共用授权，action 主
   assert.equal(router.state.errors, null);
   assert.equal(actions, 1);
   assert.equal(loads, 1);
-  assert.equal(requests.filter((url) => url === '/api/systems/mine').length, 1);
+  assert.equal(requests.filter((url) => url === '/api/systems/page').length, 1);
   invalidate = true;
   await router.navigate('/systems/CAC/submit', { formMethod: 'post', body: new URLSearchParams() });
   assert.equal(router.state.errors, null);
   assert.equal(actions, 2);
   assert.equal(loads, 2);
-  assert.equal(requests.filter((url) => url === '/api/systems/mine').length, 2);
+  assert.equal(requests.filter((url) => url === '/api/systems/page').length, 2);
 });
 
-test('我的系统入口重新检查一次成员关系，切换器订阅共享结果且不再请求', async (t) => {
+test('我的系统入口仅查询一次所有系统鉴权，切换器复用既有目录不再请求', async (t) => {
   const { mySystemsOptions } = await import('../src/queries/systems.ts');
   const { router, requests } = fixture(t);
-  // 模拟首页已展示我的系统；进入工作区仍需要一次最新成员校验。
+  // 首页已展示我的系统；鉴权只查询所有系统，目录继续独立复用。
   await queryClient.query(mySystemsOptions());
   assert.equal(requests.length, 1);
   await router.navigate('/systems/CAC/application/one');
   assert.equal(router.state.errors, null);
   assert.deepEqual(
     requests.map((item) => item.url),
-    ['/api/systems/mine', '/api/systems/mine'],
+    ['/api/systems/mine', '/api/systems/page'],
   );
   const observer = new QueryObserver(queryClient, { ...mySystemsOptions(), refetchOnMount: false });
   const unsubscribe = observer.subscribe(() => {});

@@ -8,7 +8,7 @@ import type { AppStore } from '../index.ts';
 import type { ThemeMode } from '@/types/preferences.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
 import { cancelPreferencesRequests, refreshUserSettings } from '../slices/preferencesSlice.ts';
-import { bootstrapThemeKey } from './themeBootstrap.ts';
+import { bootstrapControlRadiusKey, bootstrapThemeKey } from './themeBootstrap.ts';
 import { bootstrapLoadingKey } from './loadingBootstrap.ts';
 import { createUserSettingsSyncTransport } from './sync.ts';
 
@@ -20,10 +20,12 @@ export function startUserSettingsEffects(
   // 生命周期固定用户键，账号切换重载前不把旧状态写入新账号。
   const themeKey = currentUserStorageKey(bootstrapThemeKey);
   const loadingKey = currentUserStorageKey(bootstrapLoadingKey);
+  const radiusKey = currentUserStorageKey(bootstrapControlRadiusKey);
   const isCurrentUser = () => themeKey === currentUserStorageKey(bootstrapThemeKey);
   // 只记录成功写入的值；字段分别处理，某一项存储失败不阻塞另一项，后续更新仍可重试。
   let persistedTheme: ThemeMode | undefined;
   let persistedLoading: LoadingStyleId | undefined;
+  let persistedRadius: number | undefined;
   let stopped = false;
   // 用布尔值合并多次通知；请求期间有新通知时，结束后最多再补一次读取。
   let queued = false;
@@ -82,6 +84,14 @@ export function startUserSettingsEffects(
           persistedLoading = current.savedLoadingStyle;
         } catch {
           // 图标缓存独立失败，不影响已经写入的主题缓存。
+        }
+      }
+      if (persistedRadius !== current.savedControlBorderRadius) {
+        try {
+          window.localStorage.setItem(radiusKey, String(current.savedControlBorderRadius));
+          persistedRadius = current.savedControlBorderRadius;
+        } catch {
+          // 圆角缓存只影响启动提示；失败不阻断配置保存或其他缓存写入。
         }
       }
     }

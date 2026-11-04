@@ -23,6 +23,9 @@ export interface MySystemInfo extends SystemInfo {
   role: SystemRole;
 }
 
+/** 工作区保留系统查询的加入状态，以及接口可能额外返回的人员编号与角色。 */
+export type SystemAccessInfo = AllSystemInfo & Partial<Pick<MySystemInfo, 'ystId' | 'role'>>;
+
 /** 全部系统的加入状态独立于角色，不从负责人或组织信息推导。 */
 export interface AllSystemInfo extends SystemInfo {
   userRelation: boolean;

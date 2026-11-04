@@ -3,11 +3,11 @@
  * 消费 Hook 检查布局上下文，避免在缺少系统时继续发起业务请求。
  */
 import { createContext, useContext } from 'react';
-import type { SystemInfo } from '@/types/systems';
+import type { SystemAccessInfo, SystemInfo } from '@/types/systems';
 import type { ParameterPlatform } from '@/router/paths';
 
 export interface SystemWorkspace {
-  system: SystemInfo;
+  system: SystemAccessInfo;
   systems: SystemInfo[];
   platform: ParameterPlatform;
 }
