@@ -1,6 +1,7 @@
 /**
- * 系统目录卡片：参照 Vercel Projects / GitHub 仓库卡片的克制层级——身份与重要性在上，描述居中，
- * 角色与负责人收为一行轻量元信息，彩色只留给重要性和参数入口；角色与关系标签不参与授权。
+ * 系统目录卡片：参照 Vercel Projects / GitHub 仓库卡片的克制层级——身份与重要性在上，描述之后
+ * 紧跟醒目的参数入口，角色与负责人收进底部轻量元信息栏；彩色只留给重要性和参数入口，
+ * 角色与关系标签不参与授权。
  */
 import { Avatar, Badge, Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
@@ -42,13 +43,13 @@ function MySystemActions({ systemName }: { systemName: string }) {
 }
 
 /**
- * 参数入口是卡片的主操作：两种平台用不同预设色的填充按钮区分，数量作为按钮内徽标；
- * 零数量和缺失数量不影响进入工作区。
+ * 参数入口是卡片的主操作，位于描述与元信息之间：两种平台用不同预设色的大号填充按钮区分，
+ * 名称与数量分两行呈现；零数量和缺失数量不影响进入工作区。
  */
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+    <div className="grid grid-cols-2 gap-2">
       {(
         [
           {
@@ -75,20 +76,22 @@ function SystemEntries({ system }: { system: SystemInfo }) {
             color={color}
             variant="filled"
             className={`
-              group/entry h-40px! min-w-0! px-3! justify-start! gap-2! font-500!
+              group/entry h-60px! min-w-0! px-3.5! justify-start! gap-3!
               [&>span:not(.ant-btn-icon)]:min-w-0 [&>span:not(.ant-btn-icon)]:flex-1
             `}
-            icon={<span className={`${icon} w-16px h-16px`} aria-hidden="true" />}
+            icon={<span className={`${icon} w-20px h-20px`} aria-hidden="true" />}
             onClick={() => navigate(platformHome(system.systemName, platform))}
             aria-label={`进入 ${system.systemName} ${label}，${count ?? '—'} ${unit}`}
           >
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span className="truncate">{label}</span>
-              <span className="ml-auto shrink-0 text-12px leading-18px font-600 tabular-nums opacity-75">
-                {count ?? '—'}
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="flex flex-col items-start min-w-0 flex-1 text-left">
+                <span className="max-w-full truncate text-14px leading-20px font-600">{label}</span>
+                <span className="max-w-full truncate text-12px leading-18px opacity-75">
+                  <span className="font-600 tabular-nums">{count ?? '—'}</span> {unit}
+                </span>
               </span>
               <span
-                className="i-lucide-arrow-right w-14px h-14px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
+                className="i-lucide-arrow-right w-16px h-16px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
                 aria-hidden="true"
               />
             </span>
@@ -247,12 +250,12 @@ export function SystemCard({
             {description}
           </p>
         </Tooltip>
-        <div className="flex items-center justify-between gap-3 min-w-0 h-22px mt-auto">
-          <RelationBadge system={system} />
-          <Owners value={system.systemCharges} />
-        </div>
+        <SystemEntries system={system} />
       </div>
-      <SystemEntries system={system} />
+      <div className="flex items-center justify-between gap-3 min-w-0 h-44px px-5 border-t border-t-solid border-t-border-subtle">
+        <RelationBadge system={system} />
+        <Owners value={system.systemCharges} />
+      </div>
     </article>
   );
 }

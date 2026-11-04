@@ -1,4 +1,4 @@
-/** 卡片骨架对应身份、描述、元信息行和参数入口的实际尺寸，减少加载交接时的布局跳动。 */
+/** 卡片骨架对应身份、描述、参数入口和底部元信息栏的实际尺寸，减少加载交接时的布局跳动。 */
 import { Skeleton } from 'antd';
 import { systemCardContainer, systemCardGrid, systemPageSizes } from '../model/presentation';
 
@@ -25,18 +25,18 @@ export default function SystemsHomeSkeleton() {
                 paragraph={{ rows: 2, width: ['100%', '70%'] }}
                 className="h-40px [&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px! [&_.ant-skeleton-paragraph>li+li]:mt-3!"
               />
-              <div className="flex items-center justify-between h-22px">
-                <Skeleton
-                  title={false}
-                  paragraph={{ rows: 1, width: 72 }}
-                  className="[&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px!"
-                />
-                <Skeleton.Avatar size={22} />
+              <div className="grid grid-cols-2 gap-2 [&_.ant-skeleton-button]:h-60px! [&_.ant-skeleton-button]:w-full!">
+                <Skeleton.Button active={false} block />
+                <Skeleton.Button active={false} block />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 px-3 pb-3 [&_.ant-skeleton-button]:h-40px! [&_.ant-skeleton-button]:w-full!">
-              <Skeleton.Button active={false} block />
-              <Skeleton.Button active={false} block />
+            <div className="flex items-center justify-between h-44px px-5 border-t border-t-solid border-t-border-subtle">
+              <Skeleton
+                title={false}
+                paragraph={{ rows: 1, width: 72 }}
+                className="[&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px!"
+              />
+              <Skeleton.Avatar size={22} />
             </div>
           </div>
         ))}
