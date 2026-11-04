@@ -106,9 +106,9 @@ function cases() {
       Page: AllSystemsFixture,
       path: '/catalog-test',
       routePath: '/catalog-test',
-      key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }],
+      key: ['systems', 'catalog', { pageNum: 1, pageSize: 12, keyword: '' }],
       message: '系统列表加载中',
-      data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 8 },
+      data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 12 },
     },
   ];
 }

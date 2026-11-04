@@ -6,7 +6,7 @@ import { systemPageOptions } from '@/queries/systems';
 import type { AllSystemInfo, SystemPageParams } from '@/types/systems';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
-import { systemCardGrid } from '../model/presentation';
+import { systemCardContainer, systemCardGrid, systemPageSizes } from '../model/presentation';
 import { SystemCard } from './SystemPresentation';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import CollectionPagination from './CollectionPagination';
@@ -19,7 +19,11 @@ export default function AllSystemsPanel({
   onDetails: (system: AllSystemInfo) => void;
 }) {
   const [draft, setDraft] = useState('');
-  const [params, setParams] = useState<SystemPageParams>({ pageNum: 1, pageSize: 8, keyword: '' });
+  const [params, setParams] = useState<SystemPageParams>({
+    pageNum: 1,
+    pageSize: systemPageSizes[0],
+    keyword: '',
+  });
   const query = useQuery({ ...systemPageOptions(params), enabled: active });
   function search() {
     const keyword = draft.trim();
@@ -64,14 +68,16 @@ export default function AllSystemsPanel({
       {query.isPending ? (
         <SystemsHomeSkeleton />
       ) : query.data?.records.length ? (
-        <div className={systemCardGrid}>
-          {query.data.records.map((system) => (
-            <SystemCard
-              key={system.systemName}
-              system={system}
-              onDetails={() => onDetails(system)}
-            />
-          ))}
+        <div className={systemCardContainer}>
+          <div className={systemCardGrid}>
+            {query.data.records.map((system) => (
+              <SystemCard
+                key={system.systemName}
+                system={system}
+                onDetails={() => onDetails(system)}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         !query.error && (

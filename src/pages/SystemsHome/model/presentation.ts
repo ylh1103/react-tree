@@ -25,6 +25,18 @@ export function organizationName(value: string | undefined) {
   return (separator < 0 ? value : value.slice(separator + 1)).trim() || '暂未配置';
 }
 
-/** 卡片保留足够宽度展示双参数入口；骨架与正文共用响应式列数，避免加载时跳动。 */
+/**
+ * 页面最小宽度固定为 1280px，视口媒体查询无法反映真实内容宽度，因此列数按容器宽度计算；
+ * 骨架与正文共用同一容器与网格，避免加载时跳动。
+ */
+export const systemCardContainer = '@container';
 export const systemCardGrid =
-  'grid grid-cols-1 min-[720px]:grid-cols-2 desktop:grid-cols-3 wide:grid-cols-4 gap-5';
+  'grid grid-cols-1 @[600px]:grid-cols-2 @[900px]:grid-cols-3 @[1240px]:grid-cols-4 gap-5';
+
+/** 12 可被 3、4 列整除，常见宽度下末行不留空位。 */
+export const systemPageSizes = [12, 24, 48];
+
+/** 风险等级仅作展示标记；A 为最高重要性。 */
+export function riskLevelLabel(value: string | undefined) {
+  return value ? `重要性 ${value}` : '重要性未配置';
+}
