@@ -4,8 +4,9 @@ import { Buffer } from 'node:buffer';
 
 /** 预算以每个响应分别 gzip 后求和；这是传输体积估算，不代表浏览器加载耗时。 */
 // HTML 保留五款启动动画、独立故障页及完整静态诊断交互；React 详情模块仍按需加载。
-// 启动按钮主题交互及按用户隔离的圆角提示使 HTML 达约 11.56 KB gzip，预留约 2%；JS/CSS 预算保持不变。
-export const startupBudget = { javascriptGzip: 302_000, cssGzip: 20_000, htmlGzip: 11_800 };
+// 启动按钮主题交互及按用户隔离的圆角提示使 HTML 达约 11.56 KB gzip，预留约 2%。
+// 用户面板外壳同步加载以即时响应打开，JS 约 303 KB gzip；表单、编辑器及资料内容仍按需加载。
+export const startupBudget = { javascriptGzip: 305_000, cssGzip: 20_000, htmlGzip: 11_800 };
 
 const forbiddenInitialModules = [
   '/src/components/FailureDetails/Details.tsx',

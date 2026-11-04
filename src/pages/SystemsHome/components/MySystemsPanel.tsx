@@ -33,12 +33,12 @@ export default function MySystemsPanel({
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
     <section aria-label="我的系统">
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      <div className="flex flex-wrap items-center gap-3 mb-5">
         <Input
           allowClear
           aria-label="筛选我的系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-320px!"
+          className="w-340px! max-w-full!"
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
@@ -70,7 +70,7 @@ export default function MySystemsPanel({
         </Button>
         <Button
           type="primary"
-          className="shadow-none! bg-accent-active! hover:bg-accent-active!"
+          className="ml-auto max-[640px]:ml-0"
           onClick={onCreate}
           icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
         >

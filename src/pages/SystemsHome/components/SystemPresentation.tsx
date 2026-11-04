@@ -1,4 +1,4 @@
-/** 系统卡片按身份、摘要、参数入口和负责人分层展示；关系标签仅展示接口信息，不参与授权。 */
+/** 系统目录以名称识别、参数快捷入口和负责人分层展示；角色与关系标签不参与授权。 */
 import { Button, Descriptions, Dropdown, Modal, Tag, Tooltip } from 'antd';
 import { useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
@@ -35,7 +35,7 @@ function MySystemActions({ systemName }: { systemName: string }) {
 function SystemEntries({ system }: { system: SystemInfo }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+    <div className="grid grid-cols-2 gap-2 mx-5 py-3 border-y border-y-solid border-divider">
       {(
         [
           {
@@ -57,18 +57,19 @@ function SystemEntries({ system }: { system: SystemInfo }) {
         <Button
           key={platform}
           block
+          type="text"
           className={`
-            h-64px! min-w-0! justify-start! gap-2! px-3! text-13px! bg-sidebar! hover:bg-hover!
-            hover:border-accent-border-hover! shadow-none!
+            h-48px! min-w-0! justify-start! gap-2! px-2! text-13px!
+            hover:bg-hover! hover:text-accent-text!
           `}
-          icon={<span className={`${icon} w-18px h-18px text-accent-text`} aria-hidden="true" />}
+          icon={<span className={`${icon} w-16px h-16px text-text-muted`} aria-hidden="true" />}
           onClick={() => navigate(platformHome(system.systemName, platform))}
           aria-label={`进入 ${system.systemName} ${label}`}
         >
           <span className="flex min-w-0 flex-col items-start gap-0.5">
-            <span className="text-12px leading-20px text-text-secondary">{label}</span>
+            <span className="text-12px leading-18px text-text-secondary">{label}</span>
             <span className="text-11px leading-18px text-text-muted">
-              <strong className="mr-1 text-15px font-600 tabular-nums text-text">
+              <strong className="mr-1 text-19px font-600 tabular-nums text-text">
                 {count ?? '—'}
               </strong>
               {unit}
@@ -90,6 +91,8 @@ export function SystemCard({
 }) {
   const description = descriptionText(system.systemDesc);
   const isMine = 'role' in system;
+  // 名称缩写只帮助视觉定位，不生成持久标识或推导系统类别。
+  const initials = Array.from(system.systemName).slice(0, 2).join('').toUpperCase();
   return (
     <article
       className={`
@@ -98,23 +101,23 @@ export function SystemCard({
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex-1 p-4">
+      <div className="flex-1 px-5 pt-5 pb-4">
         <div className="flex items-start gap-3 min-w-0">
           <span
-            className="flex h-40px w-40px shrink-0 items-center justify-center rounded-control bg-hover text-accent-text"
+            className="flex h-44px w-44px shrink-0 items-center justify-center rounded-control bg-hover text-accent-text text-16px font-600"
             aria-hidden="true"
           >
-            <span className="i-lucide-boxes h-21px w-21px" />
+            {initials}
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="m-0 min-w-0 text-16px leading-24px font-600">
+            <h2 className="m-0 min-w-0 text-18px leading-26px font-600">
               <Tooltip title={`${system.systemName} · 查看系统详情`}>
                 <Button
                   type="text"
                   onClick={onDetails}
                   aria-label={`查看 ${system.systemName} 详情`}
                   className={`
-                    block! max-w-full! h-auto! p-0! text-text! text-16px! font-600! leading-24px!
+                    block! max-w-full! h-auto! p-0! text-text! text-18px! font-600! leading-26px!
                     hover:text-accent-text! focus-visible:outline-2 focus-visible:outline-solid
                     focus-visible:outline-accent [&>span]:truncate
                   `}
@@ -124,7 +127,7 @@ export function SystemCard({
               </Tooltip>
             </h2>
             <p
-              className="m-0 text-12px leading-20px text-text-secondary truncate"
+              className="m-0 mt-0.5 text-13px leading-20px text-text-secondary truncate"
               title={system.systemChineseName}
             >
               {system.systemChineseName || '暂无中文名称'}
@@ -132,51 +135,45 @@ export function SystemCard({
           </div>
           {isMine && <MySystemActions systemName={system.systemName} />}
         </div>
-        <div className="flex flex-wrap items-center gap-2 mt-3">
-          <Tag variant="filled" className="m-0! shrink-0! text-11px! leading-20px!">
+        <div className="flex items-center gap-2 mt-4 min-w-0">
+          <Tag
+            variant="filled"
+            className={`m-0! shrink-0! text-11px! leading-20px! ${isMine ? 'bg-hover! text-accent-text!' : ''}`}
+          >
             {isMine
               ? systemRoleLabels[system.role] || '角色未配置'
               : system.userRelation
                 ? '已加入'
                 : '未加入'}
           </Tag>
-          <span className="text-11px leading-20px text-text-muted" title="系统风险等级">
-            风险等级：{system.sysRiskLevel || '未配置'}
-          </span>
-        </div>
-        <div className="mt-3 text-12px leading-20px text-text-muted">
           <span
-            className="block truncate"
+            className="min-w-0 truncate text-11px leading-20px text-text-muted"
             title={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
             aria-label={`架构办子系统编码：${system.systemArchNo || '未配置'}`}
           >
-            架构编码：{system.systemArchNo || '未配置'}
+            {system.systemArchNo || '架构编码未配置'}
           </span>
         </div>
         <Tooltip title={description}>
-          <p className="m-0 mt-1 h-40px text-12px leading-20px text-text-secondary line-clamp-2 break-words">
+          <p className="m-0 mt-3 h-40px text-12px leading-20px text-text-secondary line-clamp-2 break-words">
             {description}
           </p>
         </Tooltip>
       </div>
       <SystemEntries system={system} />
-      <div className="flex items-center gap-2 px-4 py-2.5 border-t border-t-solid border-divider text-12px leading-20px text-text-muted">
-        <span className="i-lucide-user-round h-14px w-14px shrink-0" aria-hidden="true" />
-        <Tooltip title={system.systemCharges || '暂未配置'}>
-          <span className="min-w-0 flex-1 truncate">
-            负责人：{peopleNames(system.systemCharges)}
-          </span>
-        </Tooltip>
-        <Button
-          type="text"
-          size="small"
-          onClick={onDetails}
-          aria-label={`查看 ${system.systemName} 完整资料`}
-          className="shrink-0 text-12px! text-text-secondary!"
-        >
-          详情
-          <span className="i-lucide-chevron-right h-12px w-12px" aria-hidden="true" />
-        </Button>
+      <div className="px-5 py-3">
+        <div className="min-w-0 flex-1 text-11px leading-20px text-text-muted">
+          <Tooltip title={system.systemCharges || '暂未配置'}>
+            <div className="flex items-center gap-1.5">
+              <span className="i-lucide-user-round h-12px w-12px shrink-0" aria-hidden="true" />
+              <span className="truncate">{peopleNames(system.systemCharges)}</span>
+            </div>
+          </Tooltip>
+          <div className="flex items-center gap-1.5" title="系统风险等级">
+            <span className="i-lucide-shield h-12px w-12px shrink-0" aria-hidden="true" />
+            <span>风险等级 {system.sysRiskLevel || '未配置'}</span>
+          </div>
+        </div>
       </div>
     </article>
   );

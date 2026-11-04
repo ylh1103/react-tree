@@ -1,12 +1,12 @@
 /** 页头身份卡片：集中展示头像、姓名和账号，保留分组菜单的键盘操作与入口授权边界。 */
-import { App, Button, Dropdown } from 'antd';
+import { App, Button, Dropdown, Modal } from 'antd';
 import { lazy, useState } from 'react';
 import { DeferredPanel } from './DeferredPanel';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { openUserSettings } from '@/store/slices/preferencesSlice';
 import { logoutUser } from '@/router/login';
 
-const UserProfileModal = lazy(() => import('./UserProfileModal'));
+const UserProfileContent = lazy(() => import('./UserProfileModal'));
 const menuItemClass = 'min-h-40px px-3! rounded-control!';
 
 /** 共用菜单项外观，退出项继承 Ant Design 的危险操作配色。 */
@@ -99,9 +99,24 @@ export function HeaderUserMenu() {
         </Button>
       </Dropdown>
       {profileOpen !== null && (
-        <DeferredPanel open={profileOpen} title="个人资料" onClose={() => setProfileOpen(false)}>
-          <UserProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-        </DeferredPanel>
+        <Modal
+          aria-label="个人资料"
+          open={profileOpen}
+          onCancel={() => setProfileOpen(false)}
+          width={500}
+          centered
+          closable={{ 'aria-label': '关闭个人资料' }}
+          classNames={{
+            container:
+              'relative isolate overflow-hidden p-3! rounded-[calc(var(--ui-radius)_+_16px)]! border border-solid border-white/40 bg-transparent! backdrop-blur-3px',
+            body: 'min-h-480px p-0!',
+          }}
+          footer={null}
+        >
+          <DeferredPanel title="个人资料">
+            <UserProfileContent />
+          </DeferredPanel>
+        </Modal>
       )}
     </>
   );

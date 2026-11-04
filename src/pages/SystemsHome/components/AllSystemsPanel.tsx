@@ -34,7 +34,7 @@ export default function AllSystemsPanel({
           allowClear
           aria-label="筛选所有系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-420px!"
+          className="w-420px! max-w-full!"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onPressEnter={search}

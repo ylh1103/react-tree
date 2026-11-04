@@ -13,12 +13,14 @@ export default function SystemsHomePage() {
   const [createdVersion, setCreatedVersion] = useState(0);
   const [details, setDetails] = useState<MySystemInfo | AllSystemInfo | null>(null);
   return (
-    <section className="max-w-1920px mx-auto p-6 [&_.ant-btn]:shadow-none!" aria-label="系统列表">
-      <h1 className="sr-only">系统列表</h1>
+    <section
+      className="max-w-1680px mx-auto px-8 py-8 max-[640px]:p-4 [&_.ant-btn]:shadow-none!"
+      aria-label="系统列表"
+    >
       <Tabs
         activeKey={tab}
         onChange={setTab}
-        className="[&_.ant-tabs-nav]:mb-6! [&_.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-text!"
+        className="[&_.ant-tabs-nav]:mb-5! [&_.ant-tabs-tab]:pt-0! [&_.ant-tabs-tab]:pb-3!"
         items={[
           {
             key: 'mine',

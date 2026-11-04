@@ -1,5 +1,5 @@
 /** 只读个人名片：柔和封面与跨面板圆形头像建立层级，角色和网络独立呈现，保留遮罩及 Esc 关闭。 */
-import { Avatar, Modal, Tag } from 'antd';
+import { Avatar, Tag } from 'antd';
 import profileCover from '@/assets/profile-cover.jpg';
 import { useAppSelector } from '@/store/hooks';
 
@@ -10,12 +10,7 @@ const networkTags = {
   '2': { label: '业务网', color: undefined, icon: 'i-lucide-network' },
 } as const;
 
-interface UserProfileModalProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-export default function UserProfileModal({ open, onClose }: UserProfileModalProps) {
+export default function UserProfileContent() {
   const userName = useAppSelector((state) => state.user.userInfo?.userName);
   const ystId = useAppSelector((state) => state.user.userInfo?.ystId);
   const employeeId = useAppSelector((state) => state.user.userInfo?.employeeId);
@@ -36,20 +31,7 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
   const networkTag = netEnv ? networkTags[netEnv] : undefined;
 
   return (
-    <Modal
-      aria-label="个人资料"
-      open={open}
-      onCancel={onClose}
-      width={500}
-      centered
-      closable={false}
-      classNames={{
-        container:
-          'relative isolate overflow-hidden p-3! rounded-[calc(var(--ui-radius)_+_16px)]! border border-solid border-white/40 bg-transparent! backdrop-blur-3px',
-        body: 'p-0!',
-      }}
-      footer={null}
-    >
+    <>
       {/* 底色仅保留 20% 不透明度并轻度模糊背景，避免玻璃留缝被高不透明度和强模糊抹成实心边框。 */}
       <div
         aria-hidden="true"
@@ -130,6 +112,6 @@ export default function UserProfileModal({ open, onClose }: UserProfileModalProp
           </div>
         </dl>
       </div>
-    </Modal>
+    </>
   );
 }

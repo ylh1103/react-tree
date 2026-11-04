@@ -25,5 +25,6 @@ export function organizationName(value: string | undefined) {
   return (separator < 0 ? value : value.slice(separator + 1)).trim() || '暂未配置';
 }
 
-/** 手机使用单列避免入口拥挤；中屏两列，1280px 起四列，骨架与正文共用相同布局。 */
-export const systemCardGrid = 'grid grid-cols-2 max-[640px]:grid-cols-1 desktop:grid-cols-4 gap-4';
+/** 卡片保留足够宽度展示双参数入口；骨架与正文共用响应式列数，避免加载时跳动。 */
+export const systemCardGrid =
+  'grid grid-cols-1 min-[720px]:grid-cols-2 desktop:grid-cols-3 wide:grid-cols-4 gap-5';

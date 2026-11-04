@@ -375,7 +375,9 @@ test('业务骨架布局工具类有实际样式，系统卡片保持与正文�
   assert.ok(grid, '系统卡片占位必须有独立的布局容器');
   const { css } = await uno.generate(grid[1], { preflights: false });
   assert.match(css, /display:grid/);
+  assert.match(css, /grid-template-columns:repeat\(1,minmax\(0,1fr\)\)/);
   assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
   assert.match(css, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
-  assert.match(css, /gap:1rem/);
+  assert.match(css, /gap:1.25rem/);
 });
