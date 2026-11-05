@@ -8,6 +8,8 @@ export default defineConfig({
   content: {
     pipeline: {
       include: [/\.(tsx?|html)($|\?)/],
+      // Landing 使用独立、局部作用域的路由 CSS，避免占用后台启动预算。
+      exclude: [/\/src\/pages\/Landing\//],
     },
   },
   theme: {
