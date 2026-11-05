@@ -6,6 +6,10 @@ import { landingStylesPlugin } from './build/landing-styles-plugin.mjs';
 import { bootstrapPlugin } from './build/bootstrap-plugin.mjs';
 import { startupBudgetPlugin } from './build/startup-budget-plugin.mjs';
 import { monacoLocalePlugin } from './build/monaco-locale-plugin.mjs';
+import {
+  reactBitsScopedCss,
+  reactBitsUtilitiesPlugin,
+} from './build/reactbits-template-plugin.mjs';
 
 /**
  * 开发与构建共用一个首屏插件，由插件内部统一安排字符集、主题、加载画面和样式交接顺序。
@@ -18,9 +22,13 @@ export default defineConfig({
     bootstrapPlugin(),
     startupBudgetPlugin(),
     monacoLocalePlugin(),
+    reactBitsUtilitiesPlugin(),
   ],
   // 预打包会绕过模块级语言适配；保留 ESM 图，让开发模式与生产构建使用相同翻译。
-  optimizeDeps: { exclude: ['monaco-editor'] },
+  // 官方站是独立应用，主项目只扫描自己的 HTML 入口，避免遍历 vendor 中的整站文档。
+  optimizeDeps: { entries: ['index.html'], exclude: ['monaco-editor'] },
+  server: { watch: { ignored: ['**/vendor/react-bits/**'] } },
+  css: { postcss: { plugins: reactBitsScopedCss() } },
   worker: { plugins: () => [monacoLocalePlugin()] },
   resolve: {
     // 与 TypeScript paths 保持一致，跨模块导入统一从 src 定位。
@@ -29,5 +37,18 @@ export default defineConfig({
   build: {
     target: 'chrome86',
     cssTarget: 'chrome86',
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              // 保持原本同包的 React 与 JSX 运行时，避免新增动态页面造成共享运行时碎片。
+              name: 'react-runtime',
+              test: /node_modules[\\/]react[\\/]/,
+            },
+          ],
+        },
+      },
+    },
   },
 });

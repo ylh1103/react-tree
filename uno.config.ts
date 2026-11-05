@@ -8,8 +8,8 @@ export default defineConfig({
   content: {
     pipeline: {
       include: [/\.(tsx?|html)($|\?)/],
-      // Landing 使用独立、局部作用域的路由 CSS，避免占用后台启动预算。
-      exclude: [/\/src\/pages\/Landing\//],
+      // 两个落地页都生成独立的局部工具类，避免占用后台启动预算。
+      exclude: [/\/src\/pages\/(?:Landing|ReactBits)\//],
     },
   },
   theme: {
