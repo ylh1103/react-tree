@@ -12,7 +12,7 @@
 npm run dev:landing
 ```
 
-Vite 会输出实际本地地址并尝试打开 `/landing`，这是实际产品落地页的公开入口，当前为待开发占位。React Bits 官网复刻演示在 `/loading-copy`，两页均不要求登录。若浏览器未自动打开，使用终端输出的地址加对应路径。停止服务使用 Ctrl+C。
+Vite 会输出实际本地地址并尝试打开 `/landing`，这是实际产品落地页的公开入口，当前为待开发占位。该页面不要求登录。若浏览器未自动打开，使用终端输出的地址加对应路径。停止服务使用 Ctrl+C。
 
 全新检出按根 README 使用 pnpm 安装依赖，继续沿用 pnpm-lock.yaml，不混用其他包管理器生成锁文件。`npm run` 仅运行已有脚本，不安装依赖。
 
@@ -60,7 +60,7 @@ codex mcp get shadcn
 
 当前上游 LICENSE.md 标注 MIT + Commons Clause；引入时重新核对组件及其第三方资源的具体许可，保存必要的版权和许可文本。Pro 素材单独按所持许可处理，不将付费密钥写入源码。
 
-`/loading-copy` 复刻演示的实现、资源和许可记录见 [页面说明](../src/pages/LoadingCopy/README.md)。实际产品落地页使用 `src/pages/Landing/index.tsx` 和 `/landing`，不沿用复刻页的品牌与内容，不更改业务鉴权。
+实际产品落地页使用 `src/pages/Landing/index.tsx` 和 `/landing`，不沿用复刻页的品牌与内容，不更改业务鉴权。
 
 ## 在 Codex 中提供上下文
 

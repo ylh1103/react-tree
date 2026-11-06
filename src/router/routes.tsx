@@ -63,7 +63,6 @@ export const routes: RouteObject[] = [
       { path: 'login', lazy: lazyPage(() => import('@/pages/Login')) },
       { path: 'landing', lazy: lazyPage(() => import('@/pages/Landing')) },
       { path: 'reactbits', lazy: lazyPage(() => import('@/pages/ReactBits')) },
-      { path: 'loading-copy', lazy: lazyPage(() => import('@/pages/LoadingCopy')) },
       {
         // 无路径分组统一保护业务入口，不增加 URL 层级；新增业务页必须放在此分组内。
         middleware: [loginMiddleware],

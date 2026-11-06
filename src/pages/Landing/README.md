@@ -1,6 +1,6 @@
 # 灵动参数管家产品落地页
 
-实现入口：`/landing`，启动：`npm run dev:landing`。开发依据为根 `AGENTS.md`、`production.md`、`docs/landing-design.md` 的 v0.8 开发基线及 `docs/react-bits.md`。本次仅本地开发与验证，没有部署或提交代码；既有 `/loading-copy`、路由和其他未提交文件保留。
+实现入口：`/landing`，启动：`npm run dev:landing`。开发依据为根 `AGENTS.md`、`production.md`、`docs/landing-design.md` 的 v0.8 开发基线及 `docs/react-bits.md`。本次仅本地开发与验证，没有部署或提交代码；其他未提交文件保留。
 
 ## 页面与行为
 
@@ -42,7 +42,7 @@ MagicBento 上游声明 `@hugeicons/react@^1.1.10` 和 `@hugeicons/core-free-ico
 
 ## 官网与公开布局参考
 
-头部只直接参考 [reactbits.dev 官网首页](https://reactbits.dev/)，已实际浏览并截取展开、滚动收拢与移动端参考。没有读取 `/loading-copy` 来推断官网头部。
+头部只直接参考 [reactbits.dev 官网首页](https://reactbits.dev/)，已实际浏览并截取展开、滚动收拢与移动端参考。
 
 以下仅参考公开预览构图并独立编写 React + UnoCSS，未购买、获取或安装 Pro 源码，也没有复制打包代码：
 
@@ -82,7 +82,7 @@ MagicBento 上游声明 `@hugeicons/react@^1.1.10` 和 `@hugeicons/core-free-ico
 | 导航与键盘                              | 共享底板跨项移动、1120px 收拢、活动项、直接锚点、重复定位、移动菜单、Escape 返回焦点、流程方向键、Home/End 与 Enter/Space、FAQ Space 与多项展开、展开指示、重复锚点不追加历史、触摸模拟菜单通过。 |
 | 背景与清理                              | 鼠标扰动、暂停/继续、离屏暂停、模拟 document.hidden 后恢复、Canvas 不可用时静态降级通过；StrictMode 三次挂载卸载后帧循环与观察器数量均回到既有页面基线。                                          |
 | 放大重排                                | 720 CSS px + DPR 2 检查 1440px 屏幕下 200% 等效重排，无横向溢出；不是实际浏览器 UI 缩放或实机屏幕阅读器测试。                                                                                     |
-| 兼容与控制台                            | `/loading-copy` 仍渲染；控制台入口进入既有登录；开发与生产验证未出现运行时/浏览器 console error。                                                                                                 |
+| 兼容与控制台                            | 控制台入口进入既有登录；开发与生产验证未出现运行时/浏览器 console error。                                                                                                                         |
 | 实验室性能                              | 单次本机生产预览 LCP 约 1.20s、CLS 0、1 个 long task；不能代替真实访问 P75，也没有据此断言 INP 达标。                                                                                             |
 
 截图与机器结果保存在被 Git 忽略的 [output/landing](../../../output/landing)，包括生产明暗首屏、手机、各区块和官网参考；`qa-results.json`、`production-results.json`、`reference-results.json` 保存对应结果。

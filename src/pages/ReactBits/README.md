@@ -23,7 +23,7 @@
 
 图片和字体在 `public/reactbits`，渲染器在 `template/content`。这些均为项目内普通文件，可直接修改；运行和构建不依赖 vendor 检出。
 
-来源为 React Bits 官方提交 `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4` 的首页及依赖源码，共迁入 97 个模板文件。没有使用 LoadingCopy 或其他页面的内容。首页官方源码本身为 JavaScript，保留其 JSX/CSS；TypeScript 入口使用明确组件声明。
+来源为 React Bits 官方提交 `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4` 的首页及依赖源码，共迁入 97 个模板文件。没有使用其他页面的内容。首页官方源码本身为 JavaScript，保留其 JSX/CSS；TypeScript 入口使用明确组件声明。
 
 保留官方布局、动态组件和 CSS；为了项目集成，主题与滚动改为页面私有，去掉文档站专用导航逻辑、埋点及远程星标查询。样式在构建时加作用域并隔离关键帧，工具类用 UnoCSS 生成，未初始化 Tailwind/shadcn。保留原 CSS 是为了维护官方模板的完整布局与动画，避免重新实现设计。
 
