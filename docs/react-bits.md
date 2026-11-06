@@ -53,7 +53,7 @@ npx shadcn@latest add @reactbits-pro/profile-3
 
 Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本以执行时实际结果为准；历史接入使用过 4.23.0，不代表项目锁定该版本。执行前检查生成文件和依赖，执行后审查 diff，特别关注全局 CSS、主题变量及锁文件；不要混用包管理器生成另一份锁文件。
 
-`/reactbits` 是独立的公开复刻页，入口为 `src/pages/ReactBits/index.tsx`，拥有局部样式与主题。实际产品 `/landing` 路由及专用代码已删除，接入新组件时按具体需求选择已有页面，不默认创建该路由。
+`/reactbits` 是独立的公开复刻页，入口为 `src/pages/ReactBits/index.tsx`，拥有局部样式与主题。产品入口 `/landing` 位于 `src/pages/Landing/index.tsx`，目前仅实现导航和首屏；导航、完整粒子层、DotGrid 和主题均已独立迁入 Landing，不依赖参考页目录，来源和适配说明见 `src/pages/Landing/README.md`。
 
 ### 历史接入记录（2026-11-06）
 

@@ -62,6 +62,7 @@ export const routes: RouteObject[] = [
       // 公开页放在此处：登录、小工具、产品介绍等无需登录，也会恢复当前用户资料。
       { path: 'login', lazy: lazyPage(() => import('@/pages/Login')) },
       { path: 'reactbits', lazy: lazyPage(() => import('@/pages/ReactBits')) },
+      { path: 'landing', lazy: lazyPage(() => import('@/pages/Landing')) },
       {
         // 无路径分组统一保护业务入口，不增加 URL 层级；新增业务页必须放在此分组内。
         middleware: [loginMiddleware],
