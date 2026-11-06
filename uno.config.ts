@@ -8,8 +8,8 @@ export default defineConfig({
   content: {
     pipeline: {
       include: [/\.(tsx?|html)($|\?)/],
-      // 两个落地页都生成独立的局部工具类，避免占用后台启动预算。
-      exclude: [/\/src\/pages\/(?:Landing|ReactBits)\//],
+      // React Bits 复刻页生成独立的局部工具类，避免占用后台启动预算。
+      exclude: [/\/src\/pages\/ReactBits\//],
     },
   },
   theme: {

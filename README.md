@@ -4,9 +4,7 @@
 
 ## 启动与验证
 
-产品落地页可通过 `npm run dev:landing` 启动并打开 `/landing`，当前为待开发占位。接入方式和 Codex 提示模板见 [React Bits 开发指南](docs/react-bits.md)。
-
-实际产品落地页的页面结构、文案、视觉规范、素材需求和验收范围见 [落地页设计文档](docs/landing-design.md)。
+React Bits 接入方式和 Codex 提示模板见 [React Bits 开发指南](docs/react-bits.md)。
 
 ```sh
 pnpm install

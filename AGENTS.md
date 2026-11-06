@@ -10,11 +10,10 @@
 
 # UI 与样式
 
-- React Bits 接入或落地页开发时，先阅读 `docs/react-bits.md`；优先通过 shadcn MCP 查询 `@react-bits` 注册表并读取官方 TypeScript 源码，记录来源与许可，适配当前 UnoCSS，不自动初始化 Tailwind/shadcn。
+- React Bits 接入或落地页开发时，先阅读 `docs/react-bits.md`；按组件归属优先通过 shadcn MCP 查询 `@react-bits`、`@reactbits-starter` 或 `@reactbits-pro` 注册表并读取对应 TypeScript 源码，记录来源与许可，适配当前 UnoCSS，不自动初始化 Tailwind/shadcn。
 - 样式优先用 UnoCSS 工具类、变体和 shortcuts，不新增样式文件，使用设计/UI skill 时同样适用。无法合理表达时才用最小范围的 CSS 并说明原因；专用 `@keyframes` 可内嵌在所属组件中，需在文档说明。
 - 沿用主题变量，专用样式和局部组合就近维护；仅跨模块共享组合或主题语义进入 `uno.config.ts`。修改存量 theme/shortcuts 时，将涉及的局部配置迁回使用处。
-- 实际产品落地页 `/landing` 的内容容器最大宽度为 1280px，页面组件尽量采用 React Bits，不使用 Ant Design；无合适 React Bits 组件时使用语义化原生元素与 UnoCSS，并保留可访问性。此约定不要求迁移后台业务页面。
-- 除实际产品落地页外，优先复用 Ant Design 控件及其属性，不以原生元素重写其外观和交互；布局和尺寸调整用 UnoCSS。
+- 优先复用 Ant Design 控件及其属性，不以原生元素重写其外观和交互；布局和尺寸调整用 UnoCSS。
 
 # 方案选型与 API 核对
 

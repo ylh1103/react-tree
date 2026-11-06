@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import UnoCSS from 'unocss/vite';
-import { landingStylesPlugin } from './build/landing-styles-plugin.mjs';
 import { bootstrapPlugin } from './build/bootstrap-plugin.mjs';
 import { startupBudgetPlugin } from './build/startup-budget-plugin.mjs';
 import { monacoLocalePlugin } from './build/monaco-locale-plugin.mjs';
@@ -18,7 +17,6 @@ export default defineConfig({
   plugins: [
     react(),
     UnoCSS(),
-    landingStylesPlugin(),
     bootstrapPlugin(),
     startupBudgetPlugin(),
     monacoLocalePlugin(),

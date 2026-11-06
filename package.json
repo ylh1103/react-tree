@@ -8,7 +8,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:landing": "vite --open /landing",
     "dev:reactbits": "vite --open /reactbits",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
