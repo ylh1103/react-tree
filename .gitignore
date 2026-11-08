@@ -32,3 +32,5 @@ output/
 .env
 .env.*
 !.env.example
+
+/backup-pre-reactbits/

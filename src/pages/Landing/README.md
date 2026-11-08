@@ -23,3 +23,11 @@
 基于 React Bits 官方提交 `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4` 的本地源码适配，当前已转换为 TypeScript 与 UnoCSS。遵循 MIT + Commons Clause，完整版权和条款见本目录 `LICENSE.md`。没有使用 Pro 素材或新增注册表组件。
 
 使用项目原有构建、Lint、格式和完整测试脚本验证，并检查桌面/手机、明暗主题、菜单键盘操作、粒子交互与闲置交接、超宽屏边缘网格及路由重复挂载。
+
+## Hero 33 光带接入
+
+落地页使用 Hero 33 的光带渲染器，沿用蓝青配色和拖拽交互。Three.js 随组件延迟加载。光带画布和粒子层覆盖同一个 Hero 区域，画布按光带的实际轮廓遮挡粒子，空隙保持透明。
+
+- 来源：授权 registry 的 pro/hero-33.json，TypeScript 变体，获取日期 2026-11-08。响应未提供上游版本。
+- 原始响应副本的 SHA-256：77AEF6C3800B09E0502C21FEDD0E2854DA7C553A7790940FA5D12CFA9E280F38。
+- 许可：React Bits Pro 商业许可。直接依赖 three 0.187.0，类型依赖 @types/three 0.187.0。

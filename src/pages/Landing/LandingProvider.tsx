@@ -25,6 +25,8 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
     void dispatch(saveUserSettings({ themeMode: next }));
   }
   const variables = {
+    '--landing-background': light ? '#fff' : 'var(--color-surface)',
+    '--landing-hero-background': light ? '#fff' : 'var(--color-canvas)',
     '--landing-accent': 'var(--color-accent)',
     '--landing-ghost': 'var(--color-surface)',
     '--landing-ghost-hover': 'var(--color-hover)',
@@ -51,7 +53,7 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
         ref={root}
         style={variables}
         lang="zh-CN"
-        className="relative h-full overflow-x-hidden overflow-y-auto bg-surface text-text [&_a]:no-underline [font-family:Inter,'PingFang_SC','Microsoft_YaHei',sans-serif]"
+        className="relative h-full overflow-x-hidden overflow-y-auto bg-[var(--landing-background)] text-text [&_a]:no-underline [font-family:Inter,'PingFang_SC','Microsoft_YaHei',sans-serif]"
       >
         <a
           href="#landing-main"

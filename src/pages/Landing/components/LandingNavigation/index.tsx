@@ -68,16 +68,17 @@ export default function LandingNavigation() {
   }
   const glass = scrolled || menuOpen;
   return (
+    // 导航与正文使用同一滚动容器的可用宽度，滚动条出现时也能对齐。
     <header
-      className={`pointer-events-none fixed left-0 right-0 z-1500 flex flex-col items-center px-6 transition-[top] duration-300 motion-reduce:transition-none [@media(max-width:768px)]:px-4 ${scrolled ? 'top-4' : 'top-2'}`}
+      className={`pointer-events-none sticky z-1500 h-0 flex flex-col items-center transition-[top] duration-300 motion-reduce:transition-none [@media(max-width:768px)]:px-4 ${scrolled ? 'top-4' : 'top-2'}`}
     >
       <div
-        className={`pointer-events-auto relative flex h-56px w-full items-center justify-between rounded-14px border border-solid py-0 pr-2 transition-[max-width,background,border-color,padding] duration-500 ease-out motion-reduce:transition-none [@media(max-width:768px)]:rounded-16px [@media(max-width:768px)]:pr-5px ${glass ? 'max-w-1276px border-[var(--landing-glass-border)] bg-[var(--landing-glass)] pl-5 shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] [@media(max-width:768px)]:pl-4' : 'max-w-1680px border-transparent bg-transparent pl-5 [@media(max-width:768px)]:pl-5px'}`}
+        className={`pointer-events-auto relative flex h-56px w-full shrink-0 items-center justify-between rounded-14px border border-solid py-0 transition-[max-width,padding,background,border-color] duration-500 ease-out motion-reduce:transition-none [@media(max-width:768px)]:rounded-16px [@media(max-width:768px)]:px-5px ${glass ? 'max-w-[calc(100%-12px)] border-[var(--landing-glass-border)] bg-[var(--landing-glass)] px-20px shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] [@media(min-width:769px)]:max-w-[min(1204px,calc(100%-76px))] [@media(min-width:769px)]:left-6px' : 'max-w-1280px border-transparent bg-transparent pl-43px pr-31px'}`}
       >
         <a
           href="#landing-top"
           aria-label="灵动参数管家"
-          className="flex shrink-0 items-center text-16px font-500 leading-6 tracking-normal text-text layout-focus [font-family:Geist,sans-serif]"
+          className="flex shrink-0 items-center text-16px [@media(max-width:768px)]:text-14px font-500 leading-6 tracking-normal text-text layout-focus [font-family:Geist,sans-serif]"
         >
           <img src={logo} alt="" className="mr-2 h-7 w-7 rounded-6px object-contain" />
           灵动参数管家
@@ -107,7 +108,7 @@ export default function LandingNavigation() {
             </a>
           ))}
         </nav>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 [@media(max-width:768px)]:gap-1.5">
           <Button
             type="text"
             disabled={!canChangeTheme}
@@ -126,7 +127,7 @@ export default function LandingNavigation() {
             type="primary"
             className="h-9! rounded-10px! border-transparent! px-18px! text-13px! font-600! [@media(max-width:768px)]:h-8! [@media(max-width:768px)]:rounded-8px! [@media(max-width:768px)]:px-3! [@media(max-width:768px)]:text-12px!"
           >
-            控制台
+            进入控制台
           </Button>
           <Button
             ref={menuButton}
