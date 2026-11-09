@@ -16,11 +16,11 @@
 
 保留参考页的 2.6px 点径、22px 间距、360px 影响半径及运动公式。静止时显现游动的局部光斑，鼠标移动后转为局部扰动，停止约 2.6 秒后恢复；2160px 起显示边缘网格。粒子容器覆盖完整首屏，底点使用当前主题的 `colorBgLayout`，显现色从 `colorPrimary` 派生，与背景保持一致并避免全屏常亮。导航玻璃层继续保留原透明度，色值取用户主题的容器、文字和边框 token；按钮直接继承 Ant Design 主题。保留减少动态效果、WebGL2 不可用时的可读内容、静止休眠及离屏/后台暂停。
 
-控制台指向 `/`，首屏接入指南指向产品文档中的应用参数文档。四个介绍导航链接目前仍指向参考页区块，后续新增产品区块时更新链接；这些链接不构成源码依赖。
+控制台指向 `/`，首屏接入指南指向产品文档中的应用参数文档。产品能力导航指向本页 #features，使用流程导航指向本页 #how-it-works，常见问题导航指向本页 #faq，接入指南仍指向参考页区块；这些链接不构成源码依赖。
 
 ## 来源与许可
 
-基于 React Bits 官方提交 `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4` 的本地源码适配，当前已转换为 TypeScript 与 UnoCSS。遵循 MIT + Commons Clause，完整版权和条款见本目录 `LICENSE.md`。没有使用 Pro 素材或新增注册表组件。
+基于 React Bits 官方提交 `4dc7b5b7772e1217c8fb8d2a7aa074302180e5b4` 的本地源码适配，当前已转换为 TypeScript 与 UnoCSS。遵循 MIT + Commons Clause，完整版权和条款见本目录 `LICENSE.md`。Pro 素材来源与许可见下方对应接入记录。
 
 使用项目原有构建、Lint、格式和完整测试脚本验证，并检查桌面/手机、明暗主题、菜单键盘操作、粒子交互与闲置交接、超宽屏边缘网格及路由重复挂载。
 
@@ -31,3 +31,36 @@
 - 来源：授权 registry 的 pro/hero-33.json，TypeScript 变体，获取日期 2026-11-08。响应未提供上游版本。
 - 原始响应副本的 SHA-256：77AEF6C3800B09E0502C21FEDD0E2854DA7C553A7790940FA5D12CFA9E280F38。
 - 许可：React Bits Pro 商业许可。直接依赖 three 0.187.0，类型依赖 @types/three 0.187.0。
+
+## Features 13 参数风险演示
+
+「产品能力」区块基于授权注册表的 Features 13，沿用原有布局、断点和交互，展示漏配、公共参数依赖与格式校验三个静态示例。局部 UnoCSS 样式随落地页加载，提供 640、768、1024px 断点，配色继承落地页与应用的主题变量，告警背景取 Ant Design 主题 token。原版依赖 Tailwind Preflight，容器内以低优先级补齐边框、标题段落与按钮默认样式，避免影响其他区块。
+
+- 来源为 [授权注册表的 features-13](https://registry.collectui.pro/api/r/reactbits/pro/features-13.json)，TypeScript 源码获取于 2026-11-09。响应未提供上游版本。
+- 原始 TypeScript 源码 SHA-256 为 `fc0f7d6209f4938d547a4621a0bd54228a628d170c6954894b4e988ada58d0ee`。
+- 按 React Bits Pro 商业许可使用。复用现有 motion 12.23.21 与 lucide-react 0.542.0。
+
+## How It Works 9 参数发布流程
+
+沿用 How It Works 9 的步骤切换、键盘导航和发布详情面板，用静态示例演示保存参数、生成快照、发布快照及核对运行时参数。局部 UnoCSS 提供原版断点，配色继承落地页主题。
+
+- 来源为 [授权注册表的 how-it-works-9](https://registry.collectui.pro/api/r/reactbits/pro/how-it-works-9.json)，获取于 2026-11-09，响应未提供上游版本。
+- 原始 TSX 的 SHA-256 为 `58613c5755bd3faeccb8063f1a7ae6aa5eaaff7e78be087c378d3fc1c1b944dc`，按 React Bits Pro 商业许可使用。动效复用已有 Motion。
+
+## Stats 4 行内使用情况
+
+从 Stats 4 原始 TSX 迁移双栏布局、点阵卡片、阴影和末项高亮，填入截至 2025 年 3 月 3 日的统计数据。保留原版窄屏单列及平板起两列的指标布局。局部 UnoCSS 跟随落地页明暗模式。
+
+- 来源为 [授权注册表的 stats-4](https://registry.collectui.pro/api/r/reactbits/pro/stats-4.json)，TSX 获取于 2026-11-09。
+- 原始 TSX 的 SHA-256 为 `b1d09d935c1dc7828e3cf389b8bef50383b108e4b66dcf9b6230f6da5ef48d45`，按 React Bits Pro 商业许可使用。
+
+## FAQ 6 常见问题
+
+保留 FAQ 6 左侧链接卡，右侧按 /reactbits 的圆角卡片、加号及单项展开方式展示九条参数管理问答。链接使用产品文档提供的应用参数与 DB 参数接入指南。
+
+- 来源为 [授权注册表的 faq-6](https://registry.collectui.pro/api/r/reactbits/pro/faq-6.json)，获取于 2026-11-09。
+- 原始 TSX 的 SHA-256 为 `f90862519f45d2668696f42ba3314b8abd465f4c40914585161badd0c9a115fc`，按 React Bits Pro 商业许可使用。复用已有 Motion 和 Lucide。
+
+## 底部 CTA 与页脚
+
+直接复用 /reactbits 的 CTA、Footer、GradientWaves 和 FooterWaves。作用域与主题通过模板容器接入，整个组合随落地页异步加载。页脚品牌返回本页顶部，CTA 的接入指南指向应用参数文档。沿用模板三列链接、署名和许可入口。

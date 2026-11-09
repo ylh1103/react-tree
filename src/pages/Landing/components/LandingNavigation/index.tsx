@@ -5,10 +5,10 @@ import logo from '@/assets/logo.jpg';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
 
 const navigation = [
-  { label: '产品能力', href: '/reactbits#features' },
-  { label: '使用流程', href: '/reactbits#how-it-works' },
+  { label: '产品能力', href: '#features' },
+  { label: '使用流程', href: '#how-it-works' },
   { label: '接入指南', href: '/reactbits#integration' },
-  { label: '常见问题', href: '/reactbits#faq' },
+  { label: '常见问题', href: '#faq' },
 ];
 const linkClass =
   'relative z-1 rounded-12px px-2.5 py-1.5 text-13px font-500 tracking-[0.04em] text-text layout-focus active:scale-96 motion-reduce:transform-none';

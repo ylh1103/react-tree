@@ -2,4 +2,8 @@
 import type { CSSOptions, Plugin } from 'vite';
 type InlinePostcss = Exclude<NonNullable<CSSOptions['postcss']>, string>;
 export function reactBitsScopedCss(): NonNullable<InlinePostcss['plugins']>;
-export function reactBitsUtilitiesPlugin(): Plugin;
+export function reactBitsUtilitiesPlugin(options?: {
+  publicId?: string;
+  sourceDirectory?: string;
+  selector?: string;
+}): Plugin;

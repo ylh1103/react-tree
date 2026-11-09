@@ -27,6 +27,7 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const variables = {
     '--landing-background': light ? '#fff' : 'var(--color-surface)',
     '--landing-hero-background': light ? '#fff' : 'var(--color-canvas)',
+    '--landing-risk-preview-bg': light ? 'var(--color-canvas)' : withAlpha(token.colorText, 0.035),
     '--landing-accent': 'var(--color-accent)',
     '--landing-ghost': 'var(--color-surface)',
     '--landing-ghost-hover': 'var(--color-hover)',

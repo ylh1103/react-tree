@@ -21,6 +21,34 @@ export default defineConfig({
     startupBudgetPlugin(),
     monacoLocalePlugin(),
     reactBitsUtilitiesPlugin(),
+    reactBitsUtilitiesPlugin({
+      publicId: 'virtual:features-13-utilities.css',
+      sourceDirectory: fileURLToPath(
+        new URL('./src/pages/Landing/components/LandingRiskFeatures/', import.meta.url),
+      ),
+      selector: '#features',
+    }),
+    reactBitsUtilitiesPlugin({
+      publicId: 'virtual:how-it-works-9-utilities.css',
+      sourceDirectory: fileURLToPath(
+        new URL('./src/pages/Landing/components/LandingReleaseFlow/', import.meta.url),
+      ),
+      selector: '#how-it-works',
+    }),
+    reactBitsUtilitiesPlugin({
+      publicId: 'virtual:stats-4-utilities.css',
+      sourceDirectory: fileURLToPath(
+        new URL('./src/pages/Landing/components/LandingAdoptionStats/', import.meta.url),
+      ),
+      selector: '#landing-adoption',
+    }),
+    reactBitsUtilitiesPlugin({
+      publicId: 'virtual:faq-6-utilities.css',
+      sourceDirectory: fileURLToPath(
+        new URL('./src/pages/Landing/components/LandingFaq/', import.meta.url),
+      ),
+      selector: '#faq',
+    }),
   ],
   // 预打包会绕过模块级语言适配；保留 ESM 图，让开发模式与生产构建使用相同翻译。
   // 官方站是独立应用，主项目只扫描自己的 HTML 入口，避免遍历 vendor 中的整站文档。

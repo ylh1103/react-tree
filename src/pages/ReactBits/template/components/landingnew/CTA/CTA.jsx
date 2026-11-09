@@ -12,7 +12,11 @@ const GradientWaves = lazy(
   () => import('../../../content/Backgrounds/GradientWaves/GradientWaves'),
 );
 
-const CTA = () => {
+const CTA = ({
+  actions,
+  waveColors,
+  secondaryHref = templateContent.closing.secondaryAction.to,
+}) => {
   const prefersReducedMotion = useReducedMotion();
   const light = useColorModeValue(true, false);
   const [nearRef, near] = useNearOnce();
@@ -26,6 +30,7 @@ const CTA = () => {
           <Suspense fallback={null}>
             <GradientWaves
               {...presetProps('dusk', { light, defaults: LOOK })}
+              {...waveColors}
               tilt={58}
               dpr={lite ? 0.75 : 1.25}
               quality={lite ? 'low' : 'medium'}
@@ -39,18 +44,19 @@ const CTA = () => {
       <p className="ln-cta-sub">{templateContent.closing.description}</p>
 
       <div className="ln-cta-buttons">
-        <a
-          href={templateContent.closing.primaryAction.to}
-          className="ln-cta-btn ln-cta-btn--primary"
-        >
-          {templateContent.closing.primaryAction.label} <FiArrowRight size={15} />
-        </a>
-        <Link
-          to={templateContent.closing.secondaryAction.to}
-          className="ln-cta-btn ln-cta-btn--secondary"
-        >
-          {templateContent.closing.secondaryAction.label}
-        </Link>
+        {actions ?? (
+          <>
+            <a
+              href={templateContent.closing.primaryAction.to}
+              className="ln-cta-btn ln-cta-btn--primary"
+            >
+              {templateContent.closing.primaryAction.label} <FiArrowRight size={15} />
+            </a>
+            <Link to={secondaryHref} className="ln-cta-btn ln-cta-btn--secondary">
+              {templateContent.closing.secondaryAction.label}
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

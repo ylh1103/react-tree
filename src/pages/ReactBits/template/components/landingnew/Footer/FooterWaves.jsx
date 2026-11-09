@@ -4,15 +4,14 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useColorModeValue } from '../../setup/color-mode';
 
 const FONT = 'Geist, "Geist Sans", system-ui, sans-serif';
-const WORD = templateContent.brand.name;
 const SHOWN = 0.6;
 const CAP = 0.9;
 const FADE = 0.4;
 
-const measureWord = () => {
+const measureWord = (text) => {
   const context = document.createElement('canvas').getContext('2d');
   context.font = `600 100px ${FONT}`;
-  const metrics = context.measureText(WORD);
+  const metrics = context.measureText(text);
   return {
     advance: metrics.width / 100,
     left: metrics.actualBoundingBoxLeft / 100,
@@ -22,7 +21,7 @@ const measureWord = () => {
   };
 };
 
-export default function FooterWaves() {
+export default function FooterWaves({ text = templateContent.brand.name }) {
   const rootRef = useRef(null);
   const id = useId().replace(/:/g, '');
   const [layout, setLayout] = useState(null);
@@ -48,7 +47,7 @@ export default function FooterWaves() {
       if (cancelled || !width) return;
       const top = root.parentElement?.querySelector('.ln-footer-top');
       const inset = top ? parseFloat(getComputedStyle(top).paddingLeft) || 0 : 0;
-      const word = measureWord();
+      const word = measureWord(text);
       const font = Math.max(24, (width - inset * 2) / (word.left + word.right));
       const glyph = font * (word.ascent + word.descent);
       const above = Math.max(36, glyph * 0.46);
@@ -74,7 +73,7 @@ export default function FooterWaves() {
       cancelled = true;
       observer.disconnect();
     };
-  }, []);
+  }, [text]);
 
   useEffect(() => {
     const pointer = window.matchMedia('(hover: hover) and (pointer: fine)');
@@ -203,7 +202,7 @@ export default function FooterWaves() {
                 fontWeight="600"
                 fontSize={layout.font}
               >
-                {WORD}
+                {text}
               </text>
             )}
           </mask>
@@ -215,7 +214,7 @@ export default function FooterWaves() {
       {eligible && visible && LiveWaves && layout && (
         <div className="ln-footer-art-live" style={box}>
           <LiveWaves
-            text={WORD}
+            text={text}
             fontFamily={FONT}
             fontWeight={600}
             textSize={2}
