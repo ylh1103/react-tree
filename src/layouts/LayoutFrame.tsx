@@ -11,12 +11,19 @@ import { navigationThemeVariables } from '@/styles/theme';
  * 根应用与根路由回退共用的视口及布局间距。外壳随窗口自适应，不设全局最小宽度；
  * 排不下的区域（如应用参数三栏）自行声明最小宽度，并只在内容区内横向滚动。
  */
-export function AppViewport({ children }: { children: ReactNode }) {
+export function AppViewport({
+  children,
+  documentScroll = false,
+}: {
+  children: ReactNode;
+  documentScroll?: boolean;
+}) {
   const { layoutMode, layoutGap } = useLayoutPreferences();
   return (
-    <div className="h-full overflow-hidden">
+    // 落地页由文档滚动，外壳随正文撑开；工作区仍保留视口内的独立滚动。
+    <div className={documentScroll ? undefined : 'h-full overflow-hidden'}>
       <div
-        className="h-full [&[data-layout=compact]]:[--layout-gap:0px]"
+        className={`[&[data-layout=compact]]:[--layout-gap:0px] ${documentScroll ? '' : 'h-full'}`}
         data-layout={layoutMode}
         style={{ '--layout-gap': `${layoutMode === 'compact' ? 0 : layoutGap}px` } as CSSProperties}
       >

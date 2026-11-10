@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { App as AntdApp, Alert, Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadUserSettings } from '@/store/slices/preferencesSlice';
-import { Outlet } from 'react-router';
+import { Outlet, useMatch } from 'react-router';
 import { AppViewport } from '@/layouts/LayoutFrame';
 import { DeferredUserSettingsDrawer } from '@/layouts/UserSettingsDrawer/Deferred';
 import { ResourceLoading } from '@/components/ResourceLoading';
@@ -16,6 +16,7 @@ import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapH
 /** 根路由访问失败时可提供安全的替代内容，保留全局交互与设置入口，避免继续挂载业务 Outlet。 */
 export default function App({ children }: { children?: ReactNode }) {
   const dispatch = useAppDispatch();
+  const landingMatch = useMatch('/landing');
   const initialized = useAppSelector((state) => state.preferences.initialized);
   const settingsError = useAppSelector((state) =>
     state.preferences.status === 'load-error' ? state.preferences.error : null,
@@ -26,7 +27,7 @@ export default function App({ children }: { children?: ReactNode }) {
         <ResourceLoading />
       ) : (
         <BootstrapLoadingHandoff>
-          <AppViewport>
+          <AppViewport documentScroll={Boolean(landingMatch) && children == null}>
             {settingsError && (
               <Alert
                 type="warning"

@@ -5,9 +5,13 @@ const integrationGuideUrl = 'https://doc.cmbchina.com/f/v?id=MkvTb';
 const buttonClass =
   'h-46px! rounded-13px! text-15px! font-500! tracking-[-0.01em]! shadow-none! transition-[background,color,transform]! active:scale-97 motion-reduce:transform-none [@media(max-width:768px)]:h-44px! [@media(max-width:768px)]:text-14px! [@media(max-width:768px)]:px-3!';
 
-export default function LandingActions() {
+export default function LandingActions({
+  className = 'flex-wrap [@media(max-width:768px)]:grid [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:w-full [@media(max-width:359px)]:grid-cols-1',
+}: {
+  className?: string;
+}) {
   return (
-    <div className="flex flex-wrap gap-2.5 [@media(max-width:768px)]:grid [@media(max-width:768px)]:grid-cols-2 [@media(max-width:768px)]:w-full [@media(max-width:359px)]:grid-cols-1">
+    <div className={`flex gap-2.5 ${className}`}>
       <Button
         type="primary"
         href="/"

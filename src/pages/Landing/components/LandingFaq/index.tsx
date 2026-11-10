@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, BookOpen, Database, Plus } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Plus, Users } from 'lucide-react';
 import { m as motion, useReducedMotion, type Variants } from 'motion/react';
 
 import { useLandingTheme } from '../../hooks/useLandingTheme';
+
+import supportGroupQr from './support-group-qr.jpg';
 
 const faqs = [
   {
@@ -19,8 +21,7 @@ const faqs = [
   },
   {
     question: '发布到生产环境需要什么权限？',
-    answer:
-      '办公网可以查询生产参数，发布生产参数前需要提权。接入与配置说明见左侧的应用参数接入文档。',
+    answer: '办公网可以查询生产参数，发布生产参数前需要提权。接入与配置说明见帮助文档。',
   },
   {
     question: '参数发布有误，怎么回退？',
@@ -50,26 +51,70 @@ const faqs = [
   },
 ];
 
+// 两个链接暂用测试地址，支持群二维码使用已提供的图片。
 const channels = [
   {
     icon: BookOpen,
-    label: '应用参数接入文档',
-    detail: '查看应用配置和客户端接入说明',
-    href: 'https://doc.cmbchina.com/f/v?id=MkvTb',
+    label: '帮助文档',
+    detail: '查看接入说明和使用指南',
+    href: 'https://example.org/help',
   },
   {
-    icon: Database,
-    label: 'DB 参数接入文档',
-    detail: '查看数据库参数接入说明',
-    href: 'https://doc.cmbchina.com/f/v?id=lDALt',
+    icon: Users,
+    label: '加入支持群',
+    detail: '点击链接或扫码加入支持群',
+    href: 'https://example.org/support-group',
   },
 ];
+
+/** 文档入口由断点控制显示，配色与悬停透明度取自 React Bits Pro 首页 FAQ 卡片。 */
+function FaqChannels({ className }: { className: string }) {
+  return (
+    <div className={className}>
+      <div
+        className={`overflow-hidden rounded-16.8px border border-solid [border-color:var(--faq-doc-border)] [background:var(--faq-doc-background)] [--faq-doc-background:#fff] [--faq-doc-border:#e5e5e5] [--faq-doc-text:#0a0a0a] [--faq-doc-muted:#414141] [--faq-doc-row:rgb(255_255_255/50%)] [--faq-doc-hover:rgb(245_245_245/50%)] [--faq-doc-divider:rgb(229_229_229/60%)] dark:[--faq-doc-background:#0a0a0a] dark:[--faq-doc-border:#1f1f1f] dark:[--faq-doc-text:#fff] dark:[--faq-doc-muted:#d6d6d6] dark:[--faq-doc-row:rgb(17_17_17/50%)] dark:[--faq-doc-hover:rgb(31_31_31/50%)] dark:[--faq-doc-divider:rgb(31_31_31/60%)] [&>a:not(:last-child)]:[border-bottom:1px_solid_var(--faq-doc-divider)]`}
+      >
+        {channels.map((channel) => (
+          <a
+            key={channel.label}
+            href={channel.href}
+            className="flex cursor-pointer items-center gap-4 [background-color:var(--faq-doc-row)] p-5 text-[var(--faq-doc-text)] transition-colors duration-200 hover:[background-color:var(--faq-doc-hover)] [&:hover>svg]:[color:var(--faq-doc-text)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full [background-color:var(--faq-doc-background)] ring-1 ring-[var(--faq-doc-border)]">
+              <channel.icon aria-hidden="true" className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <span className="block text-sm font-medium tracking-tight">{channel.label}</span>
+              <span className="mt-0.5 block text-sm text-[var(--faq-doc-muted)]">
+                {channel.detail}
+              </span>
+            </div>
+            <ArrowUpRight
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0 text-[var(--faq-doc-muted)] transition-colors duration-200 motion-reduce:transition-none"
+            />
+          </a>
+        ))}
+      </div>
+      <figure className="m-0 mt-5 flex flex-col items-center gap-2">
+        <img
+          src={supportGroupQr}
+          alt="支持群二维码"
+          width={611}
+          height={608}
+          className="block h-auto w-176px max-w-full rounded-8px bg-white p-3"
+        />
+        <figcaption className="text-sm text-text-secondary">扫码加入支持群</figcaption>
+      </figure>
+    </div>
+  );
+}
 
 /** 保留 FAQ 6 的双栏、文档入口，右栏沿用 /reactbits 的圆角折叠列表，解答参数发布常见问题。 */
 export default function LandingFaq() {
   const { theme } = useLandingTheme();
   const reduce = useReducedMotion();
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const container: Variants = {
     hidden: {},
@@ -92,7 +137,7 @@ export default function LandingFaq() {
           className="w-full bg-[var(--landing-hero-background)] py-12 lg:py-20"
         >
           <div className="mx-auto w-full max-w-1280px pl-44px pr-32px [@media(max-width:768px)]:px-22px">
-            <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 xl:gap-20">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 xl:gap-20">
               <motion.div
                 variants={container}
                 initial={reduce ? false : 'hidden'}
@@ -113,31 +158,7 @@ export default function LandingFaq() {
                 >
                   了解参数何时生效、如何热更新，以及生产发布和回退时需要注意什么。
                 </motion.p>
-                <motion.div
-                  variants={item}
-                  className="mt-10 max-w-md divide-y divide-neutral-200 overflow-hidden rounded-2xl border border-solid border-neutral-200 [&>*+*]:border-t-solid dark:divide-neutral-800 dark:border-neutral-800"
-                >
-                  {channels.map((channel) => (
-                    <a
-                      key={channel.label}
-                      href={channel.href}
-                      className="group flex items-center gap-4 bg-neutral-50 p-5 transition-colors duration-200 hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neutral-900 dark:bg-neutral-900 dark:hover:bg-neutral-800/70 dark:focus-visible:ring-white"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-950 dark:text-neutral-300 dark:ring-neutral-800">
-                        <channel.icon className="h-4 w-4" />
-                      </span>
-                      <span className="flex-1">
-                        <span className="block text-sm font-medium text-neutral-900 dark:text-white">
-                          {channel.label}
-                        </span>
-                        <span className="mt-0.5 block text-sm text-neutral-500 dark:text-neutral-400">
-                          {channel.detail}
-                        </span>
-                      </span>
-                      <ArrowUpRight className="h-4 w-4 shrink-0 text-neutral-400 transition-colors duration-200 group-hover:text-neutral-900 dark:text-neutral-500 dark:group-hover:text-white" />
-                    </a>
-                  ))}
-                </motion.div>
+                <FaqChannels className="mt-10 hidden max-w-md lg:block" />
               </motion.div>
 
               <motion.div
@@ -145,7 +166,7 @@ export default function LandingFaq() {
                 initial={reduce ? false : 'hidden'}
                 whileInView="show"
                 viewport={{ once: true, margin: '-80px' }}
-                className="flex min-w-0 flex-col gap-8px"
+                className="flex min-w-0 flex-col gap-12px lg:gap-8px"
               >
                 {faqs.map((faq, index) => {
                   const isOpen = openIndex === index;
@@ -193,6 +214,8 @@ export default function LandingFaq() {
                   );
                 })}
               </motion.div>
+
+              <FaqChannels className="lg:hidden" />
             </div>
           </div>
         </section>

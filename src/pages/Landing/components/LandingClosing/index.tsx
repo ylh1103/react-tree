@@ -43,7 +43,7 @@ export default function LandingClosing() {
       <div
         data-reactbits-template
         data-theme={theme}
-        className="[&_.ln-footer]:bg-[var(--landing-hero-background)]! [&_.ln-footer]:text-text-secondary! [&_.ln-footer-inner]:max-w-1280px! [&_.ln-footer-inner]:pl-44px! [&_.ln-footer-inner]:pr-32px! [@media(max-width:768px)]:[&_.ln-footer-inner]:px-22px! [&_.ln-footer-card]:bg-canvas! [&_.ln-footer-card]:ring-1 [&_.ln-footer-card]:ring-inset [&_.ln-footer-card]:ring-border-subtle [&_.ln-footer-col-title]:text-text! [&_.ln-footer-top_a:hover]:text-text! [&_.ln-cta-card]:bg-surface! [&_.ln-cta-headline]:text-text! [&_.ln-cta-sub]:text-text-secondary! [@media(max-width:768px)]:[&_.ln-cta-buttons]:w-full"
+        className="[&_.ln-footer]:bg-[var(--landing-hero-background)]! [&_.ln-footer]:text-text-secondary! [&_.ln-footer-inner]:max-w-1280px! [&_.ln-footer-inner]:pl-44px! [&_.ln-footer-inner]:pr-32px! [@media(max-width:768px)]:[&_.ln-footer-inner]:px-22px! [&_.ln-footer-card]:bg-canvas! [&_.ln-footer-card]:ring-1 [&_.ln-footer-card]:ring-inset [&_.ln-footer-card]:ring-border-subtle [&_.ln-footer-col-title]:text-text! [&_.ln-footer-top_a:hover]:text-text! [&_.ln-cta-card]:bg-surface! [&_.ln-cta-headline]:text-text! [&_.ln-cta-sub]:text-text-secondary!"
       >
         <Footer
           brandHref="#landing-top"
@@ -70,7 +70,9 @@ export default function LandingClosing() {
           }
           lead={
             <CTA
-              actions={<LandingActions />}
+              actions={
+                <LandingActions className="[@media(max-width:600px)]:w-full [@media(max-width:600px)]:flex-col" />
+              }
               waveColors={{
                 horizonColor: token.colorPrimary,
                 waveColor: token.colorPrimaryBorder,

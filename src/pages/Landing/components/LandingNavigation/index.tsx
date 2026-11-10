@@ -1,5 +1,5 @@
 /** 产品导航模块：保留参考页几何与交互，去掉社区、文档站及通用品牌模板分支。 */
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type SyntheticEvent } from 'react';
 import { Button } from 'antd';
 import logo from '@/assets/logo.jpg';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
@@ -13,25 +13,26 @@ const navigation = [
 const linkClass =
   'relative z-1 rounded-12px px-2.5 py-1.5 text-13px font-500 tracking-[0.04em] text-text layout-focus active:scale-96 motion-reduce:transform-none';
 
+function subscribeToScroll(onChange: () => void) {
+  window.addEventListener('scroll', onChange, { passive: true });
+  return () => window.removeEventListener('scroll', onChange);
+}
+
+function isScrolled() {
+  return window.scrollY > 50;
+}
+
 export default function LandingNavigation() {
-  const { root, theme, setTheme, canChangeTheme } = useLandingTheme();
-  const [scrolled, setScrolled] = useState(false);
+  const { theme, setTheme, canChangeTheme } = useLandingTheme();
+  const scrolled = useSyncExternalStore(subscribeToScroll, isScrolled);
   const [menuOpen, setMenuOpen] = useState(false);
   const highlight = useRef<HTMLSpanElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    const element = root.current;
-    if (!element) return;
-    const scroll = () => setScrolled(element.scrollTop > 50);
-    element.addEventListener('scroll', scroll, { passive: true });
-    return () => element.removeEventListener('scroll', scroll);
-  }, [root]);
-  useEffect(() => {
     if (!menuOpen) return;
-    const element = root.current;
-    if (!element) return;
-    const previous = element.style.overflow;
-    element.style.setProperty('overflow', 'hidden');
+    const { style } = document.documentElement;
+    const previous = style.overflowY;
+    style.overflowY = 'hidden';
     const escape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMenuOpen(false);
@@ -45,11 +46,11 @@ export default function LandingNavigation() {
     document.addEventListener('keydown', escape);
     desktop.addEventListener('change', resize);
     return () => {
-      element.style.setProperty('overflow', previous);
+      style.overflowY = previous;
       document.removeEventListener('keydown', escape);
       desktop.removeEventListener('change', resize);
     };
-  }, [menuOpen, root]);
+  }, [menuOpen]);
   function moveHighlight(event: SyntheticEvent<HTMLAnchorElement>) {
     const node = highlight.current;
     const parent = event.currentTarget.parentElement;
@@ -68,7 +69,6 @@ export default function LandingNavigation() {
   }
   const glass = scrolled || menuOpen;
   return (
-    // 导航与正文使用同一滚动容器的可用宽度，滚动条出现时也能对齐。
     <header
       className={`pointer-events-none sticky z-1500 h-0 flex flex-col items-center transition-[top] duration-300 motion-reduce:transition-none [@media(max-width:768px)]:px-4 ${scrolled ? 'top-4' : 'top-2'}`}
     >

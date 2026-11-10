@@ -5,7 +5,7 @@ import 'virtual:stats-4-utilities.css';
 import 'virtual:faq-6-utilities.css';
 import { LazyMotion } from 'motion/react';
 import { theme } from 'antd';
-import { lazy, Suspense, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import LandingProvider from './LandingProvider';
 import LandingNavigation from './components/LandingNavigation';
 import LandingHero from './components/LandingHero';
@@ -13,7 +13,8 @@ import Features13 from './components/LandingRiskFeatures';
 import LandingReleaseFlow from './components/LandingReleaseFlow';
 import LandingAdoptionStats from './components/LandingAdoptionStats';
 import LandingFaq from './components/LandingFaq';
-const LandingClosing = lazy(() => import('./components/LandingClosing'));
+import LandingClosing from './components/LandingClosing';
+
 const loadMotionFeatures = () => import('./model/motionFeatures').then((module) => module.default);
 
 /** 原始 TSX 依赖 Tailwind Preflight，局部补齐浏览器默认样式。 */
@@ -52,9 +53,7 @@ export default function Landing() {
           <LandingAdoptionStats />
           <LandingFaq />
         </main>
-        <Suspense fallback={null}>
-          <LandingClosing />
-        </Suspense>
+        <LandingClosing />
       </LandingProvider>
     </LazyMotion>
   );
