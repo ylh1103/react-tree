@@ -21,6 +21,15 @@ export default defineConfig({
     startupBudgetPlugin(),
     monacoLocalePlugin(),
     reactBitsUtilitiesPlugin(),
+    // 只在落地页加载核心功能样式，同时复用平台主题和图标定义。
+    reactBitsUtilitiesPlugin({
+      publicId: 'virtual:landing-core-features-utilities.css',
+      sourceDirectory: fileURLToPath(
+        new URL('./src/pages/Landing/components/LandingCoreFeatures/', import.meta.url),
+      ),
+      selector: '#core-features',
+      useProjectConfig: true,
+    }),
     reactBitsUtilitiesPlugin({
       publicId: 'virtual:features-13-utilities.css',
       sourceDirectory: fileURLToPath(

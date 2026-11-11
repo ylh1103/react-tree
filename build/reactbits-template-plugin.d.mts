@@ -6,4 +6,5 @@ export function reactBitsUtilitiesPlugin(options?: {
   publicId?: string;
   sourceDirectory?: string;
   selector?: string;
+  useProjectConfig?: boolean;
 }): Plugin;

@@ -31,15 +31,13 @@ export default function LandingPreview({ light }: { light: boolean }) {
     >
       <m.div
         style={{ x, y }}
-        className={`pointer-events-none overflow-hidden rounded-16px border border-solid p-4px shadow-sm motion-reduce:transform-none! ${light ? 'border-border-subtle bg-canvas' : 'border-white/10 bg-[#161616]'}`}
+        className={`pointer-events-none overflow-hidden rounded-16px border border-solid bg-[var(--landing-preview-frame)] p-4px shadow-sm motion-reduce:transform-none! ${light ? 'border-border-subtle' : 'border-white/10'}`}
       >
-        <div
-          className={`relative flex h-9 items-center justify-center ${light ? 'bg-canvas' : 'bg-[#161616] [&_div>span]:bg-white/10'}`}
-        >
+        <div className="relative flex h-9 items-center justify-center">
           <div className="absolute left-3 flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-border" />
-            <span className="h-2.5 w-2.5 rounded-full bg-border" />
-            <span className="h-2.5 w-2.5 rounded-full bg-border" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--landing-preview-dot)]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--landing-preview-dot)]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[var(--landing-preview-dot)]" />
           </div>
           <span
             className={`inline-flex items-center gap-1.5 rounded-full border border-solid px-3.5 py-1 text-11px font-500 leading-[1.5] ${light ? 'border-border-subtle bg-surface/70 text-text-secondary' : 'border-white/8 bg-[#101010]/70 text-text-secondary'}`}

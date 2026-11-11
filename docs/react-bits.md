@@ -53,7 +53,11 @@ npx shadcn@latest add @reactbits-pro/profile-3
 
 Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本以执行时实际结果为准；历史接入使用过 4.23.0，不代表项目锁定该版本。执行前检查生成文件和依赖，执行后审查 diff，特别关注全局 CSS、主题变量及锁文件；不要混用包管理器生成另一份锁文件。
 
-`/reactbits` 是独立的公开复刻页，入口为 `src/pages/ReactBits/index.tsx`，拥有局部样式与主题。产品入口 `/landing` 位于 `src/pages/Landing/index.tsx`，目前仅实现导航和首屏；导航、完整粒子层、DotGrid 和主题均已独立迁入 Landing，不依赖参考页目录，来源和适配说明见 `src/pages/Landing/README.md`。
+`/reactbits` 是独立的公开复刻页，入口为 `src/pages/ReactBits/index.tsx`，拥有局部样式与主题。产品入口 `/landing` 由 `src/pages/Landing/index.tsx` 组装，导航、首屏和下方的各个模块均由 Landing 自己维护。
+
+首屏下方的核心功能模块参考 [Moonshot 首页](https://www.moonshot.cn/) 的双栏展示与竖向进度指示，右侧根据产品 PPT 用示例数据重绘。每项进度线性增长 6 秒。鼠标进入左栏或右侧插图时清零，模块离开视口时也清零，恢复播放时从头计时。右侧使用 400 毫秒淡入。版本化管理用 React 和 UnoCSS 展示两份参数合并为快照、再上传到配置中心的流程，下方四个步骤依次点亮。其他两项的前后卡片错开入场。各自的命名关键帧就近声明，并响应减少动态效果偏好。
+
+版本化管理插图的构图由 ImageGen 根据产品 PPT 生成，再用页面组件重绘。宽屏横向排列参数源、快照和配置中心，窄屏纵向排列。快照高亮最终端口，说明应用参数覆盖公共参数的结果。
 
 ### 历史接入记录（2026-11-06）
 

@@ -10,7 +10,7 @@ const footerLinks = [
   {
     title: '产品介绍',
     links: [
-      ['产品能力', '#features'],
+      ['产品能力', '#core-features'],
       ['使用流程', '#how-it-works'],
       ['常见问题', '#faq'],
     ],

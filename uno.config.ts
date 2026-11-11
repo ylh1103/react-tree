@@ -11,6 +11,7 @@ export default defineConfig({
       // React Bits 复刻页生成独立的局部工具类，避免占用后台启动预算。
       exclude: [
         /\/src\/pages\/ReactBits\//,
+        /\/LandingCoreFeatures\//,
         /\/Landing(?:RiskFeatures|ReleaseFlow|AdoptionStats|Faq)\/index\.tsx$/,
       ],
     },

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { createGenerator, presetWind3 } from 'unocss';
 import prefixSelector from 'postcss-prefix-selector';
+import unoConfig from '../uno.config.ts';
 
 const directory = fileURLToPath(new URL('../src/pages/ReactBits/', import.meta.url));
 const sourcePattern = /[\\/]pages[\\/]ReactBits[\\/]template[\\/]/;
@@ -49,6 +50,7 @@ export function reactBitsUtilitiesPlugin({
   publicId = 'virtual:reactbits-utilities.css',
   sourceDirectory = directory,
   selector = scope,
+  useProjectConfig = false,
 } = {}) {
   const internalId = `\0${publicId}`;
   return {
@@ -68,7 +70,9 @@ export function reactBitsUtilitiesPlugin({
           return readFile(path, 'utf8');
         }),
       );
-      const generator = await createGenerator({ presets: [presetWind3()] });
+      const generator = await createGenerator(
+        useProjectConfig ? unoConfig : { presets: [presetWind3()] },
+      );
       return (await generator.generate(sources.join('\n'), { preflights: false, scope: selector }))
         .css;
     },

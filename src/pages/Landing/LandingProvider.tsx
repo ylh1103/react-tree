@@ -9,6 +9,12 @@ import { useLandingScrollRestoration } from './hooks/useLandingScrollRestoration
 import { LandingContext } from './model/landingContext';
 import { withAlpha } from './model/themeColors';
 
+const darkPreviewFrameChannel = 0x16;
+// 首屏原有的圆点是 10% 白色叠在预览栏上。合成实色后，轮播换背景也能显示同样的灰色。
+const darkPreviewDotChannel = Math.round(
+  darkPreviewFrameChannel + (255 - darkPreviewFrameChannel) * 0.1,
+);
+
 export default function LandingProvider({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useLandingScrollRestoration();
@@ -29,6 +35,12 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const variables = {
     '--landing-background': light ? '#fff' : 'var(--color-surface)',
     '--landing-hero-background': light ? '#fff' : 'var(--color-canvas)',
+    '--landing-preview-frame': light
+      ? 'var(--color-canvas)'
+      : `rgb(${darkPreviewFrameChannel} ${darkPreviewFrameChannel} ${darkPreviewFrameChannel})`,
+    '--landing-preview-dot': light
+      ? 'var(--color-border)'
+      : `rgb(${darkPreviewDotChannel} ${darkPreviewDotChannel} ${darkPreviewDotChannel})`,
     '--landing-risk-preview-bg': light ? 'var(--color-canvas)' : withAlpha(token.colorText, 0.035),
     '--landing-accent': 'var(--color-accent)',
     '--landing-ghost': 'var(--color-surface)',
