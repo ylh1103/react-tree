@@ -47,6 +47,8 @@ Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本
 
 页尾行动区的 Gradient Waves 迁至 `src/pages/Landing/components/LandingClosing`，沿用仓库提交 `ad5c48da9f5d0469f469a4a3614f276aa3d43c1d` 中的 React Bits JSX 实现。上游 commit 未记录，版权及许可随源码保存在 [页尾素材许可](../src/pages/Landing/components/LandingClosing/LICENSE.md)。波浪由浏览器 WebGL 绘制，开启减少动态效果时停用。
 
+页尾「Ling Dong」使用同一提交中的 Shape Waves 字形比例、噪声分布和波纹模拟。着色器移植到原生 WebGL2，版权和许可沿用页尾素材许可。减少动态效果或 WebGL2 不可用时由 Canvas 2D 绘制静态图案。
+
 首屏下方的核心功能模块参考 [Moonshot 首页](https://www.moonshot.cn/) 的双栏展示与竖向进度指示，右侧根据产品 PPT 用示例数据重绘。每项进度线性增长 6 秒。鼠标进入左栏或右侧插图时清零，模块离开视口时也清零，恢复播放时从头计时。右侧使用 400 毫秒淡入。版本化管理用 React 和 UnoCSS 展示两份参数合并为快照、再上传到配置中心的流程，下方四个步骤依次点亮。其他两项的前后卡片错开入场。各自的命名关键帧就近声明，并响应减少动态效果偏好。
 
 版本化管理插图的构图由 ImageGen 根据产品 PPT 生成，再用页面组件重绘。宽屏横向排列参数源、快照和配置中心，窄屏纵向排列。快照高亮最终端口，说明应用参数覆盖公共参数的结果。

@@ -1,3 +1,5 @@
+import { useLandingTheme } from '../../hooks/useLandingTheme';
+import LandingWordmark from './components/LandingWordmark';
 import LandingActions from '../LandingActions';
 import LandingClosingBackground from './LandingClosingBackground';
 
@@ -32,10 +34,16 @@ const footerLinkClass = 'w-fit rounded-3px text-inherit layout-focus hover:text-
 
 /** 落地页页尾沿用平台主题，组装行动区与页脚导航。 */
 export default function LandingClosing() {
+  const { theme } = useLandingTheme();
+  const edge =
+    theme === 'light'
+      ? 'shadow-[inset_0_0_0_1px_rgba(24,24,27,0.05)]'
+      : 'shadow-[inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_0_1px_rgba(255,255,255,0.035)]';
+
   return (
     <footer className="overflow-hidden bg-[var(--landing-hero-background)] pt-[clamp(24px,3vw,40px)] pb-[clamp(32px,4vw,56px)] text-text-secondary">
       <div className="mx-auto max-w-1280px pl-44px pr-32px [@media(max-width:768px)]:px-22px">
-        <div className="overflow-hidden rounded-24px bg-canvas p-6px ring-1 ring-inset ring-border-subtle [@media(max-width:700px)]:rounded-20px">
+        <div className="relative isolate overflow-hidden rounded-24px bg-canvas px-6px pt-6px [@media(max-width:700px)]:rounded-20px">
           <section
             aria-labelledby="landing-closing-title"
             className="relative isolate flex flex-col items-center overflow-hidden rounded-18px bg-surface px-6 pt-[clamp(80px,7.5vw,104px)] pb-[clamp(120px,11vw,156px)] text-center [@media(max-width:700px)]:rounded-14px [@media(max-width:600px)]:px-5 [@media(max-width:600px)]:pt-56px [@media(max-width:600px)]:pb-96px"
@@ -52,7 +60,7 @@ export default function LandingClosing() {
             </p>
             <LandingActions className="[@media(max-width:600px)]:w-full [@media(max-width:600px)]:flex-col" />
           </section>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-12 gap-y-8 p-10 [@media(max-width:700px)]:grid-cols-1 [@media(max-width:700px)]:px-22px [@media(max-width:700px)]:py-7">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-12 gap-y-8 px-10 pt-10 pb-5 [@media(max-width:700px)]:grid-cols-1 [@media(max-width:700px)]:px-22px [@media(max-width:700px)]:pt-7 [@media(max-width:700px)]:pb-4">
             <div>
               <a href="#landing-top" className={footerLinkClass}>
                 灵动参数管家
@@ -96,6 +104,11 @@ export default function LandingClosing() {
               </a>
             </div>
           </div>
+          <LandingWordmark />
+          <div
+            aria-hidden="true"
+            className={`pointer-events-none absolute inset-0 z-1 [border-radius:inherit] [-webkit-mask-image:linear-gradient(black_calc(100%-48px),transparent_calc(100%-24px))] [mask-image:linear-gradient(black_calc(100%-48px),transparent_calc(100%-24px))] ${edge}`}
+          />
         </div>
       </div>
     </footer>
