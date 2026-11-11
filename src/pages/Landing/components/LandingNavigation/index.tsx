@@ -7,7 +7,7 @@ import { useLandingTheme } from '../../hooks/useLandingTheme';
 const navigation = [
   { label: '产品能力', href: '#core-features' },
   { label: '使用流程', href: '#how-it-works' },
-  { label: '接入指南', href: '/reactbits#integration' },
+  { label: '接入指南', href: '#landing-integration' },
   { label: '常见问题', href: '#faq' },
 ];
 const linkClass =

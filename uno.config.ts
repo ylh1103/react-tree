@@ -7,10 +7,9 @@ export default defineConfig({
   // 项目使用 React + TypeScript，扫描 TS/TSX 与 HTML 入口，包含路由配置中的完整图标类名。
   content: {
     pipeline: {
-      include: [/\.(tsx?|html)($|\?)/],
-      // React Bits 复刻页生成独立的局部工具类，避免占用后台启动预算。
+      include: [/\.(tsx?|html)($|\?)/, /\/LandingClosing\/.*\.jsx($|\?)/],
+      // 落地页的这些模块单独生成局部工具类，避免占用后台启动预算。
       exclude: [
-        /\/src\/pages\/ReactBits\//,
         /\/LandingCoreFeatures\//,
         /\/Landing(?:RiskFeatures|ReleaseFlow|AdoptionStats|Faq)\/index\.tsx$/,
       ],

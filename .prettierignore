@@ -5,4 +5,3 @@ dist-ssr/
 coverage/
 output/
 pnpm-lock.yaml
-vendor/react-bits/

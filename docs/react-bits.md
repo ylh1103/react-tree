@@ -4,17 +4,7 @@
 
 ## 环境与启动
 
-项目已有 React 19、TypeScript、Vite、UnoCSS 和 Ant Design，版本以本地 package.json、pnpm-lock.yaml 和安装结果为准。Node 要求 ≥22.12.0。
-
-依赖已安装时，在项目根目录执行：
-
-```sh
-npm run dev:reactbits
-```
-
-Vite 会输出实际本地地址并尝试打开 `/reactbits`，这是 React Bits 复刻页的公开入口。该页面不要求登录。若浏览器未自动打开，使用终端输出的地址加对应路径。停止服务使用 Ctrl+C。
-
-全新检出按根 README 使用 pnpm 安装依赖，继续沿用 pnpm-lock.yaml，不混用其他包管理器生成锁文件。`npm run` 仅运行已有脚本，不安装依赖。
+按根 README 安装依赖并启动开发服务，使用 Vite 输出的地址打开 `/landing`。项目使用 React、TypeScript、Vite、UnoCSS 和 Ant Design，版本以本地 package.json 和 pnpm-lock.yaml 为准。
 
 ## 接入方案
 
@@ -53,7 +43,9 @@ npx shadcn@latest add @reactbits-pro/profile-3
 
 Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本以执行时实际结果为准；历史接入使用过 4.23.0，不代表项目锁定该版本。执行前检查生成文件和依赖，执行后审查 diff，特别关注全局 CSS、主题变量及锁文件；不要混用包管理器生成另一份锁文件。
 
-`/reactbits` 是独立的公开复刻页，入口为 `src/pages/ReactBits/index.tsx`，拥有局部样式与主题。产品入口 `/landing` 由 `src/pages/Landing/index.tsx` 组装，导航、首屏和下方的各个模块均由 Landing 自己维护。
+产品入口 `/landing` 由 `src/pages/Landing/index.tsx` 组装，导航、首屏和下方的各个模块均由 Landing 自己维护。
+
+页尾行动区的 Gradient Waves 迁至 `src/pages/Landing/components/LandingClosing`，沿用仓库提交 `ad5c48da9f5d0469f469a4a3614f276aa3d43c1d` 中的 React Bits JSX 实现。上游 commit 未记录，版权及许可随源码保存在 [页尾素材许可](../src/pages/Landing/components/LandingClosing/LICENSE.md)。波浪由浏览器 WebGL 绘制，开启减少动态效果时停用。
 
 首屏下方的核心功能模块参考 [Moonshot 首页](https://www.moonshot.cn/) 的双栏展示与竖向进度指示，右侧根据产品 PPT 用示例数据重绘。每项进度线性增长 6 秒。鼠标进入左栏或右侧插图时清零，模块离开视口时也清零，恢复播放时从头计时。右侧使用 400 毫秒淡入。版本化管理用 React 和 UnoCSS 展示两份参数合并为快照、再上传到配置中心的流程，下方四个步骤依次点亮。其他两项的前后卡片错开入场。各自的命名关键帧就近声明，并响应减少动态效果偏好。
 
@@ -68,7 +60,7 @@ Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本
 - 验证组件：`src/components/Profile3/index.tsx`，默认导出 `Profile3`，未挂入现有业务页面。来源：`https://registry.collectui.pro/api/r/reactbits/pro/profile-3.json`；说明：<https://pro.reactbits.dev/docs/blocks/profile/profile-3>。响应未提供 commit/版本，下载日期为 2026-11-06；原始 content SHA-256 为 `e0932fe0c8c9c39d38a73884451f13fa4efbaebeaa4d26053445ecdac80722bd`。
 - 许可：授权 Pro 素材，按所持商业许可使用；响应未附许可全文，不将其作为官方开源 MIT 素材传播。Skill 标记 Proprietary。
 - 依赖沿用现有 `motion` 12.23.21 和 `lucide-react` 0.542.0，不更改 package.json 或锁文件。组件保留上游动画，改用项目主题色、现有 desktop/wide 断点、UnoCSS 渐变和纵横比语法；内容上限改为 1280px。补足上游缺失的头像占位图，关注按钮改为可点击、可键盘操作的本地演示状态。
-- 当时记录未运行 init，也未注入全局主题变量或 `.dark` 激活机制。`backup-pre-reactbits` 备份现已删除，后续通过 Git diff 和版本历史检查变更。
+- 当时记录未运行 init，也未注入全局主题变量或 `.dark` 激活机制。后续通过 Git diff 和版本历史检查变更。
 - 当时构建、Lint、格式检查与 344 项测试全部通过；测试首次因沙盒禁止监听本地端口失败，允许本地测试服务器后全部通过。构建仅保留大文件体积提示。组件未渲染到页面，本次仅验收源码和构建，不代表页面视觉验收。
 
 此前实测 MCP 握手、工具发现、项目注册表识别、Aurora 搜索和组件详情查询通过。当时 `view_items_in_registries` 返回摘要及文件数量，未直接返回完整源码；需要读取 `https://reactbits.dev/r/Aurora-TS-TW.json` 中的 files/content、dependencies，或官方仓库对应源码。不能将摘要查询成功报告成已读取源码。

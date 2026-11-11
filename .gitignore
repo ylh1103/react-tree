@@ -27,10 +27,6 @@ dist-ssr
 # Local caches, generated output and secrets
 .pnpm-store/
 output/
-# 官方完整检出仅作为本地对照；实际可编辑模板与资源在 src/pages/ReactBits 和 public/reactbits。
-/vendor/react-bits/
 .env
 .env.*
 !.env.example
-
-/backup-pre-reactbits/

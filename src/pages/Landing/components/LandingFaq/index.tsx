@@ -110,7 +110,7 @@ function FaqChannels({ className }: { className: string }) {
   );
 }
 
-/** 保留 FAQ 6 的双栏、文档入口，右栏沿用 /reactbits 的圆角折叠列表，解答参数发布常见问题。 */
+/** 保留 FAQ 6 的双栏、文档入口，解答参数发布常见问题。 */
 export default function LandingFaq() {
   const { theme } = useLandingTheme();
   const reduce = useReducedMotion();

@@ -8,7 +8,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist', 'dist-ssr', 'coverage', 'output', '.pnpm-store', 'vendor/react-bits']),
+  globalIgnores(['dist', 'dist-ssr', 'coverage', 'output', '.pnpm-store']),
   {
     files: ['**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
@@ -30,17 +30,12 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['build/reactbits-template-plugin.mjs'],
+    files: ['build/landing-utilities-plugin.mjs'],
     languageOptions: { globals: globals.node },
   },
   {
-    // 官方提供的首页是 JavaScript 源码；不为模板额外引入运行时 PropTypes。
-    files: ['src/pages/ReactBits/template/**/*.jsx'],
-    rules: { 'react/prop-types': 'off' },
-  },
-  {
-    files: ['src/**/*.{ts,tsx}'],
-    // TypeScript handles props validation for TypeScript components.
+    // TS 组件使用静态类型，Landing 页尾沿用仓库原有的 JSX 渲染器。
+    files: ['src/**/*.{ts,tsx}', 'src/pages/Landing/components/LandingClosing/**/*.jsx'],
     rules: { 'react/prop-types': 'off' },
   },
   {
