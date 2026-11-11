@@ -54,7 +54,7 @@ function CodeSample({ lines }: { lines: string[] }) {
 
 export function VersionPreview() {
   return (
-    <PreviewStage label="参数版本化管理流程。保存应用参数和公共参数，合并生成快照，发布到配置中心，最后重启应用或热更新使参数生效。示例中应用参数的端口 8081 覆盖公共参数的端口 8080。">
+    <PreviewStage label="参数版本化管理流程。将业务应用或公共模块的参数保存到参数管家，合并配置后生成静态快照，将最终的参数上传到配置中心。重启应用或点击参数管家热更新按钮使参数生效。示例中应用参数的端口 8081 覆盖公共参数的端口 8080。">
       <VersionFlowPreview />
     </PreviewStage>
   );

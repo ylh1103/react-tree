@@ -8,8 +8,7 @@ const features = [
   {
     id: 'version',
     title: ['参数版本化管理'],
-    description:
-      '合并应用参数与公共参数，生成静态快照。每次变更都有版本可追溯，支持跨环境、跨版本比对。',
+    description: '参考应用版本管理，方便追溯变更历史和不同环境、不同版本的参数比对。',
     Preview: VersionPreview,
   },
   {
@@ -27,6 +26,23 @@ const features = [
     Preview: RuntimePreview,
   },
 ];
+
+function FeatureCopy({ feature }: { feature: (typeof features)[number] }) {
+  return (
+    <>
+      <h2 className="m-0 text-3xl font-medium leading-[1.1] tracking-tight text-text [@media(min-width:640px)_and_(max-width:1023.98px)]:text-4xl [@media(min-width:1024px)]:text-5xl">
+        {feature.title.map((line) => (
+          <span key={line} className={feature.id === 'runtime' ? 'block' : 'inline-block'}>
+            {line}
+          </span>
+        ))}
+      </h2>
+      <p className="m-0 mt-5 max-w-xl text-base leading-relaxed text-text-secondary [@media(min-width:640px)]:text-lg">
+        {feature.description}
+      </p>
+    </>
+  );
+}
 
 export default function LandingCoreFeatures() {
   const { token } = theme.useToken();
@@ -67,9 +83,9 @@ export default function LandingCoreFeatures() {
       style={colors}
       className="mx-auto w-full max-w-1280px py-12 pl-44px pr-32px [@media(max-width:768px)]:px-22px [@media(min-width:1024px)]:py-20"
     >
-      <div className="relative grid items-start gap-10 [@media(min-width:1024px)]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)] [@media(min-width:1024px)]:gap-16">
+      <div className="relative grid items-start gap-10 [@media(min-width:1024px)]:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)] [@media(min-width:1024px)]:items-center [@media(min-width:1024px)]:gap-16">
         <div
-          className="relative z-1 min-w-0"
+          className="relative z-1 grid min-w-0 items-start [@media(min-width:1024px)]:items-center"
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
           onPointerDown={() => setKeyboardFocus(false)}
@@ -78,63 +94,57 @@ export default function LandingCoreFeatures() {
             if (!event.currentTarget.contains(event.relatedTarget)) setKeyboardFocus(false);
           }}
         >
-          <div
-            role="group"
-            aria-label="选择核心功能"
-            className="absolute right-full top-0 grid justify-items-center [@media(min-width:769px)]:mr-2"
-          >
-            {features.map((feature, index) => (
-              <Button
+          {/* 用其他文案保留切换所需高度，指示条跟随当前文案顶部。 */}
+          {features.map((feature, index) =>
+            index === active ? null : (
+              <div
                 key={feature.id}
-                type="text"
-                aria-label={feature.title.join('')}
-                aria-pressed={index === active}
-                aria-controls="landing-core-feature-panel"
-                onClick={() => setActive(index)}
-                className="h-auto! w-22px! min-w-0! rounded-6px! bg-transparent! px-0! py-4px! layout-focus hover:bg-transparent! active:bg-transparent! [@media(min-width:769px)]:w-8!"
+                aria-hidden="true"
+                className="invisible col-start-1 row-start-1 pl-22px [@media(min-width:769px)]:pl-40px"
               >
-                <span
-                  aria-hidden="true"
-                  className={`relative block w-8px overflow-hidden rounded-full bg-[var(--landing-preview-frame)] transition-[height] duration-300 motion-reduce:transition-none ${index === active ? 'h-50px' : 'h-24px'}`}
-                >
-                  {index === active && playing && (
-                    <span
-                      key={id}
-                      className="absolute inset-x-0 top-0 rounded-full bg-[var(--landing-preview-dot)] motion-reduce:hidden [animation:landing-feature-progress_6s_linear_both]"
-                      onAnimationEnd={() => setActive((current) => (current + 1) % features.length)}
-                    />
-                  )}
-                  {index === active && (
-                    <span className="absolute inset-0 hidden rounded-full bg-[var(--landing-preview-dot)] motion-reduce:block" />
-                  )}
-                </span>
-              </Button>
-            ))}
-          </div>
-          <div id="landing-core-feature-panel" aria-live={playing ? 'off' : 'polite'}>
-            <div className="grid">
-              {/* 同一网格单元以最长文案确定高度，切换时不会推移插图或下方内容。 */}
+                <FeatureCopy feature={feature} />
+              </div>
+            ),
+          )}
+          <div className="relative col-start-1 row-start-1 pl-22px [@media(min-width:769px)]:pl-40px">
+            <div role="group" aria-label="选择核心功能" className="absolute left-0 top-0 grid">
               {features.map((feature, index) => (
-                <div
+                <Button
                   key={feature.id}
-                  aria-hidden={index !== active}
-                  className={`col-start-1 row-start-1 ${index === active ? '[animation:landing-feature-reveal_360ms_ease-out_both] motion-reduce:animate-none!' : 'invisible'}`}
+                  type="text"
+                  aria-label={feature.title.join('')}
+                  aria-pressed={index === active}
+                  aria-controls="landing-core-feature-panel"
+                  onClick={() => setActive(index)}
+                  className="h-auto! w-22px! min-w-0! justify-start! rounded-6px! bg-transparent! px-0! py-4px! layout-focus hover:bg-transparent! active:bg-transparent! [@media(min-width:769px)]:w-8!"
                 >
-                  <h2 className="m-0 text-3xl font-medium leading-[1.1] tracking-tight text-text [@media(min-width:640px)_and_(max-width:1023.98px)]:text-4xl [@media(min-width:1024px)]:text-5xl">
-                    {feature.title.map((line) => (
+                  <span
+                    aria-hidden="true"
+                    className={`relative block w-8px overflow-hidden rounded-full bg-[var(--landing-preview-frame)] transition-[height] duration-300 motion-reduce:transition-none ${index === active ? 'h-50px' : 'h-24px'}`}
+                  >
+                    {index === active && playing && (
                       <span
-                        key={line}
-                        className={feature.id === 'runtime' ? 'block' : 'inline-block'}
-                      >
-                        {line}
-                      </span>
-                    ))}
-                  </h2>
-                  <p className="m-0 mt-5 max-w-xl text-base leading-relaxed text-text-secondary [@media(min-width:640px)]:text-lg">
-                    {feature.description}
-                  </p>
-                </div>
+                        key={id}
+                        className="absolute inset-x-0 top-0 rounded-full bg-[var(--landing-preview-dot)] motion-reduce:hidden [animation:landing-feature-progress_6s_linear_both]"
+                        onAnimationEnd={() =>
+                          setActive((current) => (current + 1) % features.length)
+                        }
+                      />
+                    )}
+                    {index === active && (
+                      <span className="absolute inset-0 hidden rounded-full bg-[var(--landing-preview-dot)] motion-reduce:block" />
+                    )}
+                  </span>
+                </Button>
               ))}
+            </div>
+            <div id="landing-core-feature-panel" aria-live={playing ? 'off' : 'polite'}>
+              <div
+                key={id}
+                className="[animation:landing-feature-reveal_360ms_ease-out_both] motion-reduce:animate-none!"
+              >
+                <FeatureCopy feature={features[active]} />
+              </div>
             </div>
           </div>
         </div>
