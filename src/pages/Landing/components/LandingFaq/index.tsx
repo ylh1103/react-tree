@@ -67,10 +67,10 @@ const channels = [
   },
 ];
 
-/** 文档入口由断点控制显示，配色与悬停透明度取自 React Bits Pro 首页 FAQ 卡片。 */
-function FaqChannels({ className }: { className: string }) {
+/** 帮助入口和二维码作为一组，复用 FAQ 的入场节奏。 */
+function FaqChannels({ className, variants }: { className?: string; variants: Variants }) {
   return (
-    <div className={className}>
+    <motion.div className={className} variants={variants}>
       <div
         className={`overflow-hidden rounded-16.8px border border-solid [border-color:var(--faq-doc-border)] [background:var(--faq-doc-background)] [--faq-doc-background:#fff] [--faq-doc-border:#e5e5e5] [--faq-doc-text:#0a0a0a] [--faq-doc-muted:#414141] [--faq-doc-row:rgb(255_255_255/50%)] [--faq-doc-hover:rgb(245_245_245/50%)] [--faq-doc-divider:rgb(229_229_229/60%)] dark:[--faq-doc-background:#0a0a0a] dark:[--faq-doc-border:#1f1f1f] dark:[--faq-doc-text:#fff] dark:[--faq-doc-muted:#d6d6d6] dark:[--faq-doc-row:rgb(17_17_17/50%)] dark:[--faq-doc-hover:rgb(31_31_31/50%)] dark:[--faq-doc-divider:rgb(31_31_31/60%)] [&>a:not(:last-child)]:[border-bottom:1px_solid_var(--faq-doc-divider)]`}
       >
@@ -106,7 +106,7 @@ function FaqChannels({ className }: { className: string }) {
         />
         <figcaption className="text-sm text-text-secondary">扫码加入支持群</figcaption>
       </figure>
-    </div>
+    </motion.div>
   );
 }
 
@@ -158,7 +158,7 @@ export default function LandingFaq() {
                 >
                   了解参数何时生效、如何热更新，以及生产发布和回退时需要注意什么。
                 </motion.p>
-                <FaqChannels className="mt-10 hidden max-w-md lg:block" />
+                <FaqChannels className="mt-10 hidden max-w-md lg:block" variants={item} />
               </motion.div>
 
               <motion.div
@@ -215,7 +215,15 @@ export default function LandingFaq() {
                 })}
               </motion.div>
 
-              <FaqChannels className="lg:hidden" />
+              <motion.div
+                variants={container}
+                initial={reduce ? false : 'hidden'}
+                whileInView="show"
+                viewport={{ once: true, margin: '-80px' }}
+                className="lg:hidden"
+              >
+                <FaqChannels variants={item} />
+              </motion.div>
             </div>
           </div>
         </section>

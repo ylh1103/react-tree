@@ -1,6 +1,7 @@
 /** 产品导航模块：保留参考页几何与交互，去掉社区、文档站及通用品牌模板分支。 */
 import { useEffect, useRef, useState, useSyncExternalStore, type SyntheticEvent } from 'react';
 import { Button } from 'antd';
+import { useLinkClickHandler } from 'react-router';
 import logo from '@/assets/logo.jpg';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
 
@@ -23,6 +24,7 @@ function isScrolled() {
 }
 
 export default function LandingNavigation() {
+  const openConsole = useLinkClickHandler<HTMLElement>('/');
   const { theme, setTheme, canChangeTheme } = useLandingTheme();
   const scrolled = useSyncExternalStore(subscribeToScroll, isScrolled);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -124,6 +126,7 @@ export default function LandingNavigation() {
           />
           <Button
             href="/"
+            onClick={openConsole}
             type="primary"
             className="h-9! rounded-10px! border-transparent! px-18px! text-13px! font-600! [@media(max-width:768px)]:h-8! [@media(max-width:768px)]:rounded-8px! [@media(max-width:768px)]:px-3! [@media(max-width:768px)]:text-12px!"
           >

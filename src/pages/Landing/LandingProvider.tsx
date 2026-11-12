@@ -3,7 +3,7 @@ import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Alert, theme as antdTheme } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
-import { saveUserSettings } from '@/store/slices/preferencesSlice';
+import { saveThemeMode } from '@/store/slices/preferencesSlice';
 import type { ResolvedThemeMode } from '@/types/preferences';
 import { useLandingScrollRestoration } from './hooks/useLandingScrollRestoration';
 import { LandingContext } from './model/landingContext';
@@ -30,7 +30,7 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const canChangeTheme = ['ready', 'saving', 'save-error'].includes(status);
   function setTheme(next: ResolvedThemeMode) {
     // 仅用户点击时提交，复用现有并发、未知字段保留及失败回退逻辑。
-    void dispatch(saveUserSettings({ themeMode: next }));
+    void dispatch(saveThemeMode(next));
   }
   const variables = {
     '--landing-background': light ? '#fff' : 'var(--color-surface)',
@@ -38,6 +38,7 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
     '--landing-preview-frame': light
       ? 'var(--color-canvas)'
       : `rgb(${darkPreviewFrameChannel} ${darkPreviewFrameChannel} ${darkPreviewFrameChannel})`,
+    '--landing-preview-content': light ? '#fff' : '#080808',
     '--landing-preview-dot': light
       ? 'var(--color-border)'
       : `rgb(${darkPreviewDotChannel} ${darkPreviewDotChannel} ${darkPreviewDotChannel})`,

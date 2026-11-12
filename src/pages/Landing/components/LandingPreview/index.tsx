@@ -46,9 +46,7 @@ export default function LandingPreview({ light }: { light: boolean }) {
             param.cmbchina.cn
           </span>
         </div>
-        <div
-          className={`aspect-[23/10] min-h-180px overflow-hidden rounded-11px [@media(max-width:768px)]:aspect-[16/10] ${light ? 'bg-white' : 'bg-[#080808]'}`}
-        />
+        <div className="aspect-[23/10] min-h-180px overflow-hidden rounded-11px bg-[var(--landing-preview-content)] [@media(max-width:768px)]:aspect-[16/10]" />
       </m.div>
     </div>
   );

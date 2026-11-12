@@ -53,60 +53,7 @@ function CodeSample({ lines }: { lines: string[] }) {
 }
 
 export function VersionPreview() {
-  return (
-    <PreviewStage label="参数版本化管理流程。将业务应用或公共模块的参数保存到参数管家，合并配置后生成静态快照，将最终的参数上传到配置中心。重启应用或点击参数管家热更新按钮使参数生效。示例中应用参数的端口 8081 覆盖公共参数的端口 8080。">
-      <VersionFlowPreview />
-    </PreviewStage>
-  );
-}
-
-export function ReleasePreview() {
-  return (
-    <PreviewStage label="发布回退示意：比对当前配置和目标快照，选择历史快照即可回退。">
-      <div className={`${panelClass} ml-[10%] w-[90%] ${backPanelClass}`}>
-        <PanelHeader icon="i-lucide-upload" title="发布参数" meta="生产环境" />
-        <div className="mx-[5%] my-[3%] flex items-center justify-between gap-2 rounded-7px bg-canvas px-[4%] py-[2.5%]">
-          <span className="font-600">目标快照 #103</span>
-          <span className={accentPill}>发布快照</span>
-        </div>
-        <table className="mb-[5%] w-full table-fixed border-collapse text-left [&_td]:px-[5%] [&_td]:py-[1.8%] [&_th]:px-[5%] [&_th]:pb-1 [&_th]:text-[0.88em] [&_th]:font-500 [&_th]:text-text-muted">
-          <thead>
-            <tr>
-              <th className="w-[42%]">配置键</th>
-              <th>当前值</th>
-              <th>目标值</th>
-            </tr>
-          </thead>
-          <tbody className="font-mono">
-            <tr className="border-t border-t-solid border-divider">
-              <td>batch.size</td>
-              <td className="text-text-muted">1000</td>
-              <td className="text-[var(--core-feature-ink)]">500</td>
-            </tr>
-            <tr className="border-t border-t-solid border-divider">
-              <td>job.enabled</td>
-              <td className="text-text-muted">false</td>
-              <td className="text-[var(--core-feature-ink)]">true</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div className={`${panelClass} ${floatingClass} -mt-[8%] w-[67%]`}>
-        <div className="flex items-center gap-2 px-[7%] py-[3%] font-600">
-          <span className="i-lucide-history h-[1.1em] w-[1.1em] text-[var(--core-feature-ink)]" />{' '}
-          历史快照
-        </div>
-        <div className="flex items-center justify-between gap-2 border-t border-t-solid border-divider px-[7%] py-[2.5%] text-text-secondary">
-          <span>#105</span>
-          <span>当前发布</span>
-        </div>
-        <div className="flex items-center justify-between gap-2 bg-[var(--core-feature-tint)] px-[7%] py-[2.5%] font-600 text-[var(--core-feature-ink)]">
-          <span>#103</span>
-          <span>回退至此版本</span>
-        </div>
-      </div>
-    </PreviewStage>
-  );
+  return <VersionFlowPreview />;
 }
 
 export function RuntimePreview() {

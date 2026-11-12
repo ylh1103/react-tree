@@ -1,4 +1,5 @@
 import { Button } from 'antd';
+import { useLinkClickHandler } from 'react-router';
 
 const integrationGuideUrl = 'https://doc.cmbchina.com/f/v?id=MkvTb';
 
@@ -10,11 +11,13 @@ export default function LandingActions({
 }: {
   className?: string;
 }) {
+  const openConsole = useLinkClickHandler<HTMLElement>('/');
   return (
     <div className={`flex gap-2.5 ${className}`}>
       <Button
         type="primary"
         href="/"
+        onClick={openConsole}
         icon={<span aria-hidden="true" className="i-lucide-arrow-right h-17px w-17px" />}
         iconPlacement="end"
         className={`${buttonClass} gap-2! pl-21px! pr-17px!`}

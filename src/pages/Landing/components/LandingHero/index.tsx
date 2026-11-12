@@ -56,7 +56,7 @@ export default function LandingHero() {
               一站式参数管理平台
             </h1>
             <p className="m-0 mt-20px max-w-500px text-[clamp(14px,calc(12px+0.35vw),17px)] leading-[1.65] desktop:mt-28px [@media(max-width:768px)]:mt-16px text-[var(--hero-muted)]">
-              面向行内开发人员的技术参数管理工具集，实现参数发布的自动化、可视化、版本化管理，降低参数变更风险，提升操作效率
+              面向行内开发人员的技术参数管理工具集，实现参数发布的自动化、版本化、合规化管理，降低参数变更风险，提升操作效率
             </p>
             <div className="mt-28px flex w-full flex-col items-start gap-3 desktop:mt-36px [@media(max-width:768px)]:mt-24px">
               <LandingActions />

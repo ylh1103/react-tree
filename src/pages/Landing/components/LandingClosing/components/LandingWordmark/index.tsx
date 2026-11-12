@@ -137,7 +137,7 @@ export default function LandingWordmark() {
         rgb(0 0 0 / 0.942) ${fadeEnd * 0.8}px,
         rgb(0 0 0 / 0.991) ${fadeEnd * 0.9}px,
         #000 ${fadeEnd}px)`;
-      const visibleHeight = above + glyph * 0.54;
+      const visibleHeight = above + glyph * 0.6;
       revealDistance = visibleHeight * 0.72;
       root.style.height = `${visibleHeight}px`;
       root.style.maskImage = fade;
@@ -264,7 +264,7 @@ export default function LandingWordmark() {
     <div
       ref={rootRef}
       aria-hidden="true"
-      className={`relative mx-[-6px] h-[clamp(54px,12vw,175px)] overflow-hidden ${tone}`}
+      className={`relative mx-[-6px] h-[clamp(58px,13vw,188px)] overflow-hidden ${tone}`}
     >
       <canvas ref={staticRef} className="pointer-events-none absolute top-0 block" />
       <canvas ref={liveRef} className="pointer-events-none invisible absolute top-0 block" />
