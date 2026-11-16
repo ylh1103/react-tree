@@ -27,6 +27,14 @@ test('服务端及不支持 matchMedia 的环境安全回退，手动模式保�
   );
   assert.equal(renderToStaticMarkup(createElement(Theme, { mode: 'dark' })), '<span>dark</span>');
   assert.equal(renderToStaticMarkup(createElement(Theme, { mode: 'light' })), '<span>light</span>');
+  assert.equal(
+    renderToStaticMarkup(createElement(Theme, { mode: 'claude:dark' })),
+    '<span>dark</span>',
+  );
+  assert.equal(
+    renderToStaticMarkup(createElement(Theme, { mode: 'claude:system' })),
+    '<span>light</span>',
+  );
   globalThis.window = {};
   assert.equal(getSystemTheme(), 'light');
   subscribeSystemTheme(() => {})();

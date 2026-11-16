@@ -34,7 +34,8 @@ export default defineConfig({
     'tree-scrollbar':
       '[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:transparent_transparent] hover:[scrollbar-color:var(--color-border)_transparent] [&::-webkit-scrollbar]:w-8px [&::-webkit-scrollbar]:h-8px [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-4px [&:hover::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-corner]:bg-transparent',
     'workspace-frame': 'border border-solid border-border-subtle rounded-ui',
-    'workspace-panel': 'workspace-frame bg-surface',
+    'workspace-panel':
+      'workspace-frame bg-surface [--color-text:var(--color-surface-text)] text-text',
     'workspace-muted': 'text-text-muted text-13px leading-22px',
     'workspace-page__title': 'm-0 text-text text-14px font-600 leading-22px',
     'workspace-titlebar-layout':

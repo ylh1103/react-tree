@@ -230,7 +230,7 @@ export default function ReleasePreview() {
     >
       {/* 桌面工具栏按参考图保留尺寸，随卡片边界裁切；窄屏仍可换行操作。 */}
       <div className="relative z-2 flex min-w-0 flex-wrap items-center gap-1.5 border-b border-b-solid border-divider pb-1.5 [@media(min-width:1024px)]:flex-nowrap [@media(min-width:1024px)]:gap-3 [@media(min-width:1024px)]:whitespace-nowrap [@media(min-width:1024px)]:text-14px">
-        <span className="shrink-0 rounded-3px [@media(min-width:1024px)]:px-2.5 [@media(min-width:1024px)]:py-1 bg-accent px-1.5 py-0.5 text-white">
+        <span className="shrink-0 rounded-3px [@media(min-width:1024px)]:px-2.5 [@media(min-width:1024px)]:py-1 bg-accent px-1.5 py-0.5 text-on-accent">
           发布
         </span>
         <span className="shrink-0 rounded-3px [@media(min-width:1024px)]:px-2.5 [@media(min-width:1024px)]:py-1 bg-[#13a8a8] px-1.5 py-0.5 text-white">

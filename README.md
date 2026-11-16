@@ -49,7 +49,9 @@ Node 使用 22.12.0 或更高版本。为兼容 Node 22.12，React Router 固定
 
 ### 完整配置保存
 
-`userSetting.theme` 是后续参数编辑器主题，原样保存，��影响平台主题。`themeMode` 驱动平台浅色、暗色和跟随系统，缺失时使用现有默认值。`defaultCheckAllEnvTag` 和未知字段均保留。
+`userSetting.theme` 原样保留给参数编辑器，`defaultCheckAllEnvTag` 和未知字段均保留。`themeMode` 保存平台配色和明暗模式。旧值 `light`、`dark` 和 `system` 对应平台默认配色，新配色保存为 `配色:模式`（例如 `claude:system`）。用户配置的“外观”页可搜索配色并查看当前明暗模式的色板。首页的明暗切换会沿用当前配色。
+
+平台接入了 [Shadcnblocks 主题库](https://www.shadcnblocks.com/themes) 中可公开下载的 37 套浅色与暗色配色。色值来自 [官方主题注册表](https://www.shadcnblocks.com/r/theme/claude)，许可见 [Shadcnblocks License](https://www.shadcnblocks.com/license)。Alpine 和 Stripe 的注册表接口需要授权。适配覆盖页面背景、面板、导航跟随主题配色、文字、边框和控件主色。字体、圆角与业务状态色沿用平台配置。首屏按用户缓存最近确认的主题和必要色值，完整主题目录随应用打包。
 
 首屏配色在 HTML 头部同步执行，先于外部 JS/CSS 加载，避免慢网络下出现默认白色画布。Vite 插件从现有主题生成背景与文字颜色，并与 Store 共用缓存键及校验规则；这里只直接设置最小根节点样式，因为 UnoCSS 此时尚未下载，不新增样式文件。React 接管后仍通过原有主题变量更新页面。
 
@@ -95,7 +97,7 @@ React 容错采用 `react-error-boundary 6.1.6`（MIT，与当前 React 19 类�
 
 整页调用列表参考 `stacktrace-parser` 的多格式分支思路实现，无新增依赖。兼容常见 V8/Node、Gecko/JSC 和源协议；只简化本地开发 origin，查询串及 hash 原样保留。未知、复杂 eval/native 与超长行保留原文，整体解析失败时直接显示诊断原文；“查看原文”与复制共用同一份提取文本。整页的格式化/原文视图另设预览额度：首批最多 60 行或 16,000 字符，通过“继续显示”按相同额度追加；切换视图保留预览进度，异常文本变化时从首批开始。预览切片不修改提取文本，复制不受当前预览范围限制。整页详情自然撑开，仅由页面纵向滚动，局部错误面板沿用原有交互。
 
-每次生产构建通过 `build/startup-budget-plugin.mjs` 检查真实入口的静态依赖闭包，包含共享 chunk 并去重，不计入动态页面。预算为每个文件分别 gzip 后求和：静态 JS 302 KB、主 CSS 20 KB、HTML 11.8 KB（KB 按 1000 字节）；超预算时构建失败。预算包含诊断入口及独立启动失败页，完整 React 详情与格式化模块仍禁止进入首屏静态闭包。路由状态页的三种主题 SVG 插画同步引入，避免恢复界面额外等待模块下载；实测相较懒加载增加约 2 KB gzip 的同步 JS，仍沿用 302 KB 门禁，不为此次调整放宽预算。启动卡片仅内联本地图标与 UnoCSS，三个同步启动脚本复用当前 Vite 压缩器缩小体积，不增加运行时依赖。完整报告输出到 `dist/startup-report.json`，这些数字不代表浏览器实测耗时，也不包含目标页面及启动请求触发的动态模块。
+每次生产构建通过 `build/startup-budget-plugin.mjs` 检查真实入口的静态依赖闭包，包含共享 chunk 并去重，不计入动态页面。预算为每个文件分别 gzip 后求和：静态 JS 310 KB、主 CSS 20 KB、HTML 11.8 KB（KB 按 1000 字节）。主题目录和 token 映射约增加 4 KB gzip，随入口同步加载以便主题 Provider 接管首屏。启动卡片内联本地图标与 UnoCSS，三个启动脚本使用 Vite 压缩。完整报告输出到 `dist/startup-report.json`，记录传输体积估算和模块边界。
 
 构建还禁止设置表单、完整设置抽屉、交互分栏 `SplitPane`、业务分栏骨架 `CollectionSkeleton`、业务页面及 Mock 数据回流入口静态依赖；错误与状态页及其插画、唯一 Mock adapter 和轻量配置保留同步接入。调整预算前先检查依赖报告，不通过手工拆包把同步依赖移出统计。新增业务需同时验证首页、业务深链接和首次打开面板的加载行为。
 

@@ -303,6 +303,7 @@ export function GroupedList({
     <section
       className={`
         grouped-list-panel relative flex flex-col max-w-full h-full min-h-0 bg-surface
+        [--color-text:var(--color-surface-text)] text-text
         overflow-hidden [container-type:inline-size]
         ${embedded ? 'w-full' : 'w-[290px] border border-solid border-tree-panel-border rounded-ui'}
       `}

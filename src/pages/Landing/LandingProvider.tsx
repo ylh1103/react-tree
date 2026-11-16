@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { saveThemeMode } from '@/store/slices/preferencesSlice';
 import type { ResolvedThemeMode } from '@/types/preferences';
+import { createThemeMode, splitThemeMode } from '@/types/themeMode';
 import { useLandingScrollRestoration } from './hooks/useLandingScrollRestoration';
 import { LandingContext } from './model/landingContext';
 import { withAlpha } from './model/themeColors';
@@ -19,6 +20,7 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useLandingScrollRestoration();
   const mode = useAppSelector((state) => state.preferences.themeMode);
+  const [palette] = splitThemeMode(mode);
   const status = useAppSelector((state) => state.preferences.status);
   const saveError = useAppSelector((state) =>
     state.preferences.status === 'save-error' ? state.preferences.error : null,
@@ -30,11 +32,11 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const canChangeTheme = ['ready', 'saving', 'save-error'].includes(status);
   function setTheme(next: ResolvedThemeMode) {
     // 仅用户点击时提交，复用现有并发、未知字段保留及失败回退逻辑。
-    void dispatch(saveThemeMode(next));
+    void dispatch(saveThemeMode(createThemeMode(palette, next)));
   }
   const variables = {
-    '--landing-background': light ? '#fff' : 'var(--color-surface)',
-    '--landing-hero-background': light ? '#fff' : 'var(--color-canvas)',
+    '--landing-background': light && palette === 'platform' ? '#fff' : 'var(--color-surface)',
+    '--landing-hero-background': light && palette === 'platform' ? '#fff' : 'var(--color-canvas)',
     '--landing-preview-frame': light
       ? 'var(--color-canvas)'
       : `rgb(${darkPreviewFrameChannel} ${darkPreviewFrameChannel} ${darkPreviewFrameChannel})`,

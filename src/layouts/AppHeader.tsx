@@ -102,7 +102,7 @@ export function AppHeader() {
   const toolIconSizeClass = showToolTips ? 'w-18px h-18px' : 'w-16px h-16px';
 
   return (
-    <header className="shrink-0 min-w-0 text-text bg-header border-b border-b-solid border-divider">
+    <header className="shrink-0 min-w-0 text-surface-text bg-header border-b border-b-solid border-divider">
       <div className="flex flex-wrap items-center gap-x-2 min-h-51px px-3 min-[640px]:gap-x-3 min-[640px]:px-4">
         <h1 className="m-0 shrink-0 h-51px flex items-center">
           <Button

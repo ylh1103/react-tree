@@ -80,7 +80,7 @@ export default function Profile3() {
                   whileTap={{ scale: 0.95 }}
                   className={`px-5 py-2 rounded-full font-medium text-sm transition-colors duration-200 ${
                     isFollowing
-                      ? 'bg-accent text-white hover:bg-accent-hover'
+                      ? 'bg-accent text-on-accent hover:bg-accent-hover'
                       : 'border border-solid border-border text-text hover:bg-canvas'
                   }`}
                 >

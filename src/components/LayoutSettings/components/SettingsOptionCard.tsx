@@ -32,7 +32,7 @@ export function SettingsOptionCard({
 /** 默认值与选中态分开标识，切换方案后仍能找到系统默认选项。 */
 export function SettingsDefaultBadge() {
   return (
-    <span className="rounded-control bg-sidebar px-1 text-11px font-400 leading-4 text-text-secondary">
+    <span className="rounded-control bg-sidebar px-1 text-11px font-400 leading-4 text-sidebar-text">
       默认
     </span>
   );

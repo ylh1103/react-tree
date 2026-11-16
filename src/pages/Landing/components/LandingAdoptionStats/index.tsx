@@ -45,7 +45,7 @@ export default function LandingAdoptionStats() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5 }}
-                  className="m-0 text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-neutral-900 dark:text-white leading-tight"
+                  className="m-0 text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-text leading-tight"
                 >
                   行内使用情况
                 </motion.h2>
@@ -55,7 +55,7 @@ export default function LandingAdoptionStats() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.1 }}
-                  className="m-0 max-w-md text-base leading-relaxed text-neutral-600 dark:text-neutral-400 sm:text-lg"
+                  className="m-0 max-w-md text-base leading-relaxed text-text-secondary sm:text-lg"
                 >
                   灵动参数管家已接入行内多个系统和应用，支持集中管理配置、生成快照和发布参数。
                 </motion.p>
@@ -94,7 +94,7 @@ export default function LandingAdoptionStats() {
                           className={`m-0 text-sm sm:text-base ${
                             stat.highlight
                               ? 'text-green-600 dark:text-green-500'
-                              : 'text-neutral-600 dark:text-neutral-400'
+                              : 'text-text-secondary'
                           }`}
                         >
                           {stat.label}
@@ -108,9 +108,7 @@ export default function LandingAdoptionStats() {
                       </div>
                       <p
                         className={`m-0 text-4xl font-medium tracking-tighter tabular-nums sm:text-5xl lg:text-[clamp(32px,3.6vw,60px)] ${
-                          stat.highlight
-                            ? 'text-green-600 dark:text-green-500'
-                            : 'text-neutral-900 dark:text-white'
+                          stat.highlight ? 'text-green-600 dark:text-green-500' : 'text-text'
                         }`}
                       >
                         {stat.value}
@@ -118,7 +116,7 @@ export default function LandingAdoptionStats() {
                     </div>
                   </motion.div>
                 ))}
-                <p className="m-0 text-right text-xs text-neutral-600 dark:text-neutral-400 sm:col-span-2">
+                <p className="m-0 text-right text-xs text-text-secondary sm:col-span-2">
                   统计截至 <time dateTime="2025-03-03">2025 年 3 月 3 日</time>
                 </p>
               </div>

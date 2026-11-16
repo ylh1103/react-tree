@@ -11,7 +11,7 @@ import {
   previewBorderRadius,
   previewControlBorderRadius,
 } from '@/store/slices/preferencesSlice';
-import { navigationThemeVariables, themeVariablesByMode } from '@/styles/theme';
+import { getThemeVariables, navigationThemeVariables } from '@/styles/theme';
 import type {
   LayoutMode,
   NavigationTheme,
@@ -20,8 +20,10 @@ import type {
 } from '@/types/preferences';
 import { defaultUserSettings, layoutGapRange, borderRadiusRange } from '@/types/preferences';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
+import { createThemeMode, splitThemeMode, type ThemePaletteId } from '@/types/themeMode';
 import { EditorSetting } from './components/EditorSetting';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
+import { ThemePaletteSetting } from './components/ThemePaletteSetting';
 import { OverlayScroll } from '@/components/OverlayScroll';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
 import { applicationRouteConfig as navigationItems } from '@/router/application';
@@ -54,11 +56,13 @@ const themeOptions = [
 function SettingsPreview({
   layoutMode,
   themeMode,
+  palette,
   className = '',
   navigationTheme: previewNavigationTheme,
 }: {
   layoutMode: LayoutMode;
   themeMode: ResolvedThemeMode;
+  palette: ThemePaletteId;
   className?: string;
   navigationTheme?: NavigationTheme;
 }) {
@@ -72,7 +76,7 @@ function SettingsPreview({
       aria-hidden="true"
       style={
         {
-          ...themeVariablesByMode[themeMode],
+          ...getThemeVariables(themeMode, palette),
           ...navigationThemeVariables[previewNavigationTheme ?? navigationTheme],
           '--ui-radius': `${radius}px`,
         } as CSSProperties
@@ -122,7 +126,13 @@ function SettingsPreview({
 }
 
 /** 明暗拼接复用原尺寸布局，与浅色、暗色缩略图使用相同宽高，不再单独缩放内容。 */
-function SystemThemePreview({ layoutMode }: { layoutMode: LayoutMode }) {
+function SystemThemePreview({
+  layoutMode,
+  palette,
+}: {
+  layoutMode: LayoutMode;
+  palette: ThemePaletteId;
+}) {
   return (
     <span
       aria-hidden="true"
@@ -132,6 +142,7 @@ function SystemThemePreview({ layoutMode }: { layoutMode: LayoutMode }) {
         <SettingsPreview
           layoutMode={layoutMode}
           themeMode="light"
+          palette={palette}
           className="border-0! rounded-none!"
         />
       </span>
@@ -139,6 +150,7 @@ function SystemThemePreview({ layoutMode }: { layoutMode: LayoutMode }) {
         <SettingsPreview
           layoutMode={layoutMode}
           themeMode="dark"
+          palette={palette}
           className="border-0! rounded-none!"
         />
       </span>
@@ -150,17 +162,22 @@ function SystemThemePreview({ layoutMode }: { layoutMode: LayoutMode }) {
 function NavigationColorPreview({
   mode,
   themeMode,
+  palette,
   iconOnly,
 }: {
   mode: NavigationTheme;
   themeMode: ResolvedThemeMode;
+  palette: ThemePaletteId;
   iconOnly: boolean;
 }) {
   return (
     <span
       aria-hidden="true"
       style={
-        { ...themeVariablesByMode[themeMode], ...navigationThemeVariables[mode] } as CSSProperties
+        {
+          ...getThemeVariables(themeMode, palette),
+          ...navigationThemeVariables[mode],
+        } as CSSProperties
       }
       className="relative block h-104px w-full shrink-0 overflow-hidden rounded-ui border border-solid border-border flex! bg-surface"
     >
@@ -295,7 +312,7 @@ function PreferenceSlider({
           }}
           className={`
             w-84px!
-            ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent!'}
+            ${disabled ? '[&_input]:text-text-muted!' : '[&_input]:text-accent-text!'}
             [&_input]:font-600 [&_input]:tabular-nums
           `}
         />
@@ -380,7 +397,7 @@ function MenuDisplaySetting({
           { label: '仅图标', value: 'icon' },
           { label: '图标和文字', value: 'text' },
         ]}
-        className="w-190px p-1! bg-sidebar! text-text-secondary! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent"
+        className="w-190px p-1! bg-sidebar! text-sidebar-text! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent-text! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent"
       />
     </div>
   );
@@ -398,6 +415,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
   const borderRadius = useAppSelector((state) => state.preferences.borderRadius);
   const controlBorderRadius = useAppSelector((state) => state.preferences.controlBorderRadius);
   const themeMode = useAppSelector((state) => state.preferences.themeMode);
+  const [palette, appearance] = splitThemeMode(themeMode);
   const navigationTheme = useAppSelector((state) => state.preferences.navigationTheme);
   const navigationIconOnly = useAppSelector((state) => state.preferences.navigationIconOnly);
   const headerToolsIconOnly = useAppSelector((state) => state.preferences.headerToolsIconOnly);
@@ -436,7 +454,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
           content: 'h-full! min-h-0! overflow-hidden!',
           indicator: 'hidden!',
           // 设置项与滑块统一使用平台主色，避免局部文字覆盖产生另一套强调色。
-          item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-text-secondary [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
+          item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-sidebar-text [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
         }}
         items={[
           {
@@ -449,19 +467,25 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             ),
             children: (
               <OverlayScroll direction="vertical" label="外观设置" className="px-6">
-                <section className="flex flex-col gap-3 pb-4" aria-labelledby={themeLabelId}>
+                <section className="flex flex-col gap-3 pb-4" aria-label="主题与外观">
+                  <ThemePaletteSetting
+                    value={palette}
+                    mode={resolvedTheme}
+                    disabled={disabled}
+                    onChange={(value) => onSave({ themeMode: createThemeMode(value, appearance) })}
+                  />
                   <h3 id={themeLabelId} className="m-0 text-14px font-600 leading-5 text-text">
                     主题模式
                   </h3>
                   <Radio.Group
                     name={themeLabelId}
                     aria-labelledby={themeLabelId}
-                    value={themeMode}
+                    value={appearance}
                     disabled={disabled}
                     onChange={(event) => {
                       const mode = event.target.value;
                       if (mode === 'light' || mode === 'dark' || mode === 'system')
-                        onSave({ themeMode: mode });
+                        onSave({ themeMode: createThemeMode(palette, mode) });
                     }}
                     className="grid! w-full! grid-cols-2 gap-3"
                   >
@@ -475,7 +499,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                         {mode === 'system' ? (
                           // 列间距含上排网格的 12px 与卡片两侧内边距 20px，使三张缩略图精确同宽。
                           <span className="grid w-full grid-cols-2 items-center gap-32px">
-                            <SystemThemePreview layoutMode={layoutMode} />
+                            <SystemThemePreview layoutMode={layoutMode} palette={palette} />
                             <span className="flex min-w-0 flex-1 flex-col gap-1">
                               <span className="flex items-center gap-2 text-14px font-500 leading-5">
                                 {label}
@@ -488,7 +512,11 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                           </span>
                         ) : (
                           <span className="flex w-full min-w-0 flex-col gap-2">
-                            <SettingsPreview layoutMode={layoutMode} themeMode={mode} />
+                            <SettingsPreview
+                              layoutMode={layoutMode}
+                              themeMode={mode}
+                              palette={palette}
+                            />
                             <span className="flex items-center justify-center gap-1.5 text-14px font-500 leading-5">
                               <span aria-hidden="true" className={`${icon} text-16px`} />
                               {label}
@@ -523,6 +551,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                           <NavigationColorPreview
                             mode={value}
                             themeMode={resolvedTheme}
+                            palette={palette}
                             iconOnly={navigationIconOnly}
                           />
                           <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
@@ -592,7 +621,11 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                         aria-label={mode === 'default' ? '标准布局' : '紧凑布局'}
                       >
                         <span className="flex w-full min-w-0 flex-col gap-2">
-                          <SettingsPreview layoutMode={mode} themeMode={resolvedTheme} />
+                          <SettingsPreview
+                            layoutMode={mode}
+                            themeMode={resolvedTheme}
+                            palette={palette}
+                          />
                           <span className="flex min-h-20px items-center justify-center gap-1.5 text-14px font-500 leading-5">
                             {mode === 'default' ? '标准布局' : '紧凑布局'}
                             {mode === defaultUserSettings.layoutMode && <SettingsDefaultBadge />}

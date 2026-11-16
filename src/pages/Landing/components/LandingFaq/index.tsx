@@ -72,7 +72,7 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
   return (
     <motion.div className={className} variants={variants}>
       <div
-        className={`overflow-hidden rounded-16.8px border border-solid [border-color:var(--faq-doc-border)] [background:var(--faq-doc-background)] [--faq-doc-background:#fff] [--faq-doc-border:#e5e5e5] [--faq-doc-text:#0a0a0a] [--faq-doc-muted:#414141] [--faq-doc-row:rgb(255_255_255/50%)] [--faq-doc-hover:rgb(245_245_245/50%)] [--faq-doc-divider:rgb(229_229_229/60%)] dark:[--faq-doc-background:#0a0a0a] dark:[--faq-doc-border:#1f1f1f] dark:[--faq-doc-text:#fff] dark:[--faq-doc-muted:#d6d6d6] dark:[--faq-doc-row:rgb(17_17_17/50%)] dark:[--faq-doc-hover:rgb(31_31_31/50%)] dark:[--faq-doc-divider:rgb(31_31_31/60%)] [&>a:not(:last-child)]:[border-bottom:1px_solid_var(--faq-doc-divider)]`}
+        className={`overflow-hidden rounded-16.8px border border-solid [border-color:var(--faq-doc-border)] [background:var(--faq-doc-background)] [--faq-doc-background:var(--color-settings-surface)] [--faq-doc-border:var(--color-border)] [--faq-doc-text:var(--color-popover-text)] [--faq-doc-muted:var(--color-text-secondary)] [--faq-doc-row:var(--color-settings-surface)] [--faq-doc-hover:var(--color-hover)] [--faq-doc-divider:var(--color-divider)] [&>a:not(:last-child)]:[border-bottom:1px_solid_var(--faq-doc-divider)]`}
       >
         {channels.map((channel) => (
           <a
@@ -148,13 +148,13 @@ export default function LandingFaq() {
                 <motion.h2
                   id="landing-faq-heading"
                   variants={item}
-                  className="m-0 text-3xl font-medium leading-[1.1] tracking-tighter text-neutral-900 dark:text-white sm:text-4xl lg:text-5xl"
+                  className="m-0 text-3xl font-medium leading-[1.1] tracking-tighter text-text sm:text-4xl lg:text-5xl"
                 >
                   常见问题
                 </motion.h2>
                 <motion.p
                   variants={item}
-                  className="m-0 mt-5 max-w-md text-base leading-relaxed text-neutral-600 dark:text-neutral-400"
+                  className="m-0 mt-5 max-w-md text-base leading-relaxed text-text-secondary"
                 >
                   了解参数何时生效、如何热更新，以及生产发布和回退时需要注意什么。
                 </motion.p>

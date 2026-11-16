@@ -68,7 +68,7 @@ export function HeaderUserMenu() {
           },
         }}
         popupRender={(menu) => (
-          <div className="w-72 rounded-ui border border-solid border-border-subtle bg-surface shadow-xl">
+          <div className="w-72 rounded-ui border border-solid border-border-subtle bg-settings-surface text-popover-text shadow-xl">
             <div className="flex items-center gap-2.5 px-5 py-3">
               <span
                 aria-hidden="true"
