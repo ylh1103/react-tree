@@ -1,34 +1,25 @@
-/**
- * 系统目录卡片：参照 Vercel Projects / GitHub 仓库卡片的克制层级——身份与重要性在上，描述之后
- * 紧跟醒目的参数入口，角色与负责人收进底部轻量元信息栏；彩色只留给重要性和参数入口，
- * 角色与关系标签不参与授权。
- */
-import {
-  Avatar,
-  Badge,
-  Button,
-  Descriptions,
-  Dropdown,
-  Modal,
-  Tag,
-  Tooltip,
-  Typography,
-} from 'antd';
+/** 系统目录卡片将系统身份、参数入口和成员信息分层展示。 */
+import { App, Avatar, Button, Descriptions, Dropdown, Modal, Tag, Tooltip, Typography } from 'antd';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
+import { requestSystemJoin } from '@/api/systems';
+import { systemCatalogKey } from '@/queries/systems';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
 import { platformHome } from '@/router/paths';
 import {
   peopleList,
   peopleNames,
-  riskLevelColor,
-  riskLevelLabel,
   systemRoleLabels,
   systemRoleTags,
+  organizationName,
+  systemCardFrame,
+  systemCardPadding,
+  systemCardFooter,
 } from '../model/presentation';
 
 /** 未接入的管理操作集中收纳并禁用，避免与可用的参数入口争夺注意力。 */
-function MySystemActions({ systemName }: { systemName: string }) {
+function SystemActions({ systemName, isMember }: { systemName: string; isMember: boolean }) {
   return (
     <Dropdown
       trigger={['click']}
@@ -37,7 +28,7 @@ function MySystemActions({ systemName }: { systemName: string }) {
         items: [
           { key: 'settings', label: '系统管理（待接入）', disabled: true },
           { key: 'users', label: '用户权限管理（待接入）', disabled: true },
-          { key: 'leave', label: '退出系统（待接入）', disabled: true },
+          ...(isMember ? [{ key: 'leave', label: '退出系统（待接入）', disabled: true }] : []),
         ],
       }}
     >
@@ -52,21 +43,17 @@ function MySystemActions({ systemName }: { systemName: string }) {
   );
 }
 
-/**
- * 参数入口是卡片的主操作，位于描述与元信息之间：两种平台用不同预设色的大号填充按钮区分，
- * 名称与数量分两行呈现；零数量和缺失数量不影响进入工作区。
- */
-function SystemEntries({ system }: { system: SystemInfo }) {
+/** 参数数量使用独立角标，完整单位保留在无障碍名称中。 */
+function SystemEntries({ system, locked }: { system: SystemInfo; locked: boolean }) {
   const navigate = useNavigate();
   return (
-    <div className="grid grid-cols-1 @[320px]/system-card:grid-cols-2 gap-2">
+    <div className="relative grid grid-cols-2 gap-2 before:pointer-events-none before:absolute before:inset-y-2.5 before:left-1/2 before:border-l before:border-l-solid before:border-l-border-subtle before:content-empty">
       {(
         [
           {
             platform: 'application',
             label: '应用参数',
-            icon: 'i-lucide-file-code-2',
-            color: 'primary',
+            icon: 'i-lucide-file-code',
             count: system.appCount,
             unit: '个应用',
           },
@@ -74,76 +61,118 @@ function SystemEntries({ system }: { system: SystemInfo }) {
             platform: 'database',
             label: '数据库参数',
             icon: 'i-lucide-database',
-            color: 'cyan',
             count: system.paramTypeCount,
             unit: '种参数类型',
           },
         ] as const
-      ).map(({ platform, label, icon, color, count, unit }) => (
-        <Tooltip key={platform} title={`${count ?? '—'} ${unit}`}>
-          <Button
-            block
-            color={color}
-            variant="filled"
-            className={`
-              group/entry h-60px! min-w-0! px-3! justify-start! gap-2!
-              [&>span:not(.ant-btn-icon)]:min-w-0 [&>span:not(.ant-btn-icon)]:flex-1
-            `}
-            icon={<span className={`${icon} w-20px h-20px`} aria-hidden="true" />}
-            onClick={() => navigate(platformHome(system.systemName, platform))}
-            aria-label={`进入 ${system.systemName} ${label}，${count ?? '—'} ${unit}`}
-          >
-            <span className="flex items-center gap-2 min-w-0">
-              <span className="flex flex-col items-start min-w-0 flex-1 text-left">
-                <span className="max-w-full truncate text-14px leading-20px font-600">{label}</span>
-                <span className="max-w-full truncate text-12px leading-18px opacity-75">
-                  <span className="font-600 tabular-nums">{count ?? '—'}</span> {unit}
-                </span>
-              </span>
+      ).map(({ platform, label, icon, count, unit }) => (
+        <Button
+          key={platform}
+          block
+          type="text"
+          disabled={locked}
+          className={`h-92px! min-w-0! px-1! rounded-ui! layout-focus ${locked ? 'text-text-muted!' : 'text-text! hover:bg-hover!'}`}
+          onClick={() => navigate(platformHome(system.systemName, platform))}
+          aria-label={`${system.systemName} ${label}，${count ?? '—'} ${unit}${locked ? '，加入后可进入' : ''}`}
+        >
+          <span className="flex w-full min-w-0 flex-col items-center gap-2">
+            <span
+              className={`relative inline-flex ${locked ? 'text-text-muted' : 'text-accent-text'}`}
+              aria-hidden="true"
+            >
+              <span className={`${icon} size-36px`} />
               <span
-                className="i-lucide-arrow-right hidden! @[360px]/system-card:inline-block! w-16px h-16px shrink-0 transition-transform group-hover/entry:translate-x-0.5 motion-reduce:transition-none"
-                aria-hidden="true"
-              />
+                className={`absolute -top-1 left-[calc(100%-6px)] min-w-18px rounded-full px-1 text-center text-11px leading-16px font-600 tabular-nums ring-2 ring-surface ${locked ? 'bg-divider text-text-muted' : 'bg-accent text-on-accent'}`}
+              >
+                {count ?? '—'}
+              </span>
             </span>
-          </Button>
-        </Tooltip>
+            <span className="max-w-full truncate text-14px leading-18px">{label}</span>
+          </span>
+        </Button>
       ))}
     </div>
   );
 }
 
-/** 重要性只用一枚小号预设色标签表达，A 级最醒目；文字等级保留，色彩不是唯一信息来源。 */
-function RiskTag({ level }: { level: string | undefined }) {
+/** 待审批来自目录响应，刷新或翻页后仍可见；提交成功也不会开放入口。 */
+function JoinSystemAction({ system }: { system: AllSystemInfo }) {
+  const { message } = App.useApp();
+  const client = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: requestSystemJoin,
+    onSuccess: () => {
+      void message.success('加入申请已提交');
+      return client.invalidateQueries({ queryKey: systemCatalogKey });
+    },
+    onError: (error) => void message.error(error.message),
+  });
+
+  if (system.joinRequestPending || mutation.isSuccess) {
+    return (
+      <Tag className="m-0!" color="gold" variant="filled">
+        待审批
+      </Tag>
+    );
+  }
+
+  return (
+    <Typography.Link
+      role="button"
+      tabIndex={0}
+      aria-disabled={mutation.isPending}
+      className="inline-flex items-center gap-1 text-12px! layout-focus"
+      aria-label={`申请加入 ${system.systemName}`}
+      onClick={() => {
+        if (!mutation.isPending) mutation.mutate(system.systemName);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          if (!event.repeat) event.currentTarget.click();
+        }
+      }}
+    >
+      <span className="i-lucide-user-round-plus size-12px shrink-0" aria-hidden="true" />
+      <span>{mutation.isPending ? '提交中…' : '申请加入'}</span>
+    </Typography.Link>
+  );
+}
+
+const riskLevelColors: Partial<Record<string, string>> = {
+  A: 'red',
+  B: 'orange',
+  C: 'gold',
+};
+
+/** 卡片保留等级文字，预设色随主题适配。 */
+function RiskTag({ level }: { level?: string }) {
+  const grade = level?.trim().toUpperCase();
   return (
     <Tag
-      variant="filled"
-      color={riskLevelColor(level)}
-      className="m-0! shrink-0! px-1.5! text-12px! leading-20px! font-500!"
+      variant="outlined"
+      color={grade ? riskLevelColors[grade.charAt(0)] : undefined}
+      className="m-0! inline-flex! h-18px! shrink-0! items-center rounded-full! bg-surface! px-1.5! text-11px! leading-none! font-600!"
       title="系统重要性等级"
-      aria-label={riskLevelLabel(level)}
     >
-      {level ? `${level} 级` : '未分级'}
+      <span>{grade ? `${grade} 级` : '未分级'}</span>
     </Tag>
   );
 }
 
-/** 我的角色或加入状态以色点 + 文字呈现，比实心标签更轻；颜色只辅助辨识，不推导访问权限。 */
-function RelationBadge({ system }: { system: MySystemInfo | AllSystemInfo }) {
-  const badge =
-    'role' in system
-      ? {
-          color: systemRoleTags[system.role]?.color ?? 'default',
-          text: systemRoleLabels[system.role] || '角色未配置',
-        }
-      : system.userRelation
-        ? { color: 'green', text: '已加入' }
-        : { color: 'default', text: '未加入' };
+/** 我的系统卡片根据目录角色显示标签。 */
+function SystemRoleTag({ system }: { system: MySystemInfo }) {
+  const role = Object.hasOwn(systemRoleTags, system.role) ? system.role : undefined;
+  const roleTag = role ? systemRoleTags[role] : undefined;
   return (
-    <Badge
-      color={badge.color === 'default' ? 'var(--color-text-muted)' : badge.color}
-      text={badge.text}
-      className="min-w-0 [&_.ant-badge-status-text]:text-12px! [&_.ant-badge-status-text]:text-text-secondary!"
-    />
+    <Tag
+      variant="filled"
+      color={roleTag?.color}
+      icon={roleTag && <span className={`${roleTag.icon} size-12px shrink-0`} aria-hidden="true" />}
+      className="m-0! inline-flex! shrink-0! items-center gap-1 px-1.5! text-12px! leading-20px!"
+    >
+      {role ? systemRoleLabels[role] : '角色未配置'}
+    </Tag>
   );
 }
 
@@ -155,13 +184,13 @@ function Owners({ value }: { value: string | undefined }) {
   }
   return (
     <Avatar.Group
-      size={22}
+      size={24}
       max={{
         count: 3,
         style: {
-          background: 'var(--color-hover)',
-          color: 'var(--color-accent-text)',
-          fontSize: 11,
+          background: 'var(--color-divider)',
+          color: 'var(--color-text-secondary)',
+          fontSize: 12,
           cursor: 'pointer',
         },
         popover: { title: `全部负责人（${people.length}）` },
@@ -175,8 +204,8 @@ function Owners({ value }: { value: string | undefined }) {
           title={`负责人：${person.id ? `${person.name} · ${person.id}` : person.name}`}
         >
           <Avatar
-            size={22}
-            className="bg-hover! text-accent-text! text-11px! font-600! cursor-default"
+            size={24}
+            className="bg-hover! text-accent-text! text-12px! font-500! cursor-default"
             aria-label={person.name}
           >
             {person.initial}
@@ -187,54 +216,46 @@ function Owners({ value }: { value: string | undefined }) {
   );
 }
 
-/** 两份目录共用卡片；角色和加入状态只读取各自接口字段，不推导访问权限。 */
+/** 两份目录共用卡片；入口状态由目录传入，实际访问仍由路由校验。 */
 export function SystemCard({
   system,
   onDetails,
+  entriesLocked = false,
 }: {
   system: MySystemInfo | AllSystemInfo;
   onDetails: () => void;
+  entriesLocked?: boolean;
 }) {
   const description = descriptionText(system.systemDesc);
   const isMine = 'role' in system;
-  const joined = isMine || Boolean(system.userRelation);
-  // 名称缩写只帮助视觉定位，不生成持久标识或推导系统类别。
-  const initials = Array.from(system.systemName).slice(0, 2).join('').toUpperCase();
-  const subtitle = [system.systemChineseName || '暂无中文名称', system.systemArchNo]
+  const subtitle = [
+    system.systemChineseName || '暂无中文名称',
+    system.ownGroup && organizationName(system.ownGroup),
+  ]
     .filter(Boolean)
     .join(' · ');
   return (
     <article
       className={`
-        workspace-panel [container-type:inline-size] [container-name:system-card] flex flex-col min-w-0 overflow-hidden
+        ${systemCardFrame}
         transition-[border-color,box-shadow] duration-200
         hover:border-accent-border-hover
-        hover:shadow-[0_8px_20px_-14px_var(--color-tree-filter-shadow)]
+        hover:shadow-[0_8px_24px_var(--color-tree-filter-shadow)]
         focus-within:border-accent motion-reduce:transition-none
       `}
       aria-label={`${system.systemName} ${isMine ? '我的系统' : '所有系统'}`}
     >
-      <div className="flex flex-col flex-1 gap-3 p-4 @[360px]/system-card:p-5">
-        <div className="flex items-start gap-3 min-w-0">
-          <span
-            className={`
-              flex h-36px w-36px shrink-0 items-center justify-center rounded-ui font-mono
-              text-13px font-600 tracking-wide
-              ${joined ? 'bg-hover text-accent-text' : 'border border-solid border-border-subtle text-text-muted'}
-            `}
-            aria-hidden="true"
-          >
-            {initials}
-          </span>
+      <div className={`flex flex-1 flex-col gap-2.5 ${systemCardPadding}`}>
+        <div className="flex min-w-0 items-start gap-2">
           <div className="min-w-0 flex-1">
-            <h2 className="m-0 min-w-0 text-15px leading-20px font-600">
+            <h2 className="m-0 flex min-w-0 items-center gap-1.5">
               <Tooltip title={`${system.systemName} · 查看系统详情`}>
                 <Button
                   type="text"
                   onClick={onDetails}
                   aria-label={`查看 ${system.systemName} 详情`}
                   className={`
-                    block! max-w-full! h-auto! p-0! text-text! text-15px! font-600! leading-20px!
+                    inline-flex! h-24px! min-w-0! max-w-full! items-center! p-0! text-text! text-18px! font-600! leading-24px!
                     hover:text-accent-text! hover:bg-transparent! focus-visible:outline-2
                     focus-visible:outline-solid focus-visible:outline-accent [&>span]:truncate
                   `}
@@ -242,36 +263,42 @@ export function SystemCard({
                   {system.systemName}
                 </Button>
               </Tooltip>
+              <RiskTag level={system.sysRiskLevel} />
             </h2>
             <Typography.Paragraph
               ellipsis={{
                 rows: 1,
-                tooltip: `${system.systemChineseName || '暂无中文名称'} · 架构办子系统编码：${system.systemArchNo || '未配置'}`,
+                tooltip: subtitle,
               }}
               className="m-0! mt-0.5! text-12px! leading-16px! text-text-muted!"
             >
               {subtitle}
             </Typography.Paragraph>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <RiskTag level={system.sysRiskLevel} />
-            {isMine && <MySystemActions systemName={system.systemName} />}
-          </div>
+          {!entriesLocked && (
+            <SystemActions
+              systemName={system.systemName}
+              isMember={isMine || system.userRelation === true}
+            />
+          )}
         </div>
         <Typography.Paragraph
           ellipsis={{ rows: 2, tooltip: { title: description, placement: 'top' } }}
-          className="m-0! text-13px! leading-20px! text-text-secondary! break-words"
+          className="m-0! text-14px! leading-18px! text-text-secondary! break-words"
         >
           {description}
         </Typography.Paragraph>
         {/* 描述按实际行数排版；同行卡片等高时把剩余高度放在入口上方，入口仍逐行对齐。 */}
-        <div className="mt-auto">
-          <SystemEntries system={system} />
+        <div className="mt-auto pt-1">
+          <SystemEntries system={system} locked={entriesLocked} />
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 min-w-0 min-h-44px px-4 py-2 @[360px]/system-card:px-5 border-t border-t-solid border-t-border-subtle">
-        <RelationBadge system={system} />
+      <div
+        className={`flex min-w-0 flex-wrap items-center justify-between gap-2 ${systemCardPadding} ${systemCardFooter}`}
+      >
         <Owners value={system.systemCharges} />
+        {isMine && <SystemRoleTag system={system} />}
+        {!isMine && entriesLocked && <JoinSystemAction system={system} />}
       </div>
     </article>
   );

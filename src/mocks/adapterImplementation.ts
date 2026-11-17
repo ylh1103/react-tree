@@ -8,6 +8,7 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
   if (/^https?:\/\//.test(config.url!)) return axios.getAdapter(['xhr', 'http'])(config);
   // 在延迟前固定请求所属用户，防止切换账号后旧请求写入新用户文档。
   const settingsKey = currentUserStorageKey('display-settings');
+  const joinRequestsKey = currentUserStorageKey('system-join-requests');
   await new Promise<void>((resolve, reject) => {
     if (config.signal?.aborted) {
       reject(new CanceledError());
@@ -77,7 +78,7 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     }
     return fail(405, '不支持的请求方法');
   }
-  const { allSystems, mySystems, systemPage, createSystem, accessSystem } =
+  const { allSystems, mySystems, systemPage, createSystem, accessSystem, requestSystemJoin } =
     await import('./systemService.ts');
   if (config.signal?.aborted) throw new CanceledError();
   if (url.pathname === '/api/systems/mine' && method === 'GET') {
@@ -103,13 +104,22 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     if (param('keyword') && mockConfig.systemAccessError)
       return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
     return response(
-      systemPage({
-        pageNum,
-        pageSize,
-        keyword: String(param('keyword') ?? ''),
-        userRelation: relation == null ? undefined : relation === true || relation === 'true',
-      }),
+      systemPage(
+        {
+          pageNum,
+          pageSize,
+          keyword: String(param('keyword') ?? ''),
+          userRelation: relation == null ? undefined : relation === true || relation === 'true',
+        },
+        joinRequestsKey,
+      ),
     );
+  }
+  if (url.pathname === '/api/systems/join-requests' && method === 'POST') {
+    if (joinRequestsKey === 'system-join-requests:anonymous') return fail(401, '请先登录');
+    if (typeof body?.systemName !== 'string' || !body.systemName.trim())
+      return fail(400, '请选择要加入的系统');
+    return response(requestSystemJoin(body.systemName, joinRequestsKey, fail));
   }
   if (url.pathname === '/api/systems') {
     if (method === 'GET') return response(allSystems());

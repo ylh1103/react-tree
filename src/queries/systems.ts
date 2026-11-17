@@ -28,10 +28,15 @@ export const mySystemsOptions = (openId = store.getState().user.userInfo?.openId
   });
 
 /** 页码、条数和所有筛选共同决定缓存；不使用上页占位，避免失败后误展示其他页的数据。 */
-export const systemPageOptions = (params: SystemPageParams) =>
+export const systemCatalogKey = ['systems', 'catalog'] as const;
+
+export const systemPageOptions = (
+  params: SystemPageParams,
+  openId = store.getState().user.userInfo?.openId ?? null,
+) =>
   queryOptions({
     ...routeQueryMountOptions,
-    queryKey: ['systems', 'catalog', params],
+    queryKey: [...systemCatalogKey, params, openId],
     queryFn: ({ signal }) => loadSystemPage(params, signal),
   });
 

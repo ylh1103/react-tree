@@ -51,39 +51,21 @@ export function organizationName(value: string | undefined) {
  */
 export const systemCardContainer = '@container';
 export const systemCardGrid =
-  'grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] auto-rows-fr gap-5';
+  'grid grid-cols-[repeat(auto-fill,minmax(min(100%,360px),1fr))] auto-rows-fr gap-3 @[640px]:gap-4 @[1200px]:gap-5';
+
+/** 正文卡片和加载骨架共用外框与边距，减少加载交接时的布局变化。 */
+export const systemCardFrame =
+  'workspace-panel rounded-16px! [container-type:inline-size] [container-name:system-card] flex min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
+export const systemCardPadding = 'p-3 @[360px]/system-card:p-3.5';
+export const systemCardFooter =
+  '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] py-2.5!';
 
 /** 两份系统目录默认每页 8 条，保留已有的每页数量选项。 */
 export const systemPageSizes = [8, 12, 24, 48];
 
-/** 风险等级仅作展示标记；A 为最高重要性。 */
-export function riskLevelLabel(value: string | undefined) {
-  return value ? `重要性 ${value}` : '重要性未配置';
-}
-
-/** 信号格数：A→4、B→3、C→2、D 及以后→1；未配置或非字母等级为 0，只影响视觉强度。 */
-export const riskLevelMax = 4;
-export function riskLevelRank(value: string | undefined) {
-  const letter = value?.trim().charAt(0).toUpperCase();
-  if (!letter || letter < 'A' || letter > 'Z') return 0;
-  return Math.max(1, riskLevelMax - (letter.charCodeAt(0) - 65));
-}
-
-/**
- * 标签色只用 Ant Design 预设色，深浅主题由组件算法自动适配；
- * 颜色仅辅助辨识，文字仍完整表达角色与等级，不参与授权判断。
- */
+/** 角色标签使用随主题适配的预设色，图标和文字也能独立区分角色。 */
 export const systemRoleTags: Record<SystemRole, { color: string; icon: string }> = {
-  R: { color: 'gold', icon: 'i-lucide-crown' },
+  R: { color: 'gold', icon: 'i-lucide-user-round-check' },
   D: { color: 'blue', icon: 'i-lucide-code-xml' },
   V: { color: 'cyan', icon: 'i-lucide-eye' },
 };
-
-/** A 最高重要性用最醒目的红色，逐级减弱；D 及以后、未配置回到中性色。 */
-export function riskLevelColor(value: string | undefined) {
-  const rank = riskLevelRank(value);
-  if (rank >= 4) return 'red';
-  if (rank === 3) return 'orange';
-  if (rank === 2) return 'gold';
-  return 'default';
-}

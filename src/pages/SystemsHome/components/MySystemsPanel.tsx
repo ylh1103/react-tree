@@ -40,13 +40,13 @@ export default function MySystemsPanel({
     <section aria-label="我的系统">
       <div className="@container mb-5">
         {/* 按工具栏实际可用宽度换行；桌面搜索框上限 420px，不随整页空白继续拉长。 */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="grid w-full @[520px]:w-auto max-w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] @[520px]:grid-cols-[minmax(0,420px)_150px_auto] items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 @[640px]:gap-3">
+          <div className="grid w-full @[640px]:w-auto max-w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] @[640px]:grid-cols-[minmax(0,420px)_150px_auto] items-center gap-2.5 @[640px]:gap-3">
             <Input
               allowClear
               aria-label="筛选我的系统"
               placeholder="系统名称、架构编码、组织或人员"
-              className="col-span-2 @[520px]:col-span-1 w-full! min-w-0!"
+              className="col-span-2 @[640px]:col-span-1 w-full! min-w-0!"
               value={search}
               onChange={(event) => {
                 setSearch(event.target.value);
@@ -80,7 +80,7 @@ export default function MySystemsPanel({
               刷新
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-3 ml-auto w-full @[520px]:w-auto">
+          <div className="grid grid-cols-2 gap-2.5 ml-auto w-full @[640px]:w-auto @[640px]:gap-3">
             <Button
               type="primary"
               onClick={onCreate}

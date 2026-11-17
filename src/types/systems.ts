@@ -29,6 +29,8 @@ export type SystemAccessInfo = AllSystemInfo & Partial<Pick<MySystemInfo, 'ystId
 /** 全部系统的加入状态独立于角色，不从负责人或组织信息推导。 */
 export interface AllSystemInfo extends SystemInfo {
   userRelation: boolean;
+  /** 加入申请待审批，只影响目录展示。 */
+  joinRequestPending?: boolean;
 }
 
 /** 所有系统的服务端分页条件；页码从 1 开始，筛选发生在服务端分页之前。 */

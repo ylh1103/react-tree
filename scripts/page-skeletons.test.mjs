@@ -9,6 +9,8 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { createServer } from 'vite';
 import { createGenerator } from 'unocss';
 import { createMockApplicationEnvironments } from '../src/mocks/applicationEnvironments.ts';
+import { createDemoLoginUser } from '../src/mocks/login.ts';
+import { setUserInfo } from '../src/store/slices/userSlice.ts';
 
 let vite;
 let createAppStore;
@@ -39,7 +41,10 @@ before(async () => {
 after(() => vite?.close());
 
 /** 使用真实页面和独立缓存控制 pending/fetching/error，不运行 loader 或业务接口。 */
-function setup(t, { Page, path, routePath, key, data, platform = 'application', staleTime = 0 }) {
+function setup(
+  t,
+  { Page, path, routePath, key, data, platform = 'application', staleTime = 0, user },
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime } } });
   if (data !== undefined) {
     client.setQueryData(key, data);
@@ -52,6 +57,7 @@ function setup(t, { Page, path, routePath, key, data, platform = 'application', 
     client.clear();
   });
   const store = createAppStore();
+  if (user) store.dispatch(setUserInfo(user));
   const render = () =>
     renderToStaticMarkup(
       createElement(
@@ -74,6 +80,33 @@ function setup(t, { Page, path, routePath, key, data, platform = 'application', 
 function AllSystemsFixture() {
   return createElement(allSystemsPanel, { active: true, onDetails: () => {} });
 }
+
+test('所有系统仅锁定未加入的普通成员，平台管理员直接进入', (t) => {
+  const params = { pageNum: 1, pageSize: 8, keyword: '' };
+  for (const [userType, userRelation, locked] of [
+    ['0', false, false],
+    ['1', true, false],
+    ['1', false, true],
+  ]) {
+    const user = createDemoLoginUser(userType);
+    const { render } = setup(t, {
+      Page: AllSystemsFixture,
+      path: '/catalog-test',
+      routePath: '/catalog-test',
+      key: ['systems', 'catalog', params, user.openId],
+      data: { ...params, records: [{ ...system, userRelation }], total: 1 },
+      user,
+    });
+    const html = render();
+    assert.equal(html.includes('申请加入 CAC'), locked);
+    assert.equal(html.includes('CAC 更多操作'), !locked);
+    const entries = [
+      ...html.matchAll(/<button\b[^>]*aria-label="CAC (?:应用|数据库)参数[^"]*"[^>]*>/g),
+    ];
+    assert.equal(entries.length, 2);
+    for (const [entry] of entries) assert.equal(/\bdisabled=""/.test(entry), locked);
+  }
+});
 
 function cases() {
   return [
@@ -106,7 +139,7 @@ function cases() {
       Page: AllSystemsFixture,
       path: '/catalog-test',
       routePath: '/catalog-test',
-      key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }],
+      key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }, null],
       message: '系统列表加载中',
       data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 8 },
     },

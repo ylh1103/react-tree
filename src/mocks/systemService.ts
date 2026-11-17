@@ -55,7 +55,7 @@ export function allSystems(): AllSystemInfo[] {
 }
 
 /** 模拟后端先查询再分页；返回真实 total 和当前有效页，空结果固定为第一页。 */
-export function systemPage(params: SystemPageParams): SystemPage {
+export function systemPage(params: SystemPageParams, joinRequestsKey: string): SystemPage {
   const keyword = params.keyword.trim().toLocaleLowerCase();
   const filtered = allSystems().filter(
     (item) =>
@@ -74,12 +74,28 @@ export function systemPage(params: SystemPageParams): SystemPage {
     params.pageNum,
     Math.max(1, Math.ceil(filtered.length / params.pageSize)),
   );
+  const pending = new Set(readMock<string[]>(joinRequestsKey, []));
   return {
-    records: filtered.slice((pageNum - 1) * params.pageSize, pageNum * params.pageSize),
+    records: filtered
+      .slice((pageNum - 1) * params.pageSize, pageNum * params.pageSize)
+      .map((item) =>
+        !item.userRelation && pending.has(item.systemName)
+          ? { ...item, joinRequestPending: true }
+          : item,
+      ),
     total: filtered.length,
     pageNum,
     pageSize: params.pageSize,
   };
+}
+
+/** 申请按发起账号保存；重复提交返回同一待审批状态，不写入成员关系。 */
+export function requestSystemJoin(name: string, key: string, fail: Fail) {
+  accessSystem(name, fail);
+  if (Object.hasOwn(relations(), name)) return fail(409, '你已加入该系统');
+  const pending = readMock<string[]>(key, []);
+  if (!pending.includes(name)) writeMock(key, [...pending, name]);
+  return { status: 'pending' } as const;
 }
 /** 我的目录单独返回接口角色；旧 systems 存储里的遗留身份字段仍被剔除。 */
 export function mySystems(): MySystemInfo[] {

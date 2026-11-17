@@ -5,6 +5,7 @@ import { Alert, Button, Empty, Input } from 'antd';
 import { systemPageOptions } from '@/queries/systems';
 import type { AllSystemInfo, SystemPageParams } from '@/types/systems';
 import { isAccessDenied } from '@/utils/systems';
+import { useAppSelector } from '@/store/hooks';
 import RouteStatusPage from '@/pages/RouteStatus';
 import { systemCardContainer, systemCardGrid, systemPageSizes } from '../model/presentation';
 import { SystemCard } from './SystemPresentation';
@@ -24,7 +25,9 @@ export default function AllSystemsPanel({
     pageSize: systemPageSizes[0],
     keyword: '',
   });
-  const query = useQuery({ ...systemPageOptions(params), enabled: active });
+  const openId = useAppSelector((state) => state.user.userInfo?.openId ?? null);
+  const isPlatformAdmin = useAppSelector((state) => state.user.userInfo?.userType === '0');
+  const query = useQuery({ ...systemPageOptions(params, openId), enabled: active });
   function search() {
     const keyword = draft.trim();
     if (keyword === params.keyword && params.pageNum === 1) void query.refetch();
@@ -33,12 +36,12 @@ export default function AllSystemsPanel({
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
     <section aria-label="所有系统">
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-2.5 mb-5 min-[641px]:gap-3">
         <Input
           allowClear
           aria-label="筛选所有系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-420px! min-w-0! max-[640px]:flex-1"
+          className="w-420px! min-w-0!"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onPressEnter={search}
@@ -74,6 +77,7 @@ export default function AllSystemsPanel({
               <SystemCard
                 key={system.systemName}
                 system={system}
+                entriesLocked={!isPlatformAdmin && system.userRelation !== true}
                 onDetails={() => onDetails(system)}
               />
             ))}

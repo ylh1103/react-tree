@@ -17,3 +17,9 @@ export const loadSystemPage = (params: SystemPageParams, signal?: AbortSignal) =
   requestData<SystemPage>({ url: '/api/systems/page', params, signal });
 export const createSystem = (data: CreateSystemInput) =>
   requestData<SystemInfo>({ url: '/api/systems', method: 'POST', data });
+export const requestSystemJoin = (systemName: string) =>
+  requestData<{ status: 'pending' }>({
+    url: '/api/systems/join-requests',
+    method: 'POST',
+    data: { systemName },
+  });

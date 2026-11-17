@@ -6,7 +6,13 @@ import { CancelledError } from '@tanstack/react-query';
 import test, { beforeEach, afterEach } from 'node:test';
 import { mockConfig } from '../src/mocks/config.ts';
 import { writeMock, readMock } from '../src/mocks/storage.ts';
-import { loadSystems, loadMySystems, loadSystemPage, createSystem } from '../src/api/systems.ts';
+import {
+  loadSystems,
+  loadMySystems,
+  loadSystemPage,
+  createSystem,
+  requestSystemJoin,
+} from '../src/api/systems.ts';
 import { SystemAccessError } from '../src/api/systemAccessError.ts';
 import { loadSystemAccess } from '../src/api/systemAccess.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
@@ -56,6 +62,39 @@ test('全部目录只包含加入标记，空 Store 不自行构造身份，访�
   const access = await loadSystemAccess('CAC');
   for (const field of ['ystId', 'role']) assert.equal(field in access, false);
   assert.equal(access.userRelation, true);
+});
+
+test('加入申请可重复提交，按账号展示待审批且不授予访问权限', async (t) => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  let ystId = 'join-request-user';
+  const storage = new Map();
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key) =>
+        key === 'parameter-management:login'
+          ? JSON.stringify({ version: 1, loggedIn: true, user: { ystId } })
+          : (storage.get(key) ?? null),
+      setItem: (key, value) => storage.set(key, value),
+    },
+  });
+  t.after(() => {
+    if (descriptor) Object.defineProperty(globalThis, 'localStorage', descriptor);
+    else delete globalThis.localStorage;
+  });
+
+  const { systemName } = (await loadSystems()).find((item) => !item.userRelation);
+  const params = { keyword: systemName, pageNum: 1, pageSize: 999 };
+  const readSystem = async () =>
+    (await loadSystemPage(params)).records.find((item) => item.systemName === systemName);
+  assert.deepEqual(await requestSystemJoin(systemName), { status: 'pending' });
+  assert.deepEqual(await requestSystemJoin(systemName), { status: 'pending' });
+  assert.equal((await readSystem()).joinRequestPending, true);
+  assert.equal((await readSystem()).userRelation, false);
+  await assert.rejects(requireSystemAccess(systemName), (error) => error.status === 403);
+  ystId = 'join-request-other-user';
+  assert.equal((await readSystem()).joinRequestPending, undefined);
+  await assert.rejects(requestSystemJoin('CAC'), (error) => error.status === 409);
 });
 
 test('创建系统保留业务校验和空清单，不从虚构用户填充负责人或角色', async () => {
@@ -184,8 +223,9 @@ test('分页缓存包含所有查询维度，取消的分页读取不影响其�
     { ...params, pageSize: 8 },
     { ...params, keyword: 'CAC' },
     { ...params, userRelation: false },
-  ].map(systemPageOptions);
+  ].map((pageParams) => systemPageOptions(pageParams));
   assert.equal(new Set(options.map((option) => JSON.stringify(option.queryKey))).size, 5);
+  assert.notDeepEqual(systemPageOptions(params, 'another-user').queryKey, options[0].queryKey);
   await Promise.all(options.map((option) => queryClient.query(option)));
   assert.equal(queryClient.getQueryData(options[0].queryKey).records.length, 2);
   assert.equal(queryClient.getQueryData(options[1].queryKey).pageNum, 2);
