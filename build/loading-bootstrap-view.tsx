@@ -60,23 +60,23 @@ export function renderBootstrapLoading() {
       <section
         role="alert"
         aria-labelledby="bootstrap-failure-title"
-        className="box-border hidden min-h-screen flex-col bg-canvas px-6 py-8 text-text desktop:px-12 desktop:py-10 [[data-bootstrap-failed]_&]:flex"
+        className="@container box-border hidden min-h-full w-full min-w-0 flex-col bg-canvas px-[clamp(1rem,4vw,3rem)] py-[clamp(1.5rem,5dvh,3rem)] text-text [[data-bootstrap-failed]_&]:flex"
       >
-        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center [@media(min-height:700px)]:-translate-y-8 py-12 desktop:py-16">
-          <div className="grid items-center gap-10 desktop:grid-cols-[1fr_480px] desktop:gap-16">
+        <div className="mx-auto flex w-full max-w-560px flex-1 flex-col justify-center @[760px]:max-w-1040px">
+          <div className="grid min-w-0 gap-5 @[760px]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] @[760px]:items-center @[760px]:gap-x-[clamp(2rem,6cqi,4rem)]">
             <div className="min-w-0">
               <h1
                 id="bootstrap-failure-title"
-                className="m-0 text-32px font-600 leading-12 tracking-tight desktop:text-40px desktop:leading-14"
+                className="m-0 text-[clamp(1.75rem,5cqi,2.5rem)] font-600 leading-tight tracking-tight"
               >
                 应用启动失败
               </h1>
-              <p className="mb-0 mt-5 text-15px leading-8 text-text-secondary">
+              <p className="mb-0 mt-3 text-15px leading-7 @[760px]:mt-5 text-text-secondary">
                 启动过程中遇到问题，暂时无法打开工作区。
                 <br />
                 请刷新重试，或联系技术支持协助排查。
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-5 grid gap-2 @[400px]:flex @[400px]:flex-wrap @[400px]:items-center @[400px]:gap-3 @[760px]:mt-8">
                 <button
                   id="bootstrap-reload"
                   type="button"
@@ -96,13 +96,16 @@ export function renderBootstrapLoading() {
                 </button>
               </div>
             </div>
-            <div aria-hidden="true" className="mx-auto w-full max-w-480px">
+            <div
+              aria-hidden="true"
+              className="mx-auto w-full max-w-[clamp(17.5rem,80cqi,20rem)] @[760px]:max-w-480px"
+            >
               <FailureIllustration />
             </div>
           </div>
           {/* 原生操作栏对齐 PageDetails；错误内容仅由内联脚本通过 textContent 创建。 */}
-          <div className="mt-10 min-w-0 border-0 border-t border-solid border-border-subtle pt-5 text-left desktop:mt-14">
-            <div className="flex items-center gap-4">
+          <div className="mt-5 min-w-0 border-0 border-t border-solid border-border-subtle pt-3 text-left @[400px]:pt-5 @[760px]:mt-10">
+            <div className="grid min-w-0 gap-1 @[400px]:flex @[400px]:items-center @[400px]:gap-4">
               <button
                 id="bootstrap-toggle"
                 type="button"
@@ -120,7 +123,7 @@ export function renderBootstrapLoading() {
                   未提供具体失败原因
                 </span>
               </button>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 <button
                   id="bootstrap-raw"
                   type="button"
@@ -161,7 +164,7 @@ export function renderBootstrapLoading() {
               role="region"
               aria-label="错误诊断信息"
               hidden
-              className="mt-4 rounded-8px border border-solid border-border-subtle bg-surface p-4 desktop:p-5"
+              className="mt-4 rounded-8px border border-solid border-border-subtle bg-surface p-2 @[400px]:p-4 @[760px]:p-5"
             >
               <div id="bootstrap-failure-details" />
               <div

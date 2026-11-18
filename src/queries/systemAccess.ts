@@ -19,5 +19,9 @@ export async function resolveSystemAccess(
   signal.throwIfAborted();
   // 只信任本次查询返回的明确加入状态，不再为鉴权读取我的系统或使用其旧缓存。
   if (user.userType === '0' || system.userRelation === true) return system;
-  throw new SystemAccessError(403, '尚未加入该系统');
+  throw new SystemAccessError(403, '尚未加入该系统', {
+    systemName: system.systemName,
+    systemChineseName: system.systemChineseName,
+    systemCharges: system.systemCharges,
+  });
 }

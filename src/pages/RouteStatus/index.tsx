@@ -1,7 +1,11 @@
 /** 路由异常展示：保留系统与地址上下文，按失败原因提供明确的恢复入口，不自行推导访问权限。 */
 import { Button } from 'antd';
 import { useContext } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useLinkClickHandler, useLocation, useMatch } from 'react-router';
+import { AppFailure } from '@/components/AppFailure';
+import JoinSystemAction from '@/components/JoinSystemAction';
+import type { SystemJoinTarget } from '@/types/systems';
 import { SystemContext } from '@/contexts/SystemContext';
 import { platformHome } from '@/router/paths';
 import StatusIllustration from './StatusIllustration';
@@ -9,14 +13,28 @@ import StatusIllustration from './StatusIllustration';
 interface RouteStatusProps {
   forbidden?: boolean;
   scope?: 'page' | 'system';
+  joinTarget?: SystemJoinTarget;
+}
+
+/** 状态页也会作为路由错误回退渲染；独立捕捉其运行时错误，不再交回处理原 403/404 的路由边界。 */
+export default function RouteStatusPage(props: RouteStatusProps) {
+  return (
+    <ErrorBoundary FallbackComponent={AppFailure}>
+      <RouteStatusContent {...props} />
+    </ErrorBoundary>
+  );
 }
 
 /** 系统概览入口仅使用已通过授权的布局上下文，根错误边界也能从 URL 展示目标系统标识。 */
-export default function RouteStatusPage({ forbidden = false, scope = 'page' }: RouteStatusProps) {
+function RouteStatusContent({ forbidden = false, scope = 'page', joinTarget }: RouteStatusProps) {
   const { pathname } = useLocation();
   const systemMatch = useMatch('/systems/:systemName/*');
   const workspace = useContext(SystemContext);
   const systemName = systemMatch?.params.systemName;
+  const applicationTarget =
+    forbidden && scope === 'system' && joinTarget?.systemName === systemName
+      ? joinTarget
+      : undefined;
   const title = forbidden
     ? scope === 'system'
       ? '无系统访问权限'
@@ -26,7 +44,9 @@ export default function RouteStatusPage({ forbidden = false, scope = 'page' }: R
       : '页面不存在';
   const description = forbidden
     ? scope === 'system'
-      ? '请联系系统管理员确认当前账号的访问权限。'
+      ? applicationTarget
+        ? '你尚未加入该系统，可以申请加入并将申请链接发给系统负责人。'
+        : '请联系系统管理员确认当前账号的访问权限。'
       : '请联系管理员确认当前账号对该页面或资源的访问权限。'
     : scope === 'system'
       ? '请检查系统地址，或返回系统列表重新选择。'
@@ -44,11 +64,13 @@ export default function RouteStatusPage({ forbidden = false, scope = 'page' }: R
     />
   );
   const heading = (
-    <h1 className="m-0 text-40px font-600 leading-14 tracking-tight text-text">{title}</h1>
+    <h1 className="m-0 text-[clamp(1.75rem,5cqi,2.5rem)] font-600 leading-tight tracking-tight text-text">
+      {title}
+    </h1>
   );
   const detail = (
     <>
-      <p className="m-0 break-words text-15px leading-8 text-text-secondary">{description}</p>
+      <p className="m-0 break-words text-15px leading-7 text-text-secondary">{description}</p>
       <dl className="m-0 mt-5 flex items-start gap-3 border-l-2 border-l-solid border-accent-border py-1 pl-3 text-12px leading-5">
         <dt className="shrink-0 text-text-muted">{systemName ? '目标系统' : '访问地址'}</dt>
         <dd className="m-0 min-w-0 break-all font-mono text-text-secondary">
@@ -58,7 +80,10 @@ export default function RouteStatusPage({ forbidden = false, scope = 'page' }: R
     </>
   );
   const actions = (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="grid gap-2 @[400px]:flex @[400px]:flex-wrap @[400px]:items-center @[400px]:gap-3">
+      {applicationTarget && (
+        <JoinSystemAction key={applicationTarget.systemName} system={applicationTarget} primary />
+      )}
       {overview && (
         <Button
           type="primary"
@@ -76,7 +101,7 @@ export default function RouteStatusPage({ forbidden = false, scope = 'page' }: R
         </Button>
       )}
       <Button
-        type={overview ? 'default' : 'primary'}
+        type={overview || applicationTarget ? 'default' : 'primary'}
         href="/"
         onClick={handleSystemsClick}
         icon={<span aria-hidden="true" className="i-lucide:arrow-left text-4" />}
@@ -92,23 +117,24 @@ export default function RouteStatusPage({ forbidden = false, scope = 'page' }: R
     </div>
   );
   const content = (
-    <div className="min-w-0 flex-[1_1_360px]">
+    <div className="min-w-0">
       {heading}
-      <div className="mt-5">{detail}</div>
-      <div className="mt-8">{actions}</div>
+      <div className="mt-3 @[760px]:mt-5">{detail}</div>
+      <div className="mt-5 @[760px]:mt-8">{actions}</div>
     </div>
   );
-  // 外壳已有最小宽度，按内容区剩余空间自然换行，避免视口断点让宽容器提前变成单栏。
-  // 插画画幅固定且不参与压缩；内容超高时由父级滚动，不做位移以免长文案越过顶部。
+  // 按内容区宽度切换单双列，兼容独立状态页和带侧栏的工作区。窄屏先展示操作，插画随列宽缩放。
   return (
     <section
-      className="box-border flex min-h-full w-full flex-col bg-canvas px-12 py-[clamp(16px,4dvh,40px)] text-text"
+      className="@container box-border flex min-h-full w-full min-w-0 flex-col bg-canvas px-[clamp(1rem,4vw,3rem)] py-[clamp(1.5rem,4dvh,2.5rem)] text-text"
       aria-label={title}
     >
       <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center">
-        <div className="flex flex-wrap items-center gap-x-16 gap-y-8">
+        <div className="mx-auto grid w-full max-w-560px gap-5 @[760px]:max-w-none @[760px]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] @[760px]:items-center @[760px]:gap-x-[clamp(2rem,6cqi,4rem)]">
           {content}
-          <div className="mx-auto h-360px w-480px shrink-0">{icon}</div>
+          <div className="mx-auto w-full max-w-[clamp(17.5rem,80cqi,20rem)] @[760px]:max-w-480px">
+            {icon}
+          </div>
         </div>
       </div>
     </section>

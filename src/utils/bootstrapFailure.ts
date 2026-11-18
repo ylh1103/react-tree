@@ -58,7 +58,7 @@ export function startBootstrapFailure(
         if (entry.kind === 'frame') {
           const row = element(
             'div',
-            `grid gap-x-6 border-0 border-l-2 border-solid px-3 py-1.5 desktop:grid-cols-[230px_minmax(0,1fr)] ${entry.project ? 'border-accent bg-canvas' : 'border-transparent'}`,
+            `grid gap-x-6 border-0 border-l-2 border-solid px-3 py-1.5 @[760px]:grid-cols-[230px_minmax(0,1fr)] ${entry.project ? 'border-accent bg-canvas' : 'border-transparent'}`,
           );
           row.title = entry.raw.trim();
           row.append(

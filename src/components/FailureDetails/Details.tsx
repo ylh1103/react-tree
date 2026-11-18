@@ -50,8 +50,8 @@ function PageDetails({ error, text }: { error: unknown; text: string }) {
     }
   };
   return (
-    <div className="min-w-0 border-0 border-t border-solid border-border-subtle pt-5 text-left text-text">
-      <div className="flex items-center gap-4">
+    <div className="min-w-0 border-0 border-t border-solid border-border-subtle pt-3 text-left text-text @[400px]:pt-5">
+      <div className="grid min-w-0 gap-1 @[400px]:flex @[400px]:items-center @[400px]:gap-4">
         <Button
           type="text"
           size="small"
@@ -76,7 +76,7 @@ function PageDetails({ error, text }: { error: unknown; text: string }) {
         >
           <span className="block truncate">{summary}</span>
         </Button>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           {expanded && (
             <Button
               type="text"

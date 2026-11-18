@@ -55,7 +55,7 @@ export function allSystems(): AllSystemInfo[] {
 }
 
 /** 模拟后端先查询再分页；返回真实 total 和当前有效页，空结果固定为第一页。 */
-export function systemPage(params: SystemPageParams, joinRequestsKey: string): SystemPage {
+export function systemPage(params: SystemPageParams): SystemPage {
   const keyword = params.keyword.trim().toLocaleLowerCase();
   const filtered = allSystems().filter(
     (item) =>
@@ -74,15 +74,8 @@ export function systemPage(params: SystemPageParams, joinRequestsKey: string): S
     params.pageNum,
     Math.max(1, Math.ceil(filtered.length / params.pageSize)),
   );
-  const pending = new Set(readMock<string[]>(joinRequestsKey, []));
   return {
-    records: filtered
-      .slice((pageNum - 1) * params.pageSize, pageNum * params.pageSize)
-      .map((item) =>
-        !item.userRelation && pending.has(item.systemName)
-          ? { ...item, joinRequestPending: true }
-          : item,
-      ),
+    records: filtered.slice((pageNum - 1) * params.pageSize, pageNum * params.pageSize),
     total: filtered.length,
     pageNum,
     pageSize: params.pageSize,

@@ -9,6 +9,7 @@ import { Outlet, useMatch, useParams } from 'react-router';
 import { mySystemsOptions, systemAccessOptions } from '@/queries/systems';
 import { useAppSelector } from '@/store/hooks';
 import { HttpError } from '@/http/request';
+import { SystemAccessError } from '@/api/systemAccessError';
 import { SystemContext } from '@/contexts/SystemContext';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
@@ -37,7 +38,11 @@ export default function SystemLayout() {
   if (isAccessDenied(query.error))
     return (
       <SiteLayout>
-        <RouteStatusPage scope="system" forbidden />
+        <RouteStatusPage
+          scope="system"
+          forbidden
+          joinTarget={query.error instanceof SystemAccessError ? query.error.joinTarget : undefined}
+        />
       </SiteLayout>
     );
   if (query.error instanceof HttpError && query.error.status === 404)

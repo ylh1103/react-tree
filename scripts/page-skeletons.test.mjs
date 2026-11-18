@@ -74,37 +74,96 @@ function setup(
         ),
       ),
     );
-  return { client, render };
+  return { client, render, router };
 }
 
 function AllSystemsFixture() {
-  return createElement(allSystemsPanel, { active: true, onDetails: () => {} });
+  return createElement(allSystemsPanel, {
+    view: 'card',
+    onViewChange: () => {},
+    keyword: '',
+    onKeywordChange: () => {},
+    defaultPageSize: 8,
+    onDetails: () => {},
+  });
 }
+
+function AllSystemsListFixture() {
+  return createElement(allSystemsPanel, {
+    view: 'list',
+    onViewChange: () => {},
+    keyword: '',
+    onKeywordChange: () => {},
+    defaultPageSize: 8,
+    onDetails: () => {},
+  });
+}
+
+test('系统首页从链接恢复页签、关键词、角色和展示模式', async (t) => {
+  const mine = '/?mineKeyword=%E6%B5%8B%E8%AF%95&role=V&mineView=list';
+  const { render, router } = setup(t, {
+    Page: home,
+    path: `${mine}&tab=all&allView=card`,
+    routePath: '/',
+    key: ['systems', 'mine', null],
+    data: [
+      { ...system, role: 'V' },
+      { ...system, systemName: 'DEV', role: 'D' },
+      { ...system, systemName: 'OTHER', systemChineseName: '其他系统', role: 'V' },
+    ],
+    staleTime: Infinity,
+  });
+  assert.match(
+    render(),
+    /role="tab"[^>]*aria-selected="true"[^>]*><span[^>]*><span[^>]*><\/span>所有系统/,
+  );
+  await router.navigate(mine);
+  const html = render();
+  assert.match(html, /aria-label="筛选我的系统"[^>]*value="测试"/);
+  assert.match(
+    html,
+    /ant-segmented-item-selected[^>]*><input[^>]*checked=""[^>]*><div[^>]*title="列表"/,
+  );
+  assert.match(html, /aria-label="CAC 我的系统"/);
+  assert.doesNotMatch(html, /aria-label="(?:DEV|OTHER) 我的系统"/);
+});
 
 test('所有系统仅锁定未加入的普通成员，平台管理员直接进入', (t) => {
   const params = { pageNum: 1, pageSize: 8, keyword: '' };
-  for (const [userType, userRelation, locked] of [
-    ['0', false, false],
-    ['1', true, false],
-    ['1', false, true],
-  ]) {
-    const user = createDemoLoginUser(userType);
-    const { render } = setup(t, {
-      Page: AllSystemsFixture,
-      path: '/catalog-test',
-      routePath: '/catalog-test',
-      key: ['systems', 'catalog', params, user.openId],
-      data: { ...params, records: [{ ...system, userRelation }], total: 1 },
-      user,
-    });
-    const html = render();
-    assert.equal(html.includes('申请加入 CAC'), locked);
-    assert.equal(html.includes('CAC 更多操作'), !locked);
-    const entries = [
-      ...html.matchAll(/<button\b[^>]*aria-label="CAC (?:应用|数据库)参数[^"]*"[^>]*>/g),
-    ];
-    assert.equal(entries.length, 2);
-    for (const [entry] of entries) assert.equal(/\bdisabled=""/.test(entry), locked);
+  for (const Page of [AllSystemsFixture, AllSystemsListFixture]) {
+    for (const [userType, userRelation, locked] of [
+      ['0', false, false],
+      ['1', true, false],
+      ['1', false, true],
+    ]) {
+      const user = createDemoLoginUser(userType);
+      const { render } = setup(t, {
+        Page,
+        path: '/catalog-test',
+        routePath: '/catalog-test',
+        key: ['systems', 'catalog', params, user.openId],
+        data: { ...params, records: [{ ...system, userRelation }], total: 1 },
+        user,
+      });
+      const html = render();
+      assert.equal(html.includes('申请加入 CAC'), locked);
+      assert.equal(html.includes('CAC 更多操作'), !locked);
+      const entries = [
+        ...html.matchAll(/<(a|button)\b[^>]*aria-label="CAC (?:应用|数据库)参数[^"]*"[^>]*>/g),
+      ];
+      assert.equal(entries.length, 2);
+      for (const [index, [entry, tag]] of entries.entries()) {
+        const href = index === 0 ? '/systems/CAC/overview' : '/systems/CAC/db';
+        assert.equal(tag, locked ? 'button' : 'a');
+        assert.equal(/\bdisabled=""/.test(entry), locked);
+        assert.equal(entry.match(/\bhref="([^"]+)"/)?.[1], locked ? undefined : href);
+      }
+      if (!locked) {
+        const actionsIndex = html.indexOf('aria-label="CAC 更多操作"');
+        const endOfEntries = entries.at(-1).index;
+        assert.equal(actionsIndex > endOfEntries, Page === AllSystemsListFixture);
+      }
+    }
   }
 });
 
@@ -382,7 +441,9 @@ test('页面分栏骨架沿用 URL 解码和历史折叠尺寸，不创建交互
 });
 
 test('业务骨架布局工具类有实际样式，系统卡片保持与正文一致的自适应网格', async (t) => {
-  for (const config of cases()) {
+  const configs = cases();
+  const catalog = configs.find(({ Page }) => Page === AllSystemsFixture);
+  for (const config of [...configs, { ...catalog, Page: AllSystemsListFixture }]) {
     const html = setup(t, { ...config, data: undefined }).render();
     const tokens = new Set(
       [...html.matchAll(/class="([^"]+)"/g)].flatMap(([, classes]) =>

@@ -26,6 +26,13 @@ export default defineConfig({
         .map((name) => [name.slice('--color-'.length), `var(${name})`]),
     ),
   },
+  preflights: [
+    {
+      // 普通链接复用 Ant Design 的主题色，保留导航等位置主动设置的颜色。
+      getCSS: () =>
+        ':where(a[href]){color:var(--color-link)}:where(a[href]:hover){color:var(--color-link-hover)}:where(a[href]:active){color:var(--color-link-active)}',
+    },
+  ],
   shortcuts: {
     // 根节点统一原生滚动条配色，覆盖 body 弹层；后代选择器降低优先级，保留局部隐藏与悬停行为。
     'app-scrollbars':

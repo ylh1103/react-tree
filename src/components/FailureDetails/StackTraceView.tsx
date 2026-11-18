@@ -17,7 +17,7 @@ export function StackTrace({ text, id, raw = false }: { text: string; id: string
       id={id}
       role="region"
       aria-label="错误诊断信息"
-      className="mt-4 rounded-8px border border-solid border-border-subtle bg-surface p-4 desktop:p-5"
+      className="mt-4 rounded-8px border border-solid border-border-subtle bg-surface p-2 @[400px]:p-4 @[760px]:p-5"
     >
       {result?.failed && (
         <p role="status" className="mb-2 mt-0 text-12px text-text-secondary">
@@ -34,7 +34,7 @@ export function StackTrace({ text, id, raw = false }: { text: string; id: string
             <li key={`${index}:${entry.raw}`} className={index ? 'mt-1' : ''}>
               {entry.kind === 'frame' ? (
                 <div
-                  className={`grid gap-x-6 border-0 border-l-2 border-solid px-3 py-1.5 desktop:grid-cols-[230px_minmax(0,1fr)] ${entry.project ? 'border-accent bg-canvas' : 'border-transparent'}`}
+                  className={`grid gap-x-6 border-0 border-l-2 border-solid px-3 py-1.5 @[760px]:grid-cols-[230px_minmax(0,1fr)] ${entry.project ? 'border-accent bg-canvas' : 'border-transparent'}`}
                   title={entry.raw.trim()}
                 >
                   <div className={entry.project ? 'font-600 text-text' : 'text-text-secondary'}>

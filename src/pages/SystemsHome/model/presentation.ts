@@ -1,11 +1,19 @@
 /** 系统目录的纯展示映射：只解读接口字段，不推导身份、成员关系或访问权限。 */
 import type { SystemRole } from '@/types/systems';
 
-export const systemRoleLabels: Record<SystemRole, string> = {
-  V: '观察者',
-  D: '开发者',
-  R: '系统负责人',
-};
+export type SystemView = 'card' | 'list';
+
+export const systemListLayout = 'grid gap-2';
+
+/** 列表正文和骨架共用分栏：先并排入口，宽度足够后再把负责人及操作移到右列。 */
+export const systemListRow =
+  'workspace-panel grid min-w-0 @[960px]:grid-cols-[minmax(0,1fr)_240px] @[960px]:items-center';
+export const systemListBody =
+  'grid min-w-0 items-center gap-2 px-3 py-2 @[560px]:grid-cols-[minmax(0,1fr)_240px]';
+export const systemListFooter =
+  'flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-t-solid border-divider px-3 py-2 @[960px]:border-t-0';
+
+export { systemRoleLabels } from '@/utils/systemRoles';
 
 /** 目录展示姓名，完整的姓名/编号串仍在提示与详情中保留。 */
 export function peopleNames(value: string | undefined) {
@@ -18,24 +26,6 @@ export function peopleNames(value: string | undefined) {
   );
 }
 
-/** 负责人契约为“姓名/编号”逗号分隔；头像只取姓名首字，完整值保留给提示。 */
-export function peopleList(value: string | undefined) {
-  return (value ?? '')
-    .split(',')
-    .map((person) => person.trim())
-    .filter(Boolean)
-    .map((raw) => {
-      const [name = '', ...rest] = raw.split('/');
-      const displayName = name.trim() || raw;
-      return {
-        key: raw,
-        name: displayName,
-        id: rest.join('/').trim(),
-        initial: Array.from(displayName)[0] ?? '?',
-      };
-    });
-}
-
 /** 组织契约为编号/名称；只移除首个编号段，兼容名称本身包含斜线。 */
 export function organizationName(value: string | undefined) {
   if (!value) return '暂未配置';
@@ -46,8 +36,7 @@ export function organizationName(value: string | undefined) {
 /**
  * 原生网格按可用宽度自动填列，每张多列卡片至少保留 360px，窄屏允许缩到容器宽度。
  * 避免依赖任意容器断点的生成顺序；auto-fill 保留不足一行时的列宽，骨架与正文共用布局。
- * `auto-rows-fr` 让所有行取最高卡片的高度：描述按实际行数排版不留空白，
- * 多出的高度由卡片内 `mt-auto` 吸收到入口上方，整页卡片等高、入口对齐。
+ * `auto-rows-fr` 让所有行等高。卡片和骨架预留两行描述的空间，避免翻页时行高随描述变化。
  */
 export const systemCardContainer = '@container';
 export const systemCardGrid =
@@ -55,13 +44,11 @@ export const systemCardGrid =
 
 /** 正文卡片和加载骨架共用外框与边距，减少加载交接时的布局变化。 */
 export const systemCardFrame =
-  'workspace-panel rounded-16px! [container-type:inline-size] [container-name:system-card] flex min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
+  'workspace-panel rounded-16px! [container-type:inline-size] [container-name:system-card] flex min-h-268px min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
 export const systemCardPadding = 'p-3 @[360px]/system-card:p-3.5';
+export const systemCardDescriptionHeight = 'h-36px';
 export const systemCardFooter =
-  '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] py-2.5!';
-
-/** 两份系统目录默认每页 8 条，保留已有的每页数量选项。 */
-export const systemPageSizes = [8, 12, 24, 48];
+  '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] min-h-44px py-2.5!';
 
 /** 角色标签使用随主题适配的预设色，图标和文字也能独立区分角色。 */
 export const systemRoleTags: Record<SystemRole, { color: string; icon: string }> = {

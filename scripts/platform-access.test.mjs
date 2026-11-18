@@ -64,9 +64,9 @@ test('全部目录只包含加入标记，空 Store 不自行构造身份，访�
   assert.equal(access.userRelation, true);
 });
 
-test('加入申请可重复提交，按账号展示待审批且不授予访问权限', async (t) => {
+test('加入申请可重复提交，不改变系统目录响应或授予访问权限', async (t) => {
   const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
-  let ystId = 'join-request-user';
+  const ystId = 'join-request-user';
   const storage = new Map();
   Object.defineProperty(globalThis, 'localStorage', {
     configurable: true,
@@ -85,15 +85,11 @@ test('加入申请可重复提交，按账号展示待审批且不授予访问�
 
   const { systemName } = (await loadSystems()).find((item) => !item.userRelation);
   const params = { keyword: systemName, pageNum: 1, pageSize: 999 };
-  const readSystem = async () =>
-    (await loadSystemPage(params)).records.find((item) => item.systemName === systemName);
+  const before = await loadSystemPage(params);
   assert.deepEqual(await requestSystemJoin(systemName), { status: 'pending' });
   assert.deepEqual(await requestSystemJoin(systemName), { status: 'pending' });
-  assert.equal((await readSystem()).joinRequestPending, true);
-  assert.equal((await readSystem()).userRelation, false);
+  assert.deepEqual(await loadSystemPage(params), before);
   await assert.rejects(requireSystemAccess(systemName), (error) => error.status === 403);
-  ystId = 'join-request-other-user';
-  assert.equal((await readSystem()).joinRequestPending, undefined);
   await assert.rejects(requestSystemJoin('CAC'), (error) => error.status === 409);
 });
 
@@ -461,10 +457,18 @@ test('普通用户未加入和系统不存在均只查询所有系统，分别�
     ['NOT_EXISTING', 404],
   ]) {
     requests.length = 0;
-    await assert.rejects(
-      requireSystemAccess(name),
-      (error) => error instanceof SystemAccessError && error.status === status,
-    );
+    await assert.rejects(requireSystemAccess(name), (error) => {
+      assert.ok(error instanceof SystemAccessError);
+      assert.equal(error.status, status);
+      if (status === 403) {
+        assert.equal(error.joinTarget.systemName, name);
+        assert.equal(typeof error.joinTarget.systemChineseName, 'string');
+        assert.equal(typeof error.joinTarget.systemCharges, 'string');
+      } else {
+        assert.equal(error.joinTarget, undefined);
+      }
+      return true;
+    });
     assert.deepEqual(requests, [{ url: '/api/systems/page', keyword: name }]);
   }
 });

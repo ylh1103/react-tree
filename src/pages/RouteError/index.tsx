@@ -26,6 +26,7 @@ export default function RouteErrorPage({
     const status = (
       <RouteStatusPage
         forbidden={error.status === 403}
+        joinTarget={error instanceof SystemAccessError ? error.joinTarget : undefined}
         scope={error instanceof SystemAccessError ? 'system' : 'page'}
       />
     );

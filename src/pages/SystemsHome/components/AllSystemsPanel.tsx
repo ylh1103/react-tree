@@ -7,56 +7,77 @@ import type { AllSystemInfo, SystemPageParams } from '@/types/systems';
 import { isAccessDenied } from '@/utils/systems';
 import { useAppSelector } from '@/store/hooks';
 import RouteStatusPage from '@/pages/RouteStatus';
-import { systemCardContainer, systemCardGrid, systemPageSizes } from '../model/presentation';
-import { SystemCard } from './SystemPresentation';
-import SystemsHomeSkeleton from './SystemsHomeSkeleton';
+import {
+  systemCardContainer,
+  systemCardGrid,
+  systemListLayout,
+  type SystemView,
+} from '../model/presentation';
+import { SystemItem, SystemViewSwitch } from './SystemPresentation';
 import CollectionPagination from './CollectionPagination';
+import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 
 export default function AllSystemsPanel({
-  active,
+  view,
+  onViewChange,
+  keyword,
+  onKeywordChange,
+  defaultPageSize,
   onDetails,
 }: {
-  active: boolean;
+  view: SystemView;
+  onViewChange: (view: SystemView) => void;
+  keyword: string;
+  onKeywordChange: (keyword: string) => void;
+  defaultPageSize: number;
   onDetails: (system: AllSystemInfo) => void;
 }) {
-  const [draft, setDraft] = useState('');
-  const [params, setParams] = useState<SystemPageParams>({
-    pageNum: 1,
-    pageSize: systemPageSizes[0],
-    keyword: '',
-  });
+  const [pagination, setPagination] = useState({ keyword, pageNum: 1, pageSize: defaultPageSize });
+  if (pagination.keyword !== keyword) setPagination({ ...pagination, keyword, pageNum: 1 });
+  const params: SystemPageParams = {
+    keyword,
+    pageNum: pagination.keyword === keyword ? pagination.pageNum : 1,
+    pageSize: pagination.pageSize,
+  };
+  // 输入草稿仅在提交时进入 URL；直达链接和历史导航恢复已提交的关键词。
+  const [draft, setDraft] = useState({ keyword, value: keyword });
+  if (draft.keyword !== keyword) setDraft({ keyword, value: keyword });
+
   const openId = useAppSelector((state) => state.user.userInfo?.openId ?? null);
   const isPlatformAdmin = useAppSelector((state) => state.user.userInfo?.userType === '0');
-  const query = useQuery({ ...systemPageOptions(params, openId), enabled: active });
-  function search() {
-    const keyword = draft.trim();
-    if (keyword === params.keyword && params.pageNum === 1) void query.refetch();
-    else setParams({ ...params, pageNum: 1, keyword });
+  const query = useQuery(systemPageOptions(params, openId));
+  function search(value: string) {
+    const nextKeyword = value.trim();
+    setDraft({ keyword, value: nextKeyword });
+    if (nextKeyword !== keyword) onKeywordChange(nextKeyword);
+    else if (params.pageNum === 1) void query.refetch();
+    else setPagination({ ...pagination, pageNum: 1 });
   }
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
-    <section aria-label="所有系统">
-      <div className="flex items-center gap-2.5 mb-5 min-[641px]:gap-3">
-        <Input
+    <section className="@container" aria-label="所有系统">
+      <div className="mb-5 grid min-w-0 items-center gap-2 @[360px]:grid-cols-[minmax(0,1fr)_auto] @[560px]:gap-3">
+        <Input.Search
           allowClear
           aria-label="筛选所有系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-420px! min-w-0!"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onPressEnter={search}
-          prefix={
-            <span className="i-lucide-search w-14px h-14px text-text-muted" aria-hidden="true" />
+          className="w-full! min-w-0! @[640px]:max-w-420px"
+          loading={query.isFetching && !query.isPending}
+          value={draft.keyword === keyword ? draft.value : keyword}
+          onChange={(event) => setDraft({ keyword, value: event.target.value })}
+          onSearch={search}
+          enterButton={
+            <Button
+              type="primary"
+              className="w-46px!"
+              aria-label="搜索所有系统"
+              icon={<span className="i-lucide-search w-14px h-14px" aria-hidden="true" />}
+            />
           }
         />
-        <Button
-          type="primary"
-          className="shrink-0 shadow-none! bg-accent-active! hover:bg-accent-active!"
-          onClick={search}
-          icon={<span className="i-lucide-search w-14px h-14px" aria-hidden="true" />}
-        >
-          查询
-        </Button>
+        <div className="justify-self-end">
+          <SystemViewSwitch label="所有系统展示模式" view={view} onChange={onViewChange} />
+        </div>
       </div>
       {query.error && (
         <Alert
@@ -69,14 +90,15 @@ export default function AllSystemsPanel({
         />
       )}
       {query.isPending ? (
-        <SystemsHomeSkeleton />
+        <SystemsHomeSkeleton count={params.pageSize} view={view} />
       ) : query.data?.records.length ? (
         <div className={systemCardContainer}>
-          <div className={systemCardGrid}>
+          <div className={view === 'list' ? systemListLayout : systemCardGrid}>
             {query.data.records.map((system) => (
-              <SystemCard
+              <SystemItem
                 key={system.systemName}
                 system={system}
+                view={view}
                 entriesLocked={!isPlatformAdmin && system.userRelation !== true}
                 onDetails={() => onDetails(system)}
               />
@@ -97,8 +119,9 @@ export default function AllSystemsPanel({
         page={query.data?.pageNum ?? params.pageNum}
         pageSize={params.pageSize}
         total={query.data?.total ?? 0}
+        defaultPageSize={defaultPageSize}
         onChange={(pageNum, pageSize) =>
-          setParams({ ...params, pageNum: pageSize !== params.pageSize ? 1 : pageNum, pageSize })
+          setPagination({ keyword, pageNum: pageSize !== params.pageSize ? 1 : pageNum, pageSize })
         }
       />
     </section>

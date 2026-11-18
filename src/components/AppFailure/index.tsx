@@ -14,25 +14,25 @@ export function AppFailure({ error }: { error: unknown }) {
       <section
         role="alert"
         aria-labelledby="app-failure-title"
-        className="box-border flex min-h-screen flex-col bg-canvas px-6 py-8 text-text desktop:px-12 desktop:py-10"
+        className="@container box-border flex min-h-full w-full min-w-0 flex-col bg-canvas px-[clamp(1rem,4vw,3rem)] py-[clamp(1.5rem,5dvh,3rem)] text-text"
       >
-        <div className="mx-auto flex w-full max-w-1040px flex-1 flex-col justify-center [@media(min-height:700px)]:-translate-y-8 py-12 desktop:py-16">
-          <div className="grid items-center gap-10 desktop:grid-cols-[1fr_480px] desktop:gap-16">
+        <div className="mx-auto flex w-full max-w-560px flex-1 flex-col justify-center @[760px]:max-w-1040px">
+          <div className="grid min-w-0 gap-5 @[760px]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] @[760px]:items-center @[760px]:gap-x-[clamp(2rem,6cqi,4rem)]">
             <div className="min-w-0">
               <h1
                 id="app-failure-title"
-                className="m-0 text-32px font-600 leading-12 tracking-tight desktop:text-40px desktop:leading-14"
+                className="m-0 text-[clamp(1.75rem,5cqi,2.5rem)] font-600 leading-tight tracking-tight"
               >
                 {resourceFailure ? '页面资源加载失败' : '页面暂时无法打开'}
               </h1>
-              <p className="mb-0 mt-5 text-15px leading-8 text-text-secondary">
+              <p className="mb-0 mt-3 text-15px leading-7 @[760px]:mt-5 text-text-secondary">
                 {resourceFailure
                   ? '页面所需的资源未能加载，暂时无法显示内容。'
                   : '页面运行时遇到了问题，暂时无法继续显示。'}
                 <br />
                 请刷新重试，或联系技术支持协助排查。
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-5 grid gap-2 @[400px]:flex @[400px]:flex-wrap @[400px]:items-center @[400px]:gap-3 @[760px]:mt-8">
                 <Button
                   type="primary"
                   icon={<span aria-hidden="true" className="i-lucide:rotate-cw text-4" />}
@@ -48,11 +48,11 @@ export function AppFailure({ error }: { error: unknown }) {
                 </Button>
               </div>
             </div>
-            <div className="mx-auto w-full max-w-480px">
+            <div className="mx-auto w-full max-w-[clamp(17.5rem,80cqi,20rem)] @[760px]:max-w-480px">
               <FailureIllustration />
             </div>
           </div>
-          <div className="mt-10 desktop:mt-14">
+          <div className="mt-5 min-w-0 @[760px]:mt-10">
             <FailureDetails error={error} variant="page" />
           </div>
         </div>

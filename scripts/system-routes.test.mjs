@@ -312,6 +312,30 @@ test('异常页显示目标系统，只有已授权工作区的页面 404 提供
   }
 });
 
+test('无系统访问权限页首次渲染即显示申请按钮', async () => {
+  const { default: RouteStatusPage } = await vite.ssrLoadModule('/src/pages/RouteStatus/index.tsx');
+  const router = createMemoryRouter(
+    [
+      {
+        path: '*',
+        element: createElement(RouteStatusPage, {
+          scope: 'system',
+          forbidden: true,
+          joinTarget: { systemName: 'CAC', systemChineseName: '测试系统', systemCharges: '' },
+        }),
+      },
+    ],
+    { initialEntries: ['/systems/CAC/overview'] },
+  );
+  try {
+    const html = renderToStaticMarkup(createElement(RouterProvider, { router }));
+    assert.match(html, /<button[^>]*aria-haspopup="dialog"[^>]*>.*?申请加入.*?<\/button>/);
+    assert.ok(html.includes('返回系统列表'));
+  } finally {
+    router.dispose();
+  }
+});
+
 test('系统 middleware 的 403/404 在系统边界展示站点页头，不挂载工作区', async (t) => {
   const { QueryClientProvider } = await import('@tanstack/react-query');
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');

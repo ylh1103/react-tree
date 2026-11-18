@@ -9,27 +9,50 @@ import RouteStatusPage from '@/pages/RouteStatus';
 import {
   systemCardContainer,
   systemCardGrid,
-  systemPageSizes,
   systemRoleLabels,
+  systemListLayout,
+  type SystemView,
 } from '../model/presentation';
-import { SystemCard } from './SystemPresentation';
+import { SystemItem, SystemViewSwitch } from './SystemPresentation';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import CollectionPagination from './CollectionPagination';
 
 export default function MySystemsPanel({
-  active,
+  view,
+  onViewChange,
+  search,
+  onSearchChange,
+  role,
+  onRoleChange,
+  defaultPageSize,
   onCreate,
   onDetails,
 }: {
-  active: boolean;
+  view: SystemView;
+  onViewChange: (view: SystemView) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
+  role: SystemRole | 'all';
+  onRoleChange: (role: SystemRole | 'all') => void;
+  defaultPageSize: number;
   onCreate: () => void;
   onDetails: (system: MySystemInfo) => void;
 }) {
-  const query = useQuery({ ...mySystemsOptions(), enabled: active });
-  const [search, setSearch] = useState('');
-  const [role, setRole] = useState<SystemRole | 'all'>('all');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(systemPageSizes[0]);
+  const query = useQuery(mySystemsOptions());
+  const [pagination, setPagination] = useState<{
+    search: string;
+    role: typeof role;
+    page: number;
+    size?: number;
+  }>({
+    search,
+    role,
+    page: 1,
+  });
+  const sameFilters = pagination.search === search && pagination.role === role;
+  if (!sameFilters) setPagination({ ...pagination, search, role, page: 1 });
+  const page = sameFilters ? pagination.page : 1;
+  const pageSize = pagination.size ?? defaultPageSize;
   const filtered = filterSystems(query.data ?? [], search).filter(
     (system) => role === 'all' || system.role === role,
   );
@@ -39,19 +62,16 @@ export default function MySystemsPanel({
   return (
     <section aria-label="我的系统">
       <div className="@container mb-5">
-        {/* 按工具栏实际可用宽度换行；桌面搜索框上限 420px，不随整页空白继续拉长。 */}
-        <div className="flex flex-wrap items-center gap-2.5 @[640px]:gap-3">
-          <div className="grid w-full @[640px]:w-auto max-w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] @[640px]:grid-cols-[minmax(0,420px)_150px_auto] items-center gap-2.5 @[640px]:gap-3">
+        {/* 按可用宽度整组换行，避免中等宽度只把最后一个操作挤到下一行。 */}
+        <div className="grid items-center gap-2.5 @[560px]:gap-3 @[960px]:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 @[560px]:grid-cols-[minmax(0,420px)_150px_auto] @[560px]:justify-start @[560px]:gap-3">
             <Input
               allowClear
               aria-label="筛选我的系统"
               placeholder="系统名称、架构编码、组织或人员"
-              className="col-span-2 @[640px]:col-span-1 w-full! min-w-0!"
+              className="col-span-2 w-full! min-w-0! @[560px]:col-span-1"
               value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
+              onChange={(event) => onSearchChange(event.target.value)}
               prefix={
                 <span
                   className="i-lucide-search w-14px h-14px text-text-muted"
@@ -63,16 +83,15 @@ export default function MySystemsPanel({
               aria-label="筛选我的系统角色"
               className="w-full! min-w-0!"
               value={role}
-              onChange={(value) => {
-                setRole(value);
-                setPage(1);
-              }}
+              onChange={onRoleChange}
               options={[
                 { value: 'all', label: '全部角色' },
                 ...Object.entries(systemRoleLabels).map(([value, label]) => ({ value, label })),
               ]}
             />
             <Button
+              color="primary"
+              variant="outlined"
               loading={query.isFetching}
               onClick={() => void query.refetch()}
               icon={<span className="i-lucide-refresh-cw w-14px h-14px" aria-hidden="true" />}
@@ -80,22 +99,29 @@ export default function MySystemsPanel({
               刷新
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 ml-auto w-full @[640px]:w-auto @[640px]:gap-3">
-            <Button
-              type="primary"
-              onClick={onCreate}
-              icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
-            >
-              新增系统
-            </Button>
-            {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
-            <Tooltip title="新增记录查询（待接入）">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2.5 @[560px]:gap-3 @[960px]:justify-end">
+            <div className="flex flex-wrap gap-2.5 @[560px]:gap-3">
               <Button
-                icon={<span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />}
+                type="primary"
+                onClick={onCreate}
+                icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
               >
-                新增记录
+                新增系统
               </Button>
-            </Tooltip>
+              {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
+              <Tooltip title="新增记录查询（待接入）">
+                <Button
+                  icon={
+                    <span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />
+                  }
+                >
+                  新增记录
+                </Button>
+              </Tooltip>
+            </div>
+            <div className="ml-auto shrink-0">
+              <SystemViewSwitch label="我的系统展示模式" view={view} onChange={onViewChange} />
+            </div>
           </div>
         </div>
       </div>
@@ -110,14 +136,15 @@ export default function MySystemsPanel({
         />
       )}
       {query.isPending ? (
-        <SystemsHomeSkeleton />
+        <SystemsHomeSkeleton count={pageSize} view={view} />
       ) : visible.length ? (
         <div className={systemCardContainer}>
-          <div className={systemCardGrid}>
+          <div className={view === 'list' ? systemListLayout : systemCardGrid}>
             {visible.map((system) => (
-              <SystemCard
+              <SystemItem
                 key={system.systemName}
                 system={system}
+                view={view}
                 onDetails={() => onDetails(system)}
               />
             ))}
@@ -140,10 +167,10 @@ export default function MySystemsPanel({
         page={current}
         pageSize={pageSize}
         total={filtered.length}
-        onChange={(next, size) => {
-          setPage(size !== pageSize ? 1 : next);
-          setPageSize(size);
-        }}
+        defaultPageSize={defaultPageSize}
+        onChange={(next, size) =>
+          setPagination({ search, role, page: size === pageSize ? next : 1, size })
+        }
       />
     </section>
   );

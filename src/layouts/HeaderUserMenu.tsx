@@ -25,11 +25,13 @@ export function HeaderUserMenu() {
   const dispatch = useAppDispatch();
   const userName = useAppSelector((state) => state.user.userInfo?.userName);
   const ystId = useAppSelector((state) => state.user.userInfo?.ystId);
-  // 这里只控制平台入口展示；工作区访问统一由 requireSystemAccess 校验。
-  const isPlatformUser = useAppSelector((state) => state.user.userInfo?.userType === '0');
+  // 平台角色用于显示身份及菜单入口；工作区访问统一由 requireSystemAccess 校验。
+  const userType = useAppSelector((state) => state.user.userInfo?.userType);
+  const isPlatformUser = userType === '0';
   // null 表示尚未打开；关闭后保留模块挂载，让 Modal 完成关闭动画。
   const [profileOpen, setProfileOpen] = useState<boolean | null>(null);
   if (!userName) return null;
+  const roleLabel = isPlatformUser ? '平台人员' : userType === '1' ? '普通用户' : '未提供角色';
 
   return (
     <>
@@ -90,10 +92,14 @@ export function HeaderUserMenu() {
         <Button
           type="text"
           shape="circle"
-          aria-label={`${userName}，用户菜单`}
-          title={userName}
+          aria-label={`${userName}，${roleLabel}，用户菜单`}
+          title={isPlatformUser ? `${userName}（平台人员）` : userName}
           // 头像本身也是菜单按钮，直接复用 Button 的圆形外观和交互，保持首屏依赖轻量。
-          className="h-32px! w-32px! min-w-32px! p-0! bg-hover! hover:bg-accent-bg-hover! text-accent-text! text-14px! font-600 layout-focus"
+          className={`h-32px! w-32px! min-w-32px! p-0! text-14px! font-600 layout-focus ${
+            isPlatformUser
+              ? 'bg-red-100! text-red-800! hover:bg-red-200! [html[data-theme=dark]_&]:bg-red-950! [html[data-theme=dark]_&]:text-red-200! [html[data-theme=dark]_&]:hover:bg-red-900!'
+              : 'bg-hover! text-accent-text! hover:bg-accent-bg-hover!'
+          }`}
         >
           {userName.slice(0, 1)}
         </Button>
@@ -105,7 +111,7 @@ export function HeaderUserMenu() {
           onCancel={() => setProfileOpen(false)}
           width={500}
           centered
-          closable={{ 'aria-label': '关闭个人资料' }}
+          closable={false}
           classNames={{
             container:
               'relative isolate overflow-hidden p-3! rounded-[calc(var(--ui-radius)_+_16px)]! border border-solid border-white/40 bg-transparent! backdrop-blur-3px',

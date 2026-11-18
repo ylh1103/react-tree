@@ -8,14 +8,17 @@ function FailureDetailsLoading() {
     <div
       role="status"
       aria-busy="true"
-      className="min-w-0 border-0 border-t border-solid border-border-subtle pt-5"
+      className="min-w-0 border-0 border-t border-solid border-border-subtle pt-3 @[400px]:pt-5"
     >
       <span className="sr-only">诊断信息加载中</span>
-      <div aria-hidden="true" className="flex h-30px items-center gap-4">
-        <div className="min-w-0 flex-1">
+      <div
+        aria-hidden="true"
+        className="grid gap-1 @[400px]:flex @[400px]:items-center @[400px]:gap-4"
+      >
+        <div className="flex h-30px min-w-0 flex-1 items-center">
           <div className="h-3 w-64 max-w-full rounded-3px bg-border-subtle" />
         </div>
-        <div className="flex w-112px shrink-0 justify-center">
+        <div className="flex h-30px w-112px shrink-0 items-center justify-center justify-self-end">
           <div className="h-3 w-20 rounded-3px bg-border-subtle" />
         </div>
       </div>

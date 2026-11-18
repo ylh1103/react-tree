@@ -104,15 +104,12 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     if (param('keyword') && mockConfig.systemAccessError)
       return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
     return response(
-      systemPage(
-        {
-          pageNum,
-          pageSize,
-          keyword: String(param('keyword') ?? ''),
-          userRelation: relation == null ? undefined : relation === true || relation === 'true',
-        },
-        joinRequestsKey,
-      ),
+      systemPage({
+        pageNum,
+        pageSize,
+        keyword: String(param('keyword') ?? ''),
+        userRelation: relation == null ? undefined : relation === true || relation === 'true',
+      }),
     );
   }
   if (url.pathname === '/api/systems/join-requests' && method === 'POST') {

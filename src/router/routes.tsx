@@ -16,6 +16,7 @@ import { RouteSkeleton } from '@/components/RouteSkeleton';
 import { preloadSystems } from './loaders';
 import RouteErrorPage, { RootRouteErrorPage, SystemRouteErrorPage } from '@/pages/RouteError';
 import { InitialRouteFallback } from './skeletons';
+import { systemJoinRequestRoute } from '@/utils/systemJoinLink';
 import { loginMiddleware, restoreLoginMiddleware } from './login';
 import { systemAccessMiddleware } from './systemAccess';
 
@@ -74,9 +75,22 @@ export const routes: RouteObject[] = [
               {
                 index: true,
                 loader: preloadSystems,
+                // 首页预取只依赖身份，列表筛选和展示模式由页面消费。
+                shouldRevalidate: ({ currentUrl, nextUrl, formMethod, defaultShouldRevalidate }) =>
+                  !formMethod &&
+                  currentUrl.pathname === nextUrl.pathname &&
+                  currentUrl.search !== nextUrl.search
+                    ? false
+                    : defaultShouldRevalidate,
                 HydrateFallback: RouteSkeleton,
                 ErrorBoundary: RouteErrorPage,
                 lazy: lazyPage(() => import('@/pages/SystemsHome')),
+              },
+              {
+                path: systemJoinRequestRoute,
+                HydrateFallback: RouteSkeleton,
+                ErrorBoundary: RouteErrorPage,
+                lazy: lazyPage(() => import('@/pages/SystemJoinRequest')),
               },
               { path: '*', Component: RouteStatusPage },
             ],

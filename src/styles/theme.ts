@@ -9,11 +9,14 @@ import { defaultUserSettings } from '../types/preferences.ts';
 import type { ThemePaletteId } from '../types/themeMode.ts';
 import { shadcnPalettes } from './shadcnPalettes.ts';
 
-/** 浅色主题以 Ant Design 默认算法为基础，只覆盖平台主色、边框和控件基础尺寸。 */
+const platformPrimary = '#0d99ff';
+
+/** 浅色主题以 Ant Design 默认算法为基础，链接与主按钮共用平台主色。 */
 export const appTheme: ThemeConfig = {
   algorithm: theme.defaultAlgorithm,
   token: {
-    colorPrimary: '#0d99ff',
+    colorPrimary: platformPrimary,
+    colorLink: platformPrimary,
     colorBorder: '#e5e5e5',
     colorBorderSecondary: '#e5e5e5',
     borderRadius: defaultUserSettings.controlBorderRadius,
@@ -55,6 +58,7 @@ export const darkAppTheme: ThemeConfig = {
     ...theme.darkAlgorithm(seed, map),
     // 暗色算法会调整种子色；强调色和语义色沿用下方指定值，避免再次降低亮度。
     colorPrimary: seed.colorPrimary,
+    colorLink: seed.colorPrimary,
     colorInfo: seed.colorInfo,
     colorSuccess: seed.colorSuccess,
     colorWarning: seed.colorWarning,
@@ -86,9 +90,9 @@ export const darkAppTheme: ThemeConfig = {
     colorPrimaryBorderHover: darkAccent.main,
     // 亮色实心区域默认使用深字；主按钮文字单独与复选框勾选标记保持一致。
     colorTextLightSolid: dracula.surfaceDark,
-    colorLink: dracula.cyan,
-    colorLinkHover: '#a4ffff',
-    colorLinkActive: '#6dd5ed',
+    colorLink: darkAccent.main,
+    colorLinkHover: darkAccent.hover,
+    colorLinkActive: darkAccent.active,
     colorInfo: dracula.cyan,
     colorInfoText: dracula.cyan,
     colorSuccess: dracula.green,
@@ -233,9 +237,9 @@ export function getAppTheme(mode: ResolvedThemeMode, palette: ThemePaletteId = '
       colorPrimaryText: accentText,
       colorPrimaryTextHover: accentText,
       colorPrimaryTextActive: accentText,
-      colorLink: accentText,
-      colorLinkHover: accentText,
-      colorLinkActive: accentText,
+      colorLink: fill,
+      colorLinkHover: mix(fill, fillTarget, 0.08),
+      colorLinkActive: mix(fill, fillTarget, 0.16),
     },
     components: {
       Dropdown: { colorText: popupText },
@@ -314,6 +318,9 @@ function createThemeVariables(mode: ResolvedThemeMode, palette: ThemePaletteId =
     '--color-accent-hover': tokens.colorPrimaryHover,
     '--color-accent-active': tokens.colorPrimaryActive,
     '--color-accent-text': tokens.colorPrimaryText,
+    '--color-link': tokens.colorLink,
+    '--color-link-hover': tokens.colorLinkHover,
+    '--color-link-active': tokens.colorLinkActive,
     '--color-settings-surface': tokens.colorBgElevated,
     '--color-on-accent':
       palette === 'platform'
