@@ -80,7 +80,7 @@ export function renderBootstrapLoading() {
                 <button
                   id="bootstrap-reload"
                   type="button"
-                  className={`${buttonClass} border-accent bg-accent px-6 text-[var(--color-button-primary-text)] [box-shadow:var(--color-button-primary-shadow)] hover:border-accent-hover hover:bg-accent-hover active:border-accent-active active:bg-accent-active`}
+                  className={`${buttonClass} border-transparent bg-[var(--color-button-primary-bg)] px-6 text-[var(--color-button-primary-text)] [box-shadow:var(--color-button-primary-shadow)] hover:bg-[var(--color-button-primary-hover-bg)] active:bg-[var(--color-button-primary-active-bg)]`}
                 >
                   <BootstrapIcon name="rotate-cw" size={16} className="shrink-0" />
                   刷新页面

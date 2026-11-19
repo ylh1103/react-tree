@@ -49,7 +49,7 @@ Node 使用 22.12.0 或更高版本。为兼容 Node 22.12，React Router 固定
 
 ### 完整配置保存
 
-`userSetting.theme` 原样保留给参数编辑器，`defaultCheckAllEnvTag` 和未知字段均保留。`themeMode` 保存平台配色和明暗模式。旧值 `light`、`dark` 和 `system` 对应平台默认配色，新配色保存为 `配色:模式`（例如 `claude:system`）。用户配置的“外观”页可搜索配色并查看当前明暗模式的色板。首页的明暗切换会沿用当前配色。
+`userSetting.theme` 原样保留给参数编辑器，`defaultCheckAllEnvTag` 和未知字段均保留。`themeMode` 保存平台明暗模式（`light`、`dark` 或 `system`）。旧版 `配色:模式` 读取时使用平台默认配色并保留明暗模式，不会因读取而自动保存。
 
 平台接入了 [Shadcnblocks 主题库](https://www.shadcnblocks.com/themes) 中可公开下载的 37 套浅色与暗色配色。色值来自 [官方主题注册表](https://www.shadcnblocks.com/r/theme/claude)，许可见 [Shadcnblocks License](https://www.shadcnblocks.com/license)。Alpine 和 Stripe 的注册表接口需要授权。适配覆盖页面背景、面板、导航跟随主题配色、文字、边框和控件主色。字体、圆角与业务状态色沿用平台配置。首屏按用户缓存最近确认的主题和必要色值，完整主题目录随应用打包。
 

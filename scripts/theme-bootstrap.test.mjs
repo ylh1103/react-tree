@@ -15,19 +15,13 @@ import {
   openUserSettings,
   resetPreferences,
 } from '../src/store/slices/preferencesSlice.ts';
-import {
-  getAppTheme,
-  getThemeVariables,
-  themeVariablesByMode,
-  applyTheme,
-} from '../src/styles/theme.ts';
+import { appThemes, themeVariablesByMode, applyTheme } from '../src/styles/theme.ts';
 import { bootstrapLoadingKey as bootstrapLoadingKeyResource } from '../src/store/preferences/loadingBootstrap.ts';
 import { borderRadiusRange, defaultUserSettings } from '../src/types/preferences.ts';
 import {
   readBootstrapTheme,
   bootstrapThemeKey as bootstrapThemeKeyResource,
   bootstrapControlRadiusKey,
-  bootstrapThemeColors,
   readControlRadius,
 } from '../src/store/preferences/themeBootstrap.ts';
 
@@ -220,37 +214,11 @@ test('显示配置独立读取最新值，刷新和读取失败时仍维护启�
   assert.equal(readBootstrapTheme(), 'light', '读取失败不覆盖最近确认的缓存');
 });
 
-test('自定义配色确认后缓存明暗两组色值，保存失败保留已确认的配色', async (t) => {
+test('旧配色缓存只恢复明暗模式，不携带色值', (t) => {
   const values = mockStorage(t);
-  mockUserSettingsApi(t, {
-    load: async () => defaultUserSettings,
-    save: async (settings) => {
-      if (settings.themeMode === 'linear:dark') throw new Error('保存失败');
-      return settings;
-    },
-  });
-  const store = createAppStore();
-  t.after(startUserSettingsEffects(store, null));
-  await store.dispatch(loadUserSettings()).unwrap();
-  await store.dispatch(saveThemeMode('claude:system')).unwrap();
-
-  const cached = values.get(bootstrapThemeKey);
-  const [mode, ...rows] = cached.split('|');
-  assert.equal(mode, 'claude:system');
-  for (const [index, appearance] of ['light', 'dark'].entries()) {
-    const variables = getThemeVariables(appearance, 'claude');
-    assert.deepEqual(
-      rows[index].split(','),
-      bootstrapThemeColors.map((name) => variables[`--color-${name}`]),
-    );
-  }
-  assert.equal(
-    createAppStore({ themeMode: readBootstrapTheme() }).getState().preferences.themeMode,
-    'claude:system',
-  );
-  await assert.rejects(store.dispatch(saveThemeMode('linear:dark')).unwrap());
-  assert.equal(store.getState().preferences.themeMode, 'claude:system');
-  assert.equal(values.get(bootstrapThemeKey), cached);
+  values.set(bootstrapThemeKey, 'claude:dark|#ffffff|#000000');
+  assert.equal(readBootstrapTheme(), 'dark');
+  assert.equal(values.get(bootstrapThemeKey), 'claude:dark|#ffffff|#000000');
 });
 
 test('无关操作不重复写缓存，停止监听和配置重置后都不写入', async (t) => {
@@ -329,26 +297,18 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
   assert.ok(match.index < html.indexOf('<link'));
   assert.ok(Buffer.byteLength(match[1]) < 3000, '内联脚本只携带最小配色，不能打包完整主题库');
 
-  const claudeCache = [
-    'claude:system',
-    ...['light', 'dark'].map((mode) => {
-      const variables = getThemeVariables(mode, 'claude');
-      return bootstrapThemeColors.map((name) => variables[`--color-${name}`]).join(',');
-    }),
-  ].join('|');
-
-  for (const { cached, system, expected, palette = 'platform', blocked, mediaAvailable = true } of [
+  for (const { cached, system, expected, blocked, mediaAvailable = true } of [
     { cached: 'dark', system: false, expected: 'dark' },
     { cached: 'light', system: true, expected: 'light' },
     { cached: 'system', system: true, expected: 'dark' },
     { cached: 'system', system: false, expected: 'light' },
     { cached: null, system: true, expected: 'dark' },
+    { cached: 'claude:dark|#ffffff|#000000', system: false, expected: 'dark' },
+    { cached: 'claude:system|#ffffff|#000000', system: true, expected: 'dark' },
+    { cached: 'claude:light|invalid', system: true, expected: 'light' },
     { cached: 'invalid', system: true, expected: 'dark' },
     { blocked: true, system: true, expected: 'dark' },
     { blocked: true, mediaAvailable: false, expected: 'light' },
-    { cached: claudeCache, system: true, expected: 'dark', palette: 'claude' },
-    { cached: claudeCache, system: false, expected: 'light', palette: 'claude' },
-    { cached: claudeCache.replace(/#[\da-f]{6}/i, 'invalid'), system: false, expected: 'light' },
   ]) {
     const values = new Map();
     const root = {
@@ -372,14 +332,14 @@ test('HTML 在外部资源前完成配色，缓存及系统回退与正式主题
     assert.equal(root.dataset.theme, expected);
     assert.equal(root.style.colorScheme, expected);
     assert.equal(root.style.backgroundColor, 'var(--color-canvas)');
-    const expectedVariables = getThemeVariables(expected, palette);
+    const expectedVariables = themeVariablesByMode[expected];
     assert.equal(values.get('--color-canvas'), expectedVariables['--color-canvas']);
     assert.equal(values.get('--color-text'), expectedVariables['--color-text']);
     assert.equal(values.get('--control-radius'), `${defaultUserSettings.controlBorderRadius}px`);
     assert.equal(values.get('--color-accent-active'), expectedVariables['--color-accent-active']);
     assert.equal(
       values.get('--color-button-primary-text'),
-      getAppTheme(expected, palette).components?.Button?.primaryColor ??
+      appThemes[expected].components?.Button?.primaryColor ??
         expectedVariables['--color-on-accent'],
     );
 

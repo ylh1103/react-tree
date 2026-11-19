@@ -11,7 +11,6 @@ import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { createAppTheme, applyTheme } from '@/styles/theme';
 import { UserLoadingIndicator } from '@/components/LoadingIndicator/UserLoadingIndicator';
 import { appMotionTransformers } from '@/styles/motion';
-import { splitThemeMode } from '@/types/themeMode';
 
 const spinConfig = { indicator: <UserLoadingIndicator /> };
 // 全局文字提示默认隐藏箭头；个别 Tooltip 可通过自身 arrow 属性覆盖。
@@ -20,7 +19,6 @@ const tooltipConfig = { arrow: false };
 /** 包住路由加载骨架与正式页面，使加载等待、导航和设置切换使用同一套主题。 */
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   const mode = useAppSelector((state) => state.preferences.themeMode);
-  const [palette] = splitThemeMode(mode);
   // system 仅在显示时解析为 light/dark，不能把解析结果写回 Redux，否则会丢失跟随系统的选择。
   const resolvedTheme = useResolvedTheme(mode);
   // 两类圆角独立：面板圆角只影响 CSS 变量，控件圆角还参与 Ant Design token 计算。
@@ -34,15 +32,15 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   );
   // 配置对象保持稳定，避免面板圆角预览等无关更新反复触发 Ant Design 主题计算与样式生成。
   const appTheme = useMemo(
-    () => createAppTheme(resolvedTheme, controlBorderRadius, palette),
-    [resolvedTheme, controlBorderRadius, palette],
+    () => createAppTheme(resolvedTheme, controlBorderRadius),
+    [resolvedTheme, controlBorderRadius],
   );
   // 根节点样式属于外部 DOM 同步，放在提交阶段而非渲染期间。
   // useLayoutEffect 在此次提交后的绘制前补齐变量，避免骨架或页面先使用缺失的颜色、圆角。
   // 组件经 ConfigProvider 使用 token，UnoCSS 和挂载到 body 的弹层经根节点变量使用相同配色。
   useLayoutEffect(() => {
-    applyTheme(resolvedTheme, borderRadius, controlBorderRadius, palette);
-  }, [resolvedTheme, borderRadius, controlBorderRadius, palette]);
+    applyTheme(resolvedTheme, borderRadius, controlBorderRadius);
+  }, [resolvedTheme, borderRadius, controlBorderRadius]);
   return (
     <StyleProvider transformers={appMotionTransformers}>
       <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>

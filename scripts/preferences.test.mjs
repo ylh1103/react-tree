@@ -276,7 +276,12 @@ test('主题兼容旧配置，拒绝异常主题值', () => {
     layoutMode: 'compact',
     themeMode: 'system',
   });
-  for (const themeMode of ['invalid', null, 1, undefined]) {
+  assert.deepEqual(parseUserSettings({ layoutMode: 'compact', themeMode: 'claude:dark' }), {
+    ...defaultUserSettings,
+    layoutMode: 'compact',
+    themeMode: 'dark',
+  });
+  for (const themeMode of ['invalid', 'claude:invalid', null, 1, undefined]) {
     assert.throws(() => parseUserSettings({ layoutMode: 'default', themeMode }), /格式错误/);
   }
 });

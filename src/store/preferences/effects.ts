@@ -7,27 +7,10 @@ import { currentUserStorageKey } from '../../utils/userStorage.ts';
 import type { AppStore } from '../index.ts';
 import type { ThemeMode } from '@/types/preferences.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
-import { getThemeVariables } from '@/styles/theme.ts';
-import { splitThemeMode } from '@/types/themeMode.ts';
 import { cancelPreferencesRequests, refreshUserSettings } from '../slices/preferencesSlice.ts';
-import {
-  bootstrapControlRadiusKey,
-  bootstrapThemeColors,
-  bootstrapThemeKey,
-} from './themeBootstrap.ts';
+import { bootstrapControlRadiusKey, bootstrapThemeKey } from './themeBootstrap.ts';
 import { bootstrapLoadingKey } from './loadingBootstrap.ts';
 import { createUserSettingsSyncTransport } from './sync.ts';
-
-/** 自定义主题只缓存当前已确认的两组首屏色，避免将整套主题目录重复写入 HTML。 */
-function serializeBootstrapTheme(mode: ThemeMode) {
-  const [palette] = splitThemeMode(mode);
-  if (palette === 'platform') return mode;
-  const colors = (['light', 'dark'] as const).map((appearance) => {
-    const variables = getThemeVariables(appearance, palette);
-    return bootstrapThemeColors.map((name) => variables[`--color-${name}`]).join(',');
-  });
-  return [mode, ...colors].join('|');
-}
 
 /** 安装配置副作用；按字段去重缓存写入，按保存版本广播，读写期间合并外部刷新通知。 */
 export function startUserSettingsEffects(
@@ -89,7 +72,7 @@ export function startUserSettingsEffects(
     if (current.initialized && current.status !== 'loading' && current.status !== 'load-error') {
       if (persistedTheme !== current.savedThemeMode) {
         try {
-          window.localStorage.setItem(themeKey, serializeBootstrapTheme(current.savedThemeMode));
+          window.localStorage.setItem(themeKey, current.savedThemeMode);
           persistedTheme = current.savedThemeMode;
         } catch {
           // 缓存不可用不影响当前主题或跨页签同步，后续 Store 更新可重试。

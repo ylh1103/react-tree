@@ -5,7 +5,7 @@ import {
   type EditorPreferences,
 } from './editorPreferences.ts';
 import { isLoadingStyleId, type LoadingStyleId } from './loading.ts';
-import { isThemeMode, shadcnPaletteIds, type ThemeMode } from './themeMode.ts';
+import { parseThemeMode, type ThemeMode } from './themeMode.ts';
 export type { ResolvedThemeMode, ThemeMode } from './themeMode.ts';
 export type LayoutMode = 'default' | 'compact';
 /** 导航可保留独立配色，或在导航作用域复用全局表面色与文字色。 */
@@ -26,7 +26,7 @@ export interface UserSettings {
   borderRadius: number;
   /** Ant Design 控件的基础圆角（px），各尺寸控件的实际圆角由主题算法生成。 */
   controlBorderRadius: number;
-  /** 平台配色与明暗模式；system 由显示层解析，与编辑器 theme 字段独立。 */
+  /** 平台明暗模式；system 由显示层解析，与编辑器 theme 字段独立。 */
   themeMode: ThemeMode;
   /** 导航配色策略：contrast 使用独立撞色，theme 跟随平台主题的表面色与文字色。 */
   navigationTheme: NavigationTheme;
@@ -83,7 +83,7 @@ export function parseUserSettings(value: unknown): UserSettings {
         !Number.isInteger(value.layoutGap) ||
         value.layoutGap < layoutGapRange.min ||
         value.layoutGap > 24)) ||
-    ('themeMode' in value && !isThemeMode(value.themeMode, shadcnPaletteIds)) ||
+    ('themeMode' in value && !parseThemeMode(value.themeMode)) ||
     ('navigationTheme' in value &&
       value.navigationTheme !== 'contrast' &&
       value.navigationTheme !== 'theme') ||
@@ -111,7 +111,8 @@ export function parseUserSettings(value: unknown): UserSettings {
         ? Math.min(value.layoutGap as number, layoutGapRange.max)
         : defaultUserSettings.layoutGap,
     themeMode:
-      'themeMode' in value ? (value.themeMode as ThemeMode) : defaultUserSettings.themeMode,
+      ('themeMode' in value ? parseThemeMode(value.themeMode) : undefined) ??
+      defaultUserSettings.themeMode,
     navigationTheme:
       'navigationTheme' in value
         ? (value.navigationTheme as NavigationTheme)

@@ -20,11 +20,10 @@ import { getDiagnosticPreview } from '../src/components/FailureDetails/preview.t
 import { startBootstrapStyles } from '../src/utils/bootstrapStyles.ts';
 import { appThemes, themeVariablesByMode } from '../src/styles/theme.ts';
 import { theme } from 'antd';
+import { parseThemeMode } from '../src/types/themeMode.ts';
 import {
   bootstrapControlRadiusKey,
-  bootstrapThemeColors,
   bootstrapThemeKey,
-  parseBootstrapTheme,
   readControlRadius,
 } from '../src/store/preferences/themeBootstrap.ts';
 
@@ -40,7 +39,6 @@ function initializeTheme(
   fallback,
   colorNames,
   colors,
-  colorCount,
   readRadius,
   radiusKey,
   radiusDefault,
@@ -50,14 +48,13 @@ function initializeTheme(
     let cached;
     try {
       cached = parseCache(
-        window.localStorage.getItem(scopeKey(key, window.localStorage)),
-        colorCount,
+        window.localStorage.getItem(scopeKey(key, window.localStorage))?.split('|', 1)[0],
       );
     } catch {
       // 获取 localStorage 本身也可能抛错，仍继续按系统主题绘制。
     }
     // 首屏脚本独立于 React 运行，只在此刻解析 system；持续跟随系统由 useResolvedTheme 负责。
-    const appearance = cached?.appearance ?? fallback;
+    const appearance = cached ?? fallback;
     const resolved =
       appearance === 'system'
         ? typeof window.matchMedia === 'function' &&
@@ -81,22 +78,7 @@ function initializeTheme(
     }
     root.style.setProperty('--control-radius', `${radius}px`);
     // 启动失败页也使用正式主题 token，无需等待主样式或 Provider。
-    const index = resolved === 'dark' ? 1 : 0;
-    const custom = cached?.colors?.[index];
-    // 自定义主题的默认按钮与表面、文字、边框一致，两种按钮均不使用阴影。
-    const values = custom
-      ? [
-          ...custom,
-          custom[2],
-          custom[1],
-          custom[4],
-          custom[2],
-          custom[2],
-          custom[9],
-          'none',
-          'none',
-        ]
-      : colors[index];
+    const values = colors[resolved === 'dark' ? 1 : 0];
     colorNames.forEach((name, index) => root.style.setProperty(`--color-${name}`, values[index]));
     // UnoCSS 此时可能尚未下载，所以直接设置最小根节点样式；这部分不能依赖外部工具类。
     // 背景引用变量而非固定颜色，Provider 后续更新变量时，画布也会随之变化。
@@ -129,14 +111,30 @@ function serializeArguments(values) {
 
 /** 从正式主题提取最小配色，校验函数作为参数内联，避免脚本依赖模块作用域或携带完整主题库。 */
 function createThemeScript() {
+  const surfaceColorNames = [
+    'canvas',
+    'text',
+    'surface',
+    'text-secondary',
+    'border-subtle',
+    'accent',
+    'accent-hover',
+    'accent-active',
+    'accent-border',
+    'on-accent',
+    'danger',
+  ];
   const colorNames = [
-    ...bootstrapThemeColors,
+    ...surfaceColorNames,
     'button-bg',
     'button-text',
     'button-border',
     'button-hover-bg',
     'button-active-bg',
     'button-primary-text',
+    'button-primary-bg',
+    'button-primary-hover-bg',
+    'button-primary-active-bg',
     'button-shadow',
     'button-primary-shadow',
   ];
@@ -146,13 +144,16 @@ function createThemeScript() {
     const tokens = theme.getDesignToken(config);
     const button = config.components?.Button ?? {};
     return [
-      ...bootstrapThemeColors.map((name) => variables[`--color-${name}`]),
+      ...surfaceColorNames.map((name) => variables[`--color-${name}`]),
       button.defaultBg ?? tokens.colorBgContainer,
       button.defaultColor ?? tokens.colorText,
       button.defaultBorderColor ?? tokens.colorBorder,
       button.defaultHoverBg ?? tokens.colorBgContainer,
       button.defaultActiveBg ?? tokens.colorBgContainer,
       button.primaryColor ?? tokens.colorTextLightSolid,
+      button.colorPrimary ?? tokens.colorPrimary,
+      button.colorPrimaryHover ?? tokens.colorPrimaryHover,
+      button.colorPrimaryActive ?? tokens.colorPrimaryActive,
       button.defaultShadow ?? `0 ${tokens.controlOutlineWidth}px 0 ${tokens.controlTmpOutline}`,
       button.primaryShadow ?? `0 ${tokens.controlOutlineWidth}px 0 ${tokens.controlOutline}`,
     ];
@@ -162,14 +163,13 @@ function createThemeScript() {
     defaultUserSettings.themeMode,
     colorNames,
     colors,
-    bootstrapThemeColors.length,
   ]);
   const radiusArgs = serializeArguments([
     bootstrapControlRadiusKey,
     defaultUserSettings.controlBorderRadius,
     borderRadiusRange,
   ]);
-  return `;(${initializeTheme.toString()})(${userStorageKey.toString()},${parseBootstrapTheme.toString()},${args},${readControlRadius.toString()},${radiusArgs});`;
+  return `;(${initializeTheme.toString()})(${userStorageKey.toString()},${parseThemeMode.toString()},${args},${readControlRadius.toString()},${radiusArgs});`;
 }
 
 /** 在图标与样式链接解析前选择缓存方案并安装样式监听，与主题脚本分别执行以保持异常隔离。 */

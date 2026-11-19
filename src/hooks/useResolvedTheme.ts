@@ -3,7 +3,7 @@
  * 系统外观是浏览器外部状态，由 useSyncExternalStore 读取和订阅，不通过 Effect 复制进 Redux。
  */
 import { useSyncExternalStore } from 'react';
-import { splitThemeMode, type ResolvedThemeMode, type ThemeMode } from '@/types/themeMode.ts';
+import { type ResolvedThemeMode, type ThemeMode } from '@/types/themeMode.ts';
 
 /** 同步读取系统外观；Node、SSR 或缺少 matchMedia 的环境回退浅色，不读写用户设置。 */
 export function getSystemTheme(): ResolvedThemeMode {
@@ -36,10 +36,9 @@ const subscribeManualTheme = () => () => {};
  * 当前客户端挂载读取本机快照，不使用服务端回退来判断用户的系统外观。
  */
 export function useResolvedTheme(mode: ThemeMode): ResolvedThemeMode {
-  const [, appearance] = splitThemeMode(mode);
   return useSyncExternalStore(
-    appearance === 'system' ? subscribeSystemTheme : subscribeManualTheme,
-    appearance === 'system' ? getSystemTheme : () => appearance,
-    () => (appearance === 'system' ? 'light' : appearance),
+    mode === 'system' ? subscribeSystemTheme : subscribeManualTheme,
+    mode === 'system' ? getSystemTheme : () => mode,
+    () => (mode === 'system' ? 'light' : mode),
   );
 }

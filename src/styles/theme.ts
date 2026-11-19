@@ -6,8 +6,6 @@
 import { theme, type ThemeConfig } from 'antd';
 import type { NavigationTheme, ResolvedThemeMode } from '../types/preferences.ts';
 import { defaultUserSettings } from '../types/preferences.ts';
-import type { ThemePaletteId } from '../types/themeMode.ts';
-import { shadcnPalettes } from './shadcnPalettes.ts';
 
 const platformPrimary = '#0d99ff';
 
@@ -41,14 +39,14 @@ const dracula = {
   surfaceDarker: '#191a21',
 };
 
-/** 主色采用 Dracula 徽标粉；平台强调与 Ant Design 控件共用同一组交互色。 */
+/** 深浅模式共用品牌蓝，交互状态针对暗色表面单独调整。 */
 const darkAccent = {
-  main: dracula.pink,
-  hover: '#ff92df',
-  active: '#e563af',
-  background: '#402d3b',
-  backgroundHover: '#503346',
-  border: '#9b527e',
+  main: platformPrimary,
+  hover: '#48b3ff',
+  active: '#2598e8',
+  background: '#253848',
+  backgroundHover: '#29445b',
+  border: '#3877a3',
 };
 
 /** 保留暗色算法的控件层级，再显式校准文本、表面和交互状态色。 */
@@ -77,7 +75,7 @@ export const darkAppTheme: ThemeConfig = {
     colorTextQuaternary: dracula.comment,
     colorTextDisabled: dracula.comment,
     colorTextPlaceholder: '#a6afcf',
-    // 覆盖暗色算法的降亮结果，粉色强调与低亮度选中背景分别控制。
+    // 保留品牌主色，选中背景使用低亮度蓝色。
     colorPrimary: darkAccent.main,
     colorPrimaryHover: darkAccent.hover,
     colorPrimaryActive: darkAccent.active,
@@ -88,7 +86,7 @@ export const darkAppTheme: ThemeConfig = {
     colorPrimaryBgHover: darkAccent.backgroundHover,
     colorPrimaryBorder: darkAccent.border,
     colorPrimaryBorderHover: darkAccent.main,
-    // 亮色实心区域默认使用深字；主按钮文字单独与复选框勾选标记保持一致。
+    // 通用品牌蓝填充使用深字；主按钮使用独立的深蓝填充。
     colorTextLightSolid: dracula.surfaceDark,
     colorLink: darkAccent.main,
     colorLinkHover: darkAccent.hover,
@@ -115,8 +113,14 @@ export const darkAppTheme: ThemeConfig = {
       colorTextLightSolid: dracula.foreground,
     },
     Button: {
-      // Ant Design 复选框勾选标记使用 colorWhite（#fff），主按钮文字同步使用纯白。
+      colorPrimary: '#246bb0',
+      colorPrimaryHover: '#2876c0',
+      colorPrimaryActive: '#20598f',
       primaryColor: '#fff',
+      defaultHoverColor: darkAccent.hover,
+      defaultHoverBorderColor: darkAccent.hover,
+      defaultActiveColor: darkAccent.active,
+      defaultActiveBorderColor: darkAccent.active,
       // 默认按钮使用同色系表面与中性边框，避免在弹层上形成突兀的深色块。
       defaultBg: dracula.surfaceLight,
       defaultColor: '#c0c5dc',
@@ -128,7 +132,7 @@ export const darkAppTheme: ThemeConfig = {
       colorBgContainerDisabled: dracula.surfaceDark,
       colorBorderDisabled: dracula.background,
       colorTextDisabled: '#737687',
-      // 仅覆盖交互表面色；文字与边框使用 Ant Design 从主色派生的 hover/active 默认值。
+      // 默认按钮保留全局品牌交互色，不使用主按钮的深蓝填充。
       defaultHoverBg: dracula.selection,
       defaultActiveBg: dracula.background,
     },
@@ -136,139 +140,12 @@ export const darkAppTheme: ThemeConfig = {
 };
 export const appThemes = { light: appTheme, dark: darkAppTheme };
 
-function rgb(hex: string) {
-  const color = Number.parseInt(hex.slice(1), 16);
-  return [color >> 16, (color >> 8) & 255, color & 255];
-}
-
-function mix(color: string, target: string, amount: number) {
-  const channels = rgb(target);
-  return (
-    '#' +
-    rgb(color)
-      .map((channel, index) =>
-        Math.round(channel + (channels[index] - channel) * amount)
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-  );
-}
-
-function luminance(color: string) {
-  const [r, g, b] = rgb(color).map((channel) => {
-    const value = channel / 255;
-    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-function contrast(first: string, second: string) {
-  const a = luminance(first) + 0.05;
-  const b = luminance(second) + 0.05;
-  return Math.max(a, b) / Math.min(a, b);
-}
-
-function readableColor(color: string, surfaces: string[], fallback: string) {
-  for (let step = 0; step < 10; step += 1) {
-    const candidate = mix(color, fallback, step / 10);
-    if (surfaces.every((surface) => contrast(candidate, surface) >= 4.5)) return candidate;
-  }
-  return fallback;
-}
-
-const paletteThemes = new Map<string, ThemeConfig>();
-
-/** 按需映射当前配色；品牌色保留给填充，文字和选中状态按实际表面校正对比度。 */
-export function getAppTheme(mode: ResolvedThemeMode, palette: ThemePaletteId = 'platform') {
-  if (palette === 'platform') return appThemes[mode];
-  const key = `${palette}:${mode}`;
-  const cached = paletteThemes.get(key);
-  if (cached) return cached;
-  const [
-    canvas,
-    surface,
-    popover,
-    muted,
-    sidebar,
-    border,
-    foreground,
-    secondary,
-    primary,
-    onPrimary,
-    ,
-    popoverForeground,
-  ] = shadcnPalettes[palette][mode === 'light' ? 1 : 2];
-  const textFallback = mode === 'light' ? '#000000' : '#ffffff';
-  const surfaces = [canvas, surface, popover, muted, sidebar];
-  const text = readableColor(foreground, surfaces, textFallback);
-  const secondaryText = readableColor(secondary, surfaces, textFallback);
-  const popupText = readableColor(popoverForeground, [popover], textFallback);
-  const placeholder = readableColor(secondary, [surface, popover], textFallback);
-  // 保留原主题的主按钮文字色；需要时微调填充色，让文字在普通、悬停与按下状态都清晰。
-  const fillTarget = luminance(onPrimary) > 0.179 ? '#000000' : '#ffffff';
-  const fill = readableColor(primary, [onPrimary], fillTarget);
-  const selected = mix(surface, primary, 0.13);
-  const selectedHover = mix(surface, primary, 0.2);
-  const accentText = readableColor(primary, [...surfaces, selected, selectedHover], textFallback);
-  const config: ThemeConfig = {
-    algorithm: appThemes[mode].algorithm,
-    token: {
-      ...appTheme.token,
-      colorBgBase: canvas,
-      colorBgLayout: canvas,
-      colorBgContainer: surface,
-      colorBgElevated: popover,
-      colorFillAlter: muted,
-      colorTextBase: foreground,
-      colorText: text,
-      colorTextSecondary: secondaryText,
-      colorTextTertiary: secondaryText,
-      colorTextPlaceholder: placeholder,
-      colorBorder: border,
-      colorBorderSecondary: border,
-      colorPrimary: fill,
-      colorPrimaryHover: mix(fill, fillTarget, 0.08),
-      colorPrimaryActive: mix(fill, fillTarget, 0.16),
-      colorPrimaryBg: selected,
-      colorPrimaryBgHover: selectedHover,
-      colorPrimaryBorder: mix(border, primary, 0.55),
-      colorPrimaryBorderHover: mix(border, primary, 0.75),
-      colorPrimaryText: accentText,
-      colorPrimaryTextHover: accentText,
-      colorPrimaryTextActive: accentText,
-      colorLink: fill,
-      colorLinkHover: mix(fill, fillTarget, 0.08),
-      colorLinkActive: mix(fill, fillTarget, 0.16),
-    },
-    components: {
-      Dropdown: { colorText: popupText },
-      Popover: { colorText: popupText, colorTextHeading: popupText },
-      Tooltip: { colorTextLightSolid: popupText, colorBgSpotlight: popover },
-      Button: {
-        primaryColor: onPrimary,
-        defaultShadow: 'none',
-        primaryShadow: 'none',
-        defaultHoverColor: accentText,
-        defaultActiveColor: accentText,
-        linkHoverBg: selected,
-      },
-    },
-  };
-  paletteThemes.set(key, config);
-  return config;
-}
-
 /**
  * 生成控件主题；面板圆角只作用于 CSS，不参与此处的 Ant Design token 计算。
  * 常用圆角沿用默认层级，大圆角按各尺寸控件高度扩展，避免 SM/LG 的固定上限破坏相对比例。
  */
-export function createAppTheme(
-  mode: ResolvedThemeMode,
-  controlBorderRadius: number,
-  palette: ThemePaletteId = 'platform',
-): ThemeConfig {
-  const base = getAppTheme(mode, palette);
+export function createAppTheme(mode: ResolvedThemeMode, controlBorderRadius: number): ThemeConfig {
+  const base = appThemes[mode];
   const config: ThemeConfig = {
     ...base,
     token: {
@@ -295,8 +172,8 @@ export function createAppTheme(
 }
 
 /** 将 token 映射为共享语义变量，固定主题色与用户可调的布局参数在这里提供初始值。 */
-function createThemeVariables(mode: ResolvedThemeMode, palette: ThemePaletteId = 'platform') {
-  const config = getAppTheme(mode, palette);
+function createThemeVariables(mode: ResolvedThemeMode) {
+  const config = appThemes[mode];
   const tokens = theme.getDesignToken(config);
 
   const variables = {
@@ -322,10 +199,7 @@ function createThemeVariables(mode: ResolvedThemeMode, palette: ThemePaletteId =
     '--color-link-hover': tokens.colorLinkHover,
     '--color-link-active': tokens.colorLinkActive,
     '--color-settings-surface': tokens.colorBgElevated,
-    '--color-on-accent':
-      palette === 'platform'
-        ? tokens.colorTextLightSolid
-        : (config.components?.Button?.primaryColor ?? tokens.colorTextLightSolid),
+    '--color-on-accent': tokens.colorTextLightSolid,
     '--color-hover': tokens.colorPrimaryBg,
     '--color-accent-bg-hover': tokens.colorPrimaryBgHover,
     '--color-accent-border': tokens.colorPrimaryBorder,
@@ -477,53 +351,6 @@ function createThemeVariables(mode: ResolvedThemeMode, palette: ThemePaletteId =
 // 固定主题变量在模块加载时计算一次；用户圆角预览由 applyTheme 覆盖，不重算整套调色板。
 export const themeVariables = createThemeVariables('light');
 export const themeVariablesByMode = { light: themeVariables, dark: createThemeVariables('dark') };
-const paletteVariables = new Map<string, ReturnType<typeof createThemeVariables>>();
-
-/** 设置缩略图和根节点共用映射，按需计算并复用同一套固定色值。 */
-export function getThemeVariables(mode: ResolvedThemeMode, palette: ThemePaletteId = 'platform') {
-  if (palette === 'platform') return themeVariablesByMode[mode];
-  const key = `${palette}:${mode}`;
-  let variables = paletteVariables.get(key);
-  if (!variables) {
-    const base = createThemeVariables(mode, palette);
-    const [canvas, surface, , , sidebar, , foreground, , , , cardForeground, , sidebarForeground] =
-      shadcnPalettes[palette][mode === 'light' ? 1 : 2];
-    const fallback = mode === 'light' ? '#000000' : '#ffffff';
-    const sidebarText = readableColor(sidebarForeground, [sidebar], fallback);
-    const nav = mix(sidebar, '#000000', mode === 'light' ? 0.79 : 0.25);
-    variables = {
-      ...base,
-      '--color-text': readableColor(foreground, [canvas], fallback),
-      '--color-surface-text': readableColor(cardForeground, [surface], fallback),
-      '--color-sidebar': sidebar,
-      '--color-sidebar-text': sidebarText,
-      '--color-nav': nav,
-      '--color-nav-hover': mix(nav, '#ffffff', 0.12),
-      '--color-nav-pressed': mix(nav, '#ffffff', 0.12),
-      '--color-nav-text': mix(nav, '#ffffff', 0.78),
-      '--color-nav-emphasis': '#ffffff',
-      '--color-nav-active': base['--color-accent'],
-      '--color-nav-active-text': base['--color-on-accent'],
-      '--color-nav-active-hover': base['--color-accent-active'],
-      '--color-tree-empty': base['--color-text-secondary'],
-      '--color-tree-switcher': base['--color-text-secondary'],
-      '--color-tree-folder': base['--color-accent-text'],
-      '--color-tree-count-text': sidebarText,
-      '--color-tree-count-bg': 'var(--color-sidebar)',
-      '--color-tree-preview-bg': base['--color-settings-surface'],
-      '--color-tree-preview-text': base['--color-popover-text'],
-      '--color-tree-preview-count-bg': sidebar,
-      '--color-tree-preview-count-text': sidebarText,
-      '--color-leaf-default': base['--color-text-secondary'],
-      '--color-leaf-default-text': base['--color-text-secondary'],
-      '--color-leaf-default-bg': sidebar,
-      '--color-tree-loading-bg': 'color-mix(in srgb, var(--color-surface) 65%, transparent)',
-    };
-    paletteVariables.set(key, variables);
-  }
-  return variables;
-}
-
 /** 导航局部覆盖：contrast 继承独立导航色，theme 在导航及预览作用域复用全局表面色与文字色。 */
 export const navigationThemeVariables: Record<NavigationTheme, Record<string, string>> = {
   contrast: {},
@@ -548,10 +375,9 @@ export function applyTheme(
   mode: ResolvedThemeMode,
   borderRadius = defaultUserSettings.borderRadius,
   controlBorderRadius = defaultUserSettings.controlBorderRadius,
-  palette: ThemePaletteId = 'platform',
 ) {
   const root = document.documentElement;
-  for (const [name, value] of Object.entries(getThemeVariables(mode, palette))) {
+  for (const [name, value] of Object.entries(themeVariablesByMode[mode])) {
     // 圆角由用户设置覆盖，避免拖动时先恢复主题默认值再写入预览值。
     if (name !== '--ui-radius' && name !== '--control-radius' && name !== '--tree-focus-radius')
       root.style.setProperty(name, value);
