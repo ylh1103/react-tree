@@ -92,15 +92,17 @@ export function SystemViewSwitch({
   );
 }
 
-/** 卡片和列表共用系统管理入口。 */
+/** 卡片和列表共用系统操作菜单。 */
 function SystemActions({
   system,
   isMember,
   showDelete,
+  onDetails,
 }: {
   system: SystemInfo;
   isMember: boolean;
   showDelete: boolean;
+  onDetails: () => void;
 }) {
   const { message } = App.useApp();
   const [editing, setEditing] = useState(false);
@@ -111,10 +113,16 @@ function SystemActions({
         placement="bottomRight"
         menu={{
           onClick: ({ key }) => {
-            if (key === 'settings') setEditing(true);
+            if (key === 'details') onDetails();
+            else if (key === 'settings') setEditing(true);
             else void message.info('此功能暂未接入');
           },
           items: [
+            {
+              key: 'details',
+              label: '系统详情',
+              icon: <span className="i-lucide-file-text size-16px" aria-hidden="true" />,
+            },
             {
               key: 'settings',
               label: '系统管理',
@@ -286,6 +294,8 @@ function SystemRoleTag({ system }: { system: MySystemInfo }) {
   );
 }
 
+const systemAvatarTone = 'bg-hover! text-accent-text! font-500!';
+
 /** 整组头像共用一个可容纳交互内容的浮层，负责人编号供后续会话入口使用。 */
 function Owners({ value }: { value: string | undefined }) {
   const { message } = App.useApp();
@@ -296,27 +306,35 @@ function Owners({ value }: { value: string | undefined }) {
 
   const visiblePeople = people.slice(0, 3);
   const hiddenCount = people.length - visiblePeople.length;
-  const ownerAvatarClassName = 'bg-hover! text-accent-text! text-12px! font-500!';
+  const ownerAvatarClassName = `${systemAvatarTone} text-12px!`;
   return (
     <Popover
       placement="topLeft"
       trigger={['hover', 'focus', 'click']}
-      title={`系统负责人（${people.length}）`}
+      title={
+        <div className="flex items-center gap-2 border-b border-b-solid border-divider pb-2">
+          <span>系统负责人</span>
+          <span className="rounded-full bg-sidebar px-2 text-12px text-text-secondary tabular-nums">
+            {people.length}
+          </span>
+        </div>
+      }
       content={() => (
-        <ul className="m-0 grid max-h-60 w-52 max-w-[calc(100vw-48px)] list-none gap-0.5 overflow-auto p-0.5">
+        <ul className="m-0 grid max-h-[min(18rem,55dvh)] w-56 max-w-[calc(100vw-48px)] list-none gap-1 overflow-y-auto overscroll-contain p-0.5 [scrollbar-width:thin]">
           {people.map((person) => (
             <li key={person.key} className="min-w-0">
               <Button
                 type="text"
                 block
-                className="group h-auto! min-h-40px! justify-start! gap-2! px-2! py-1! text-left! hover:bg-hover! layout-focus"
+                className="group h-auto! min-h-44px! justify-start! gap-2! rounded-control! bg-sidebar! px-2! py-1.5! text-left! hover:bg-hover! focus-visible:bg-hover! layout-focus"
                 aria-label={`模拟打开与 ${person.name}${person.id ? `（${person.id}）` : ''} 的会话`}
                 onClick={() => void message.info(`模拟打开与 ${person.name} 的会话`)}
               >
+                <Avatar size={28} className={`${ownerAvatarClassName} shrink-0`} aria-hidden="true">
+                  {person.initial}
+                </Avatar>
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="truncate text-13px text-accent-text font-500">
-                    {person.name}
-                  </span>
+                  <span className="truncate text-13px font-600 text-text">{person.name}</span>
                   {person.id && (
                     <span className="truncate text-11px text-text-secondary tabular-nums">
                       {person.id}
@@ -324,7 +342,7 @@ function Owners({ value }: { value: string | undefined }) {
                   )}
                 </span>
                 <span
-                  className="i-lucide-message-circle size-12px shrink-0 text-accent-text opacity-0 group-hover:opacity-100"
+                  className="i-lucide-message-circle size-14px shrink-0 text-text-muted group-hover:text-accent-text group-focus-visible:text-accent-text"
                   aria-hidden="true"
                 />
               </Button>
@@ -373,6 +391,7 @@ export function SystemItem({
       system={system}
       isMember={isMine || system.userRelation === true}
       showDelete={showDelete}
+      onDetails={onDetails}
     />
   );
   const subsystemCode = system.systemArchNo?.trim();
@@ -483,14 +502,6 @@ function DetailPeople({
   const [query, setQuery] = useState('');
   const people = peopleList(value);
   const previewLimit = 6;
-  const avatarTones = [
-    'bg-[#dfeaff] text-[#0f4fc7]',
-    'bg-[#eadcff] text-[#5b1e92]',
-    'bg-[#d8f3e8] text-[#0b6b4c]',
-    'bg-[#ffe9b8] text-[#7a3f00]',
-    'bg-[#ffdbe4] text-[#a11d44]',
-    'bg-[#d3f0f8] text-[#0b6a85]',
-  ];
   const keyword = query.trim().toLowerCase();
   const filteredPeople = keyword
     ? people.filter(
@@ -542,17 +553,18 @@ function DetailPeople({
         <ul
           className={`m-0 grid list-none gap-2 p-0 ${showAll ? 'max-h-236px overflow-y-auto overscroll-contain' : ''} ${twoColumns ? 'min-[480px]:grid-cols-2' : ''}`}
         >
-          {visiblePeople.map(({ key, name, id, initial }, index) => (
+          {visiblePeople.map(({ key, name, id, initial }) => (
             <li
               key={key}
               className="flex min-w-0 items-center gap-2 rounded-ui bg-sidebar p-2 pr-3 hover:bg-hover"
             >
-              <span
-                className={`flex size-9 shrink-0 items-center justify-center rounded-control text-14px font-700 ${avatarTones[(index + (twoColumns ? 0 : 2)) % avatarTones.length]}`}
+              <Avatar
+                size={36}
+                className={`${systemAvatarTone} shrink-0 text-14px!`}
                 aria-hidden="true"
               >
                 {initial}
-              </span>
+              </Avatar>
               <span className="min-w-0 break-words">
                 <span className="block text-14px font-700 leading-5">{name}</span>
                 {id && (
