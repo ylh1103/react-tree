@@ -11,6 +11,7 @@ import {
   systemListRow,
   systemListBody,
   systemListFooter,
+  systemEntryGrid,
   type SystemView,
 } from '../model/presentation';
 
@@ -25,14 +26,52 @@ export default function SystemsHomeSkeleton({ count, view }: { count: number; vi
           {Array.from({ length: count }, (_, index) => (
             <div key={index} className={systemListRow}>
               <div className={systemListBody}>
-                <Skeleton title={{ width: '35%' }} paragraph={{ rows: 1, width: '65%' }} />
-                <div className="grid h-64px grid-cols-2 place-items-center gap-2">
-                  <Skeleton.Button />
-                  <Skeleton.Button />
+                <div className="grid h-64px min-w-0 grid-rows-[24px_18px_22px] items-center [&_.ant-skeleton-element]:flex! [&_.ant-skeleton-input]:min-w-0!">
+                  <div className="flex items-center gap-1.5">
+                    <Skeleton.Input
+                      block
+                      className="w-[28%]! max-w-120px"
+                      classNames={{ content: 'h-16px!' }}
+                    />
+                    <Skeleton.Input
+                      block
+                      className="w-[22%]! max-w-96px"
+                      classNames={{ content: 'h-16px! rounded-full!' }}
+                    />
+                    <Skeleton.Input
+                      block
+                      className="w-38px!"
+                      classNames={{ content: 'h-16px! rounded-full!' }}
+                    />
+                  </div>
+                  <Skeleton.Input
+                    block
+                    className="w-[48%]! max-w-240px"
+                    classNames={{ content: 'h-10px!' }}
+                  />
+                  <Skeleton.Input
+                    block
+                    className="w-[72%]! max-w-360px"
+                    classNames={{ content: 'h-12px!' }}
+                  />
+                </div>
+                <div className={systemEntryGrid}>
+                  {[0, 1].map((entry) => (
+                    <div
+                      key={entry}
+                      className="flex h-64px flex-col items-center justify-center gap-1 [&_.ant-skeleton-element]:flex!"
+                    >
+                      <Skeleton.Avatar shape="square" size={20} />
+                      <Skeleton.Input classNames={{ content: 'h-12px! w-56px! min-w-0!' }} />
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className={systemListFooter}>
-                <Skeleton.Avatar size={24} />
+                <div className="flex items-center gap-1">
+                  <Skeleton.Avatar size={24} />
+                  <Skeleton.Avatar size={24} />
+                </div>
                 <Skeleton.Button size="small" />
               </div>
             </div>

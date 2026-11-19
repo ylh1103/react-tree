@@ -7,6 +7,8 @@ import type {
   SystemInfo,
   SystemPage,
   SystemPageParams,
+  SubsystemMetadata,
+  UpdateSystemInput,
 } from '@/types/systems.ts';
 export const loadSystems = (signal?: AbortSignal) =>
   requestData<AllSystemInfo[]>({ url: '/api/systems', signal });
@@ -23,3 +25,21 @@ export const requestSystemJoin = (systemName: string) =>
     method: 'POST',
     data: { systemName },
   });
+
+/** FTC 产品和架构目录分两步查询；空结果表示目录无匹配项。 */
+export const loadFtcSubsystem = (systemName: string, signal?: AbortSignal) =>
+  requestData<{ systemArchNo: string } | null>({
+    url: '/api/systems/ftc-subsystem',
+    params: { systemName },
+    signal,
+  });
+
+export const loadSubsystemMetadata = (systemArchNo: string, signal?: AbortSignal) =>
+  requestData<SubsystemMetadata | null>({
+    url: '/api/systems/subsystem-metadata',
+    params: { systemArchNo },
+    signal,
+  });
+
+export const updateSystem = (systemName: string, data: UpdateSystemInput) =>
+  requestData<SystemInfo>({ url: '/api/systems', method: 'PATCH', params: { systemName }, data });

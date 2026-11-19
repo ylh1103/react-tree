@@ -3,7 +3,13 @@
  * 查询键包含系统维度；数据库结果剔除 setting 保留名称，避免与静态设置路由冲突。
  */
 import { queryOptions } from '@tanstack/react-query';
-import { loadSystems, loadMySystems, loadSystemPage } from '@/api/systems.ts';
+import {
+  loadSystems,
+  loadMySystems,
+  loadSystemPage,
+  loadFtcSubsystem,
+  loadSubsystemMetadata,
+} from '@/api/systems.ts';
 import { queryClient } from './client.ts';
 import type { SystemAccessInfo, SystemPageParams } from '@/types/systems.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
@@ -79,3 +85,18 @@ export function systemAccessOptions(
 export async function requireSystemAccess(systemName: string) {
   return queryClient.query(systemAccessOptions(systemName));
 }
+
+/** 精确查询键隔离快速修改输入时的在途结果，取消信号透传至 HTTP。 */
+export const ftcSubsystemOptions = (systemName: string) =>
+  queryOptions({
+    queryKey: ['system-directory', 'ftc', systemName],
+    queryFn: ({ signal }) => loadFtcSubsystem(systemName, signal),
+    retry: false,
+  });
+
+export const subsystemMetadataOptions = (systemArchNo: string) =>
+  queryOptions({
+    queryKey: ['system-directory', 'subsystem', systemArchNo],
+    queryFn: ({ signal }) => loadSubsystemMetadata(systemArchNo, signal),
+    retry: false,
+  });

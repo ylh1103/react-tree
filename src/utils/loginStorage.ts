@@ -9,7 +9,6 @@ export function readLoginUser(): LoginUser | null {
     const raw = localStorage.getItem(loginStorageKey);
     if (!raw) return null;
     const session: unknown = JSON.parse(raw);
-    console.log('readLoginUser session:', session);
     if (!session || typeof session !== 'object') return null;
     const record = session as Record<string, unknown>;
     return record.version === 1 && record.loggedIn === true

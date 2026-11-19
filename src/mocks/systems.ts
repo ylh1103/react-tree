@@ -3,6 +3,7 @@ import type { MySystemInfo, SystemInfo } from '@/types/systems.ts';
 
 const cac: SystemInfo = {
   systemName: 'CAC',
+  isFtc: true,
   systemChineseName: '信用卡核心 - 核心账务',
   systemArchNo: 'LL57.CAC',
   systemDesc: '<p>信用卡核心账务处理，包括利息 入账 账单 延滞 管制 等账务业务</p>20261006142517',
@@ -22,14 +23,20 @@ export const mockSystems: SystemInfo[] = [
   {
     ...cac,
     systemName: 'CACTEST1',
+    isFtc: false,
     systemArchNo: 'LL57.CACTEST1',
     systemDesc: '<p>信用卡核心账务处理，包括利息 入账 账单 延滞 管制 等账务业务</p >',
     appCount: 3,
     paramTypeCount: 1,
     sysRiskLevel: 'B',
-    systemCharges: '余甜/307281,刘涛/324985,晏露辉/IT009682',
-    approverYstId: 'AAFNTD,307281,310798',
-    approverCharge: '余甜/307281,谢伟业/310798,吴图威/IT009653',
+    systemCharges: [
+      '余甜/307281',
+      '刘涛/324985',
+      '晏露辉/IT009682',
+      ...Array.from({ length: 17 }, (_, index) => `模拟负责人${index + 4}/${900004 + index}`),
+    ].join(','),
+    approverYstId: '',
+    approverCharge: '',
   },
   ...[
     ['CCCMonitor', '新核心监控系统', 10, 137, '核心业务运行监控与参数管理', 'D'],
@@ -60,6 +67,7 @@ export const mockSystems: SystemInfo[] = [
     ([name, chineseName, appCount, paramTypeCount, description, riskLevel = cac.sysRiskLevel]) => ({
       ...cac,
       systemName: String(name),
+      isFtc: false,
       systemChineseName: String(chineseName),
       systemArchNo: `LL57.${name}`,
       systemDesc: String(description),

@@ -1,6 +1,8 @@
 /** 系统业务资料，不包含当前访问者的用户信息或个人角色。 */
 export interface SystemInfo {
   systemName: string;
+  /** 旧目录记录未保存类型时按普通系统处理。 */
+  isFtc?: boolean;
   systemChineseName: string;
   systemArchNo: string;
   systemDesc: string;
@@ -54,7 +56,8 @@ export interface SystemPage {
 }
 
 /** 创建系统只提交业务字段，不从前端用户资料填充负责人。 */
-export interface CreateSystemInput {
+interface LegacyCreateSystemInput {
+  isFtc?: undefined;
   systemName: string;
   systemChineseName: string;
   systemArchNo: string;
@@ -64,6 +67,20 @@ export interface CreateSystemInput {
   sysRiskLevel?: 'A' | 'B' | 'C' | 'D';
   approverCharge?: string;
 }
+
+/** 新表单只提交可写字段，目录属性由服务端按编码读取。 */
+export type CreateSystemInput =
+  LegacyCreateSystemInput | (UpdateSystemInput & { systemName: string; isFtc: boolean });
+
+export interface UpdateSystemInput {
+  systemArchNo: string;
+  systemDesc?: string;
+}
+
+export type SubsystemMetadata = Pick<
+  SystemInfo,
+  'systemChineseName' | 'sysRiskLevel' | 'ownRoom' | 'ownGroup' | 'systemDesc'
+>;
 
 export interface ParameterType {
   paramTypeName: string;

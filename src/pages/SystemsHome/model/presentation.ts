@@ -13,6 +13,10 @@ export const systemListBody =
 export const systemListFooter =
   'flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-t-solid border-divider px-3 py-2 @[960px]:border-t-0';
 
+/** 应用和数据库入口在正文与列表占位中使用相同的列宽与分隔线。 */
+export const systemEntryGrid =
+  'relative grid grid-cols-2 gap-2 before:pointer-events-none before:absolute before:inset-y-2.5 before:left-1/2 before:border-l before:border-l-solid before:border-l-border-subtle before:content-empty';
+
 export { systemRoleLabels } from '@/utils/systemRoles';
 
 /** 目录展示姓名，完整的姓名/编号串仍在提示与详情中保留。 */
@@ -44,7 +48,7 @@ export const systemCardGrid =
 
 /** 正文卡片和加载骨架共用外框与边距，减少加载交接时的布局变化。 */
 export const systemCardFrame =
-  'workspace-panel rounded-16px! [container-type:inline-size] [container-name:system-card] flex min-h-268px min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
+  'workspace-panel [container-type:inline-size] [container-name:system-card] flex min-h-268px min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
 export const systemCardPadding = 'p-3 @[360px]/system-card:p-3.5';
 export const systemCardDescriptionHeight = 'h-36px';
 export const systemCardFooter =

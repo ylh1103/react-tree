@@ -1,4 +1,5 @@
 /** 模拟请求执行器：延迟、取消及各业务响应只在首次请求后加载。 */
+import { readLoginUser } from '../utils/loginStorage.ts';
 import { currentUserStorageKey } from '../utils/userStorage.ts';
 import axios, { AxiosError, CanceledError, type AxiosAdapter, type AxiosResponse } from 'axios';
 import { mockConfig } from './config.ts';
@@ -9,6 +10,10 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
   // 在延迟前固定请求所属用户，防止切换账号后旧请求写入新用户文档。
   const settingsKey = currentUserStorageKey('display-settings');
   const joinRequestsKey = currentUserStorageKey('system-join-requests');
+  const systemWriter =
+    config.url === '/api/systems' && ['post', 'patch'].includes(config.method ?? '')
+      ? readLoginUser()
+      : null;
   await new Promise<void>((resolve, reject) => {
     if (config.signal?.aborted) {
       reject(new CanceledError());
@@ -78,9 +83,22 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     }
     return fail(405, '不支持的请求方法');
   }
-  const { allSystems, mySystems, systemPage, createSystem, accessSystem, requestSystemJoin } =
-    await import('./systemService.ts');
+  const {
+    allSystems,
+    mySystems,
+    systemPage,
+    createSystem,
+    accessSystem,
+    requestSystemJoin,
+    ftcSubsystem,
+    subsystemMetadata,
+    updateSystem,
+  } = await import('./systemService.ts');
   if (config.signal?.aborted) throw new CanceledError();
+  if (url.pathname === '/api/systems/ftc-subsystem' && method === 'GET')
+    return response(ftcSubsystem(String(config.params?.systemName ?? '')));
+  if (url.pathname === '/api/systems/subsystem-metadata' && method === 'GET')
+    return response(subsystemMetadata(String(config.params?.systemArchNo ?? '')));
   if (url.pathname === '/api/systems/mine' && method === 'GET') {
     if (mockConfig.systemAccessError)
       return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
@@ -122,10 +140,23 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     if (method === 'GET') return response(allSystems());
     if (method === 'POST')
       return response(
-        createSystem(body as unknown as import('@/types/systems').CreateSystemInput, fail),
+        createSystem(
+          body as unknown as import('@/types/systems').CreateSystemInput,
+          fail,
+          systemWriter,
+        ),
         201,
       );
   }
+  if (url.pathname === '/api/systems' && method === 'PATCH')
+    return response(
+      updateSystem(
+        String(config.params?.systemName ?? ''),
+        body as unknown as import('@/types/systems').UpdateSystemInput,
+        systemWriter,
+        fail,
+      ),
+    );
   const systemName = config.params?.systemName ?? url.searchParams.get('systemName');
   if (
     systemName &&

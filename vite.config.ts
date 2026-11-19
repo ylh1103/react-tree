@@ -32,6 +32,7 @@ export default defineConfig({
         new URL('./src/pages/Landing/components/LandingRiskFeatures/', import.meta.url),
       ),
       selector: '#features',
+      useProjectConfig: true,
     }),
     landingUtilitiesPlugin({
       publicId: 'virtual:how-it-works-9-utilities.css',
@@ -53,6 +54,7 @@ export default defineConfig({
         new URL('./src/pages/Landing/components/LandingFaq/', import.meta.url),
       ),
       selector: '#faq',
+      useProjectConfig: true,
     }),
   ],
   // 预打包会绕过模块级语言适配；保留 ESM 图，让开发模式与生产构建使用相同翻译。

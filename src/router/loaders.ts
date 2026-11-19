@@ -52,16 +52,10 @@ export const revalidateSystemCollection: ShouldRevalidateFunction = ({
   return defaultShouldRevalidate;
 };
 
-/** 静态 loader 与 route.lazy 并行执行；请求结果沿用页面的 Query 缓存。 */
-export async function preloadSystems(args?: LoaderFunctionArgs) {
-  const systemName = args?.params.systemName;
-  args?.request?.signal.throwIfAborted();
-  // 系统授权由父路由 middleware 前置执行；工作区内重跑 loader 不重复刷新切换器目录。
-  // 首页仍按原策略刷新我的系统，目录写入可通过失效查询触发更新。
-  await preloadRouteQuery(
-    queryClient,
-    systemName ? { ...mySystemsOptions(), staleTime: Infinity } : mySystemsOptions(),
-  );
+/** 供工作区切换器读取已加入系统，目录写入后通过失效查询刷新。 */
+export async function preloadSystems({ request }: LoaderFunctionArgs) {
+  request.signal.throwIfAborted();
+  await preloadRouteQuery(queryClient, { ...mySystemsOptions(), staleTime: Infinity });
   return null;
 }
 

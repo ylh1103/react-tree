@@ -262,23 +262,11 @@ for (const [name, path, routePath, message] of routeCases) {
   });
 }
 
-test('页面先就绪：配置未返回时始终保留 HTML 动画，配置完成后直接进入页面', async (t) => {
+test('首页模块就绪后导航无需等待系统清单，配置完成后直接进入页面', async (t) => {
   const fixture = setup(t, { path: '/', actualRoutes: true, initialized: false });
   fixture.page.resolve({ Component: () => createElement('div', null, 'home-ready') });
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(fixture.router.state.initialized, false, '系统清单仍在加载');
-  assert.equal(fixture.render(), '', '父 loader 等待期间也不能提前显示骨架或重建图标');
-
-  const ready = new Promise((resolve) => {
-    const unsubscribe = fixture.router.subscribe((state) => {
-      if (state.initialized) {
-        unsubscribe();
-        resolve();
-      }
-    });
-  });
-  fixture.parent.resolve(null);
-  await ready;
+  assert.equal(fixture.router.state.initialized, true, '首页导航不等待系统清单');
   assert.equal(fixture.render(), '', '页面已就绪仍由 App 保留 HTML 动画，不暴露未初始化页面');
   fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
   assert.match(fixture.render(), /home-ready/);

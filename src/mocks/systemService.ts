@@ -6,10 +6,13 @@ import type {
   SystemInfo,
   SystemPage,
   SystemPageParams,
+  SubsystemMetadata,
+  UpdateSystemInput,
 } from '@/types/systems.ts';
 import { mockSystems, mockSystemRelations } from './systems.ts';
 import { createMockParameters } from './parameters.ts';
 import { mockConfig } from './config.ts';
+import type { LoginUser } from '@/types/user.ts';
 import { readMock, writeMock } from './storage.ts';
 
 type Fail = (status: number, message: string) => never;
@@ -32,6 +35,7 @@ const records = () =>
     })),
   ).map((item) => ({
     systemName: item.systemName,
+    ...(item.isFtc !== undefined ? { isFtc: item.isFtc } : {}),
     systemChineseName: item.systemChineseName,
     systemArchNo: item.systemArchNo,
     systemDesc: item.systemDesc,
@@ -107,34 +111,94 @@ export function accessSystem(name: string, fail: Fail): SystemInfo {
     return fail(mockConfig.systemAccessError, '系统服务拒绝本次请求');
   return system;
 }
-export function createSystem(input: CreateSystemInput, fail: Fail): SystemInfo {
+/** 独立架构目录示例包含尚未接入平台的子系统，创建系统不会改变目录结果。 */
+const architectureDirectory = [
+  ...mockSystems,
+  {
+    ...mockSystems[0],
+    systemArchNo: 'LL57.PAY',
+    systemChineseName: '金融交易云支付',
+    systemDesc: '处理金融交易云的支付交易',
+  },
+  {
+    ...mockSystems[0],
+    systemArchNo: 'LL57.RSK',
+    systemChineseName: '金融交易云风控',
+    systemDesc: '处理金融交易云的风险识别与控制',
+  },
+  {
+    ...mockSystems[0],
+    systemArchNo: 'LL57.OPS',
+    systemChineseName: '应用运维服务',
+    systemDesc: '管理应用运行监控与运维任务',
+  },
+];
+const emptyMetadata: SubsystemMetadata = {
+  systemDesc: '',
+  systemChineseName: '',
+  sysRiskLevel: '',
+  ownRoom: '',
+  ownGroup: '',
+};
+
+export function ftcSubsystem(name: string) {
+  const product = ['CAC', 'PAY', 'RSK'].find((item) => item === name.toUpperCase());
+  return product ? { systemArchNo: `LL57.${product}` } : null;
+}
+
+export function subsystemMetadata(code: string): SubsystemMetadata | null {
+  const entry = architectureDirectory.find((item) => item.systemArchNo === code);
+  if (!entry) return null;
+  const { systemChineseName, sysRiskLevel, ownRoom, ownGroup, systemDesc } = entry;
+  return { systemChineseName, sysRiskLevel, ownRoom, ownGroup, systemDesc };
+}
+
+function requireMetadata(code: string, fail: Fail) {
+  return code ? (subsystemMetadata(code) ?? fail(400, '未找到该子系统编码')) : emptyMetadata;
+}
+
+export function createSystem(
+  input: CreateSystemInput,
+  fail: Fail,
+  user?: LoginUser | null,
+): SystemInfo {
   const list = records();
   const name = typeof input?.systemName === 'string' ? input.systemName.trim() : '';
-  const arch = typeof input?.systemArchNo === 'string' ? input.systemArchNo.trim() : '';
-  if (
-    !name ||
-    !arch ||
-    typeof input?.systemChineseName !== 'string' ||
-    !input.systemChineseName.trim()
-  )
+  const submittedCode = typeof input?.systemArchNo === 'string' ? input.systemArchNo.trim() : '';
+  const legacy = input?.isFtc === undefined;
+  const arch = input?.isFtc ? (ftcSubsystem(name)?.systemArchNo ?? '') : submittedCode;
+  if (!name) return fail(400, '请填写系统英文名');
+  if (legacy && (!arch || !input.systemChineseName?.trim()))
     return fail(400, '请填写系统英文名、中文名和架构编码');
-  if (list.some((item) => item.systemName === name || item.systemArchNo === arch))
+  if (!legacy && !(input.isFtc ? /^[a-z0-9]{3}$/i : /^[a-z0-9_-]{1,10}$/i).test(name))
+    return fail(400, '系统名称格式无效');
+  if (input.isFtc && !arch) return fail(400, '未找到该 FTC 产品');
+  if (list.some((item) => item.systemName === name || (arch && item.systemArchNo === arch)))
     return fail(409, '系统英文名或架构编码已存在');
+  const metadata = legacy
+    ? {
+        systemChineseName: input.systemChineseName.trim(),
+        systemDesc: '',
+        ownRoom: input.ownRoom ?? '',
+        ownGroup: input.ownGroup ?? '',
+        sysRiskLevel: input.sysRiskLevel ?? '',
+      }
+    : requireMetadata(arch, fail);
+  const approverCharge = legacy ? (input.approverCharge ?? '') : '';
+  const owner = !legacy && user ? [user.userName, user.employeeId].filter(Boolean).join('/') : '';
   const system: SystemInfo = {
+    ...metadata,
+    ...(!legacy && { isFtc: input.isFtc }),
     systemName: name,
-    systemChineseName: input.systemChineseName.trim(),
     systemArchNo: arch,
-    systemDesc: input.systemDesc ?? '',
-    ownRoom: input.ownRoom ?? '',
-    ownGroup: input.ownGroup ?? '',
-    sysRiskLevel: input.sysRiskLevel ?? '',
-    approverCharge: input.approverCharge ?? '',
-    approverYstId: (input.approverCharge ?? '')
+    systemDesc: input.systemDesc ?? metadata.systemDesc,
+    approverCharge,
+    approverYstId: approverCharge
       .split(',')
       .map((item) => item.split('/')[1])
       .filter(Boolean)
       .join(','),
-    systemCharges: '',
+    systemCharges: owner,
     appCount: 0,
     paramTypeCount: 0,
   };
@@ -142,4 +206,35 @@ export function createSystem(input: CreateSystemInput, fail: Fail): SystemInfo {
   // 模拟创建接口将新系统关联到我的目录；没有真实身份时不填造员工编号。
   writeMock('system-relations', { ...relations(), [name]: { ystId: '', role: 'R' } });
   return system;
+}
+
+/** 更新只接收描述和编码，FTC 编码及人员字段保留原值。 */
+export function updateSystem(
+  name: string,
+  input: UpdateSystemInput,
+  user: LoginUser | null,
+  fail: Fail,
+) {
+  if (!user) return fail(401, '请先登录');
+  const system = accessSystem(name, fail);
+  if (user.userType !== '0' && !Object.hasOwn(relations(), name))
+    return fail(403, '无系统管理权限');
+  if (typeof input?.systemArchNo !== 'string' || typeof input?.systemDesc !== 'string')
+    return fail(400, '系统管理参数无效');
+  const list = records();
+  const code = input.systemArchNo.trim();
+  if (system.isFtc && code !== system.systemArchNo) return fail(400, 'FTC 子系统编码不可修改');
+  if (code && list.some((item) => item.systemName !== name && item.systemArchNo === code))
+    return fail(409, '架构编码已存在');
+  const updated = {
+    ...system,
+    ...(code !== system.systemArchNo && requireMetadata(code, fail)),
+    systemArchNo: code,
+    systemDesc: input.systemDesc,
+  };
+  writeMock(
+    'systems',
+    list.map((item) => (item.systemName === name ? updated : item)),
+  );
+  return updated;
 }

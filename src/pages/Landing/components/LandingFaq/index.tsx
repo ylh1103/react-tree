@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, BookOpen, Plus, Users } from 'lucide-react';
 import { m as motion, useReducedMotion, type Variants } from 'motion/react';
 
 import { useLandingTheme } from '../../hooks/useLandingTheme';
@@ -54,13 +53,13 @@ const faqs = [
 // 两个链接暂用测试地址，支持群二维码使用已提供的图片。
 const channels = [
   {
-    icon: BookOpen,
+    icon: 'i-lucide-book-open',
     label: '帮助文档',
     detail: '查看接入说明和使用指南',
     href: 'https://example.org/help',
   },
   {
-    icon: Users,
+    icon: 'i-lucide-users',
     label: '加入支持群',
     detail: '点击链接或扫码加入支持群',
     href: 'https://example.org/support-group',
@@ -78,10 +77,10 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
           <a
             key={channel.label}
             href={channel.href}
-            className="flex cursor-pointer items-center gap-4 [background-color:var(--faq-doc-row)] p-5 text-[var(--faq-doc-text)] transition-colors duration-200 hover:[background-color:var(--faq-doc-hover)] [&:hover>svg]:[color:var(--faq-doc-text)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
+            className="group flex cursor-pointer items-center gap-4 [background-color:var(--faq-doc-row)] p-5 text-[var(--faq-doc-text)] transition-colors duration-200 hover:[background-color:var(--faq-doc-hover)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full [background-color:var(--faq-doc-background)] ring-1 ring-[var(--faq-doc-border)]">
-              <channel.icon aria-hidden="true" className="h-4 w-4" />
+              <span aria-hidden="true" className={`${channel.icon} size-4`} />
             </span>
             <div className="min-w-0 flex-1">
               <span className="block text-sm font-medium tracking-tight">{channel.label}</span>
@@ -89,9 +88,9 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
                 {channel.detail}
               </span>
             </div>
-            <ArrowUpRight
+            <span
               aria-hidden="true"
-              className="h-4 w-4 shrink-0 text-[var(--faq-doc-muted)] transition-colors duration-200 motion-reduce:transition-none"
+              className="i-lucide-arrow-up-right size-4 shrink-0 text-[var(--faq-doc-muted)] group-hover:text-[var(--faq-doc-text)] transition-colors duration-200 motion-reduce:transition-none"
             />
           </a>
         ))}
@@ -189,10 +188,9 @@ export default function LandingFaq() {
                           className="m-0 flex w-full cursor-pointer items-center justify-between gap-6 rounded-14px border-0 bg-transparent px-20px py-18px text-left text-base font-medium leading-snug text-[var(--color-text)] focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-[-2px]"
                         >
                           <span>{faq.question}</span>
-                          <Plus
+                          <span
                             aria-hidden="true"
-                            size={17}
-                            className={`shrink-0 text-[var(--color-text-secondary)] transition-transform duration-350 motion-reduce:transition-none ${isOpen ? 'rotate-135' : ''}`}
+                            className={`i-lucide-plus size-17px shrink-0 text-[var(--color-text-secondary)] transition-transform duration-350 motion-reduce:transition-none ${isOpen ? 'rotate-135' : ''}`}
                           />
                         </button>
                       </h3>

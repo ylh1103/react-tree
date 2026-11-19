@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Tabs } from 'antd';
 import { useLocation, useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemRole } from '@/types/systems';
-import CreateSystemModal from './components/CreateSystemModal';
+import SystemManagementModal from './components/SystemManagementModal';
 import { SystemDetailsModal } from './components/SystemPresentation';
 import MySystemsPanel from './components/MySystemsPanel';
 import AllSystemsPanel from './components/AllSystemsPanel';
@@ -69,7 +69,7 @@ export default function SystemsHomePage() {
         onChange={(key) => updateParams({ tab: key === 'all' ? key : '' })}
         classNames={{
           header:
-            'before:hidden [&_.ant-tabs-nav-list]:rounded-ui [&_.ant-tabs-nav-list]:bg-surface [&_.ant-tabs-nav-list]:p-3px motion-reduce:[&_[role=tab]]:transition-none!',
+            'before:hidden [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-surface [&_.ant-tabs-nav-list]:p-3px motion-reduce:[&_[role=tab]]:transition-none!',
           item: 'p-0! [&+.ant-tabs-tab]:ms-1!',
           // 沿用 Tabs 自带的指示器定位和动画，将下划线扩展为选中项底色。
           indicator: 'rounded-control motion-reduce:transition-none!',
@@ -125,9 +125,9 @@ export default function SystemsHomePage() {
         ]}
       />
       {creating && (
-        <CreateSystemModal
+        <SystemManagementModal
           onClose={() => setCreating(false)}
-          onCreated={() => {
+          onSaved={() => {
             setCreating(false);
             setCreatedVersion((value) => value + 1);
             updateParams({ tab: '', mineKeyword: '', role: '' });

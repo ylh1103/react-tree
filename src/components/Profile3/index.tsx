@@ -3,7 +3,6 @@
 /** React Bits Pro 资料卡验证样例；适配项目主题与 UnoCSS，不接入业务路由。 */
 
 import { motion } from 'motion/react';
-import { Users, FileText } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Profile3() {
@@ -64,11 +63,11 @@ export default function Profile3() {
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 text-text-secondary">
-                    <Users className="w-4 h-4" />
+                    <span aria-hidden="true" className="i-lucide-users size-4 shrink-0" />
                     <span className="text-sm font-medium">243</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-text-secondary">
-                    <FileText className="w-4 h-4" />
+                    <span aria-hidden="true" className="i-lucide-file-text size-4 shrink-0" />
                     <span className="text-sm font-medium">18</span>
                   </div>
                 </div>

@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Variants } from 'motion/react';
-import { ChevronDown, TriangleAlert } from 'lucide-react';
 
 // 三种发布前风险共用原版手风琴和预览切换，数据仅用于演示。
 type FeatureId = 'missing' | 'dependencies' | 'validation';
@@ -138,9 +137,9 @@ function VignetteCard({ id }: { id: FeatureId }) {
         variants={vignetteItem}
         className="mt-4 flex items-start gap-2 border-t border-[var(--color-border-subtle)] pt-3 text-xs leading-5 text-[var(--color-text-secondary)]"
       >
-        <TriangleAlert
+        <span
           aria-hidden="true"
-          className="mt-0.5 h-4 w-4 shrink-0 text-[var(--color-warning)]"
+          className="i-lucide-triangle-alert mt-0.5 size-4 shrink-0 text-[var(--color-warning)]"
         />
         {notice}
       </motion.p>
@@ -220,7 +219,7 @@ export function Features13() {
                           isOpen ? 'text-[var(--color-text)]' : 'text-[var(--color-text-secondary)]'
                         }`}
                       >
-                        <ChevronDown className="h-4 w-4" />
+                        <span aria-hidden="true" className="i-lucide-chevron-down size-4" />
                       </motion.span>
                     </button>
                   </h3>

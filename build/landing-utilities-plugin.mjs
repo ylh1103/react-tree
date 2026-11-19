@@ -28,8 +28,18 @@ export function landingUtilitiesPlugin({
           return readFile(path, 'utf8');
         }),
       );
+      const wind3 = presetWind3();
+      // 平台主题只定义了自有断点，局部样式仍需保留落地页使用的 Wind3 断点。
       const generator = await createGenerator(
-        useProjectConfig ? unoConfig : { presets: [presetWind3()] },
+        useProjectConfig
+          ? {
+              ...unoConfig,
+              theme: {
+                ...unoConfig.theme,
+                breakpoints: { ...wind3.theme?.breakpoints, ...unoConfig.theme?.breakpoints },
+              },
+            }
+          : { presets: [wind3] },
       );
       return (await generator.generate(sources.join('\n'), { preflights: false, scope: selector }))
         .css;

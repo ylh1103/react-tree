@@ -175,6 +175,7 @@ function cases() {
       routePath: '/',
       key: ['systems', 'mine', null],
       message: '系统列表加载中',
+      retryControl: /刷\s*新/,
       data: [{ ...system, role: 'V', ystId: '' }],
     },
     {
@@ -200,6 +201,7 @@ function cases() {
       routePath: '/catalog-test',
       key: ['systems', 'catalog', { pageNum: 1, pageSize: 8, keyword: '' }, null],
       message: '系统列表加载中',
+      retryControl: /aria-label="搜索所有系统"/,
       data: { records: [{ ...system, userRelation: true }], total: 65, pageNum: 1, pageSize: 8 },
     },
   ];
@@ -225,18 +227,26 @@ test('业务页面无数据时使用自身骨架，有缓存的刷新及刷新�
       });
       const refreshing = fixture.render();
       assert.doesNotMatch(refreshing, /ant-skeleton|列表资源加载中/);
+      if (config.Page === AllSystemsFixture) {
+        assert.doesNotMatch(refreshing, /更新中…|ant-btn-loading/);
+      }
       assert.equal(fixture.client.getQueryState(config.key).fetchStatus, 'fetching');
       reject(new Error('模拟刷新失败'));
       await assert.rejects(refresh, /模拟刷新失败/);
       const failed = fixture.render();
-      assert.match(failed, /模拟刷新失败/);
+      if (config.retryControl) {
+        assert.doesNotMatch(failed, /模拟刷新失败|ant-alert/);
+        assert.match(failed, config.retryControl);
+      } else {
+        assert.match(failed, /模拟刷新失败/);
+      }
       assert.doesNotMatch(failed, /ant-skeleton/);
       assert.deepEqual(fixture.client.getQueryData(config.key), config.data);
     });
   }
 });
 
-test('首次数据请求失败后展示错误与重试，不停留在业务骨架', async (t) => {
+test('首次数据请求失败后保留重试入口，不停留在业务骨架', async (t) => {
   for (const config of cases()) {
     await t.test(config.path, async (t) => {
       const fixture = setup(t, { ...config, data: undefined });
@@ -249,8 +259,14 @@ test('首次数据请求失败后展示错误与重试，不停留在业务骨�
         }),
       );
       const html = fixture.render();
-      assert.match(html, /模拟首次加载失败/);
-      assert.match(html, /重\s*试/);
+      if (config.retryControl) {
+        // 目录错误由客户端 message 提示，静态正文只保留搜索或刷新入口。
+        assert.doesNotMatch(html, /模拟首次加载失败|ant-alert/);
+        assert.match(html, config.retryControl);
+      } else {
+        assert.match(html, /模拟首次加载失败/);
+        assert.match(html, /重\s*试/);
+      }
       assert.doesNotMatch(html, /ant-skeleton/);
     });
   }

@@ -74,14 +74,6 @@ export const routes: RouteObject[] = [
             children: [
               {
                 index: true,
-                loader: preloadSystems,
-                // 首页预取只依赖身份，列表筛选和展示模式由页面消费。
-                shouldRevalidate: ({ currentUrl, nextUrl, formMethod, defaultShouldRevalidate }) =>
-                  !formMethod &&
-                  currentUrl.pathname === nextUrl.pathname &&
-                  currentUrl.search !== nextUrl.search
-                    ? false
-                    : defaultShouldRevalidate,
                 HydrateFallback: RouteSkeleton,
                 ErrorBoundary: RouteErrorPage,
                 lazy: lazyPage(() => import('@/pages/SystemsHome')),

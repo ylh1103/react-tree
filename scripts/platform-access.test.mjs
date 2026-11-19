@@ -168,7 +168,7 @@ test('系统统计与应用、参数实际返回数量一致', async () => {
   assert.equal((await loadSystemParameters('CAC')).length, system.paramTypeCount);
 });
 
-test('首页只预取我的系统，与页面查询去重且保留取消信号', async (t) => {
+test('工作区只预取切换器的我的系统目录，与共享查询去重且保留取消信号', async (t) => {
   const requests = [];
   const original = httpClient.request.bind(httpClient);
   t.mock.method(httpClient, 'request', (config) => {
@@ -176,7 +176,8 @@ test('首页只预取我的系统，与页面查询去重且保留取消信号',
     assert.ok(config.signal);
     return original(config);
   });
-  await Promise.all([preloadSystems(), queryClient.query(mySystemsOptions())]);
+  const request = new Request('http://localhost/systems/CAC/overview');
+  await Promise.all([preloadSystems({ request }), queryClient.query(mySystemsOptions())]);
   assert.deepEqual(requests, ['/api/systems/mine']);
   assert.ok(queryClient.getQueryData(mySystemsOptions().queryKey).length > 0);
   assert.equal(queryClient.getQueryData(systemsOptions().queryKey), undefined);
