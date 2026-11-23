@@ -1,7 +1,6 @@
 /** 验证配置副作用合并后的交互边界：字段级缓存、保存广播及统一清理不互相干扰。 */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAppStore } from '../src/store/index.ts';
 import { startUserSettingsEffects } from '../src/store/preferences/effects.ts';
 import {
   bootstrapControlRadiusKey,
@@ -14,7 +13,7 @@ import {
   openUserSettings,
 } from '../src/store/slices/preferencesSlice.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import { mockPreferencesBrowser } from './helpers/preferencesBrowser.mjs';
 
 const bootstrapThemeKey = `${bootstrapThemeKeyResource}:anonymous`;
@@ -29,9 +28,9 @@ test('一个订阅处理主题、图标、圆角缓存和保存广播，字段�
   const unsubscribe = t.mock.fn();
   mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
-    save: async (settings) => settings,
+    save: async (_, settings) => settings,
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   const subscribe = t.mock.method(store, 'subscribe');
   const stop = startUserSettingsEffects(store, { publish, subscribe: () => unsubscribe, close });
   t.after(stop);
@@ -80,9 +79,9 @@ test('主题缓存写入失败不阻塞图标和广播，恢复后只补写失�
   const publish = t.mock.fn();
   mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
-    save: async (settings) => settings,
+    save: async (_, settings) => settings,
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   t.after(startUserSettingsEffects(store, { publish, subscribe: () => () => {}, close() {} }));
   await store.dispatch(loadUserSettings()).unwrap();
   await store.dispatch(saveUserSettings({ themeMode: 'dark', loadingStyle: 'data-wave' })).unwrap();
@@ -105,15 +104,15 @@ test('统一清理取消启动配置读取，迟到响应不能更新配置或�
   let resolve;
   let signal;
   mockUserSettingsApi(t, {
-    load: (requestSignal) => {
+    load: (_, requestSignal) => {
       signal = requestSignal;
       return new Promise((yes) => {
         resolve = yes;
       });
     },
-    save: async (settings) => settings,
+    save: async (_, settings) => settings,
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   const stop = startUserSettingsEffects(store, null);
   t.after(stop);
   const loading = store.dispatch(loadUserSettings());

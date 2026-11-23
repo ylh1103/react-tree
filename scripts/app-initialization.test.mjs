@@ -1,4 +1,5 @@
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createAppStore } from '../src/store/index.ts';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createElement } from 'react';
@@ -6,7 +7,6 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { createServer } from 'vite';
-import { createAppStore } from '../src/store/index.ts';
 import { loadUserSettings, saveLayoutMode } from '../src/store/slices/preferencesSlice.ts';
 
 function deferred() {
@@ -35,17 +35,17 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
     load: () => nextLoad,
     save: () => saving.promise,
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   let pageRenders = 0;
   function Page() {
     pageRenders++;
     return createElement('main', null, 'workspace-content');
   }
-  const render = () =>
+  const render = (providedStore = store) =>
     renderToStaticMarkup(
       createElement(
         Provider,
-        { store },
+        { store: providedStore },
         createElement(
           MemoryRouter,
           null,
@@ -106,6 +106,7 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   await save;
   assert.match(render(), /data-layout="compact"/);
   assert.match(render(), /workspace-content/);
+  assert.match(render(createAppStore()), /workspace-content/, '匿名页面不等待个人配置');
 });
 
 test('没有 HTML 画面时，配置等待图标沿用缓存主题，读取成功后应用服务端主题', async (t) => {
@@ -120,8 +121,8 @@ test('没有 HTML 画面时，配置等待图标沿用缓存主题，读取成�
   const { default: App } = await vite.ssrLoadModule('/src/App.tsx');
   const { theme } = await import('antd');
   const loading = deferred();
-  mockUserSettingsApi(t, { load: () => loading.promise, save: async (value) => value });
-  const store = createAppStore({ themeMode: 'dark' });
+  mockUserSettingsApi(t, { load: () => loading.promise, save: async (_, value) => value });
+  const store = createSignedInStore({ themeMode: 'dark' });
   const request = store.dispatch(loadUserSettings());
   function ThemeProbe() {
     const { token } = theme.useToken();

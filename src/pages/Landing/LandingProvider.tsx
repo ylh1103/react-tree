@@ -3,7 +3,7 @@ import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Alert, theme as antdTheme } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
-import { saveThemeMode } from '@/store/slices/preferencesSlice';
+import { changeLandingTheme } from '@/store/slices/preferencesSlice';
 import type { ResolvedThemeMode } from '@/types/preferences';
 import { useLandingScrollRestoration } from './hooks/useLandingScrollRestoration';
 import { LandingContext } from './model/landingContext';
@@ -19,7 +19,10 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   useLandingScrollRestoration();
   const mode = useAppSelector((state) => state.preferences.themeMode);
-  const status = useAppSelector((state) => state.preferences.status);
+  const canChangeTheme = useAppSelector(
+    ({ user, preferences }) =>
+      !user.userInfo || ['ready', 'saving', 'save-error'].includes(preferences.status),
+  );
   const saveError = useAppSelector((state) =>
     state.preferences.status === 'save-error' ? state.preferences.error : null,
   );
@@ -27,10 +30,8 @@ export default function LandingProvider({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
   const { token } = antdTheme.useToken();
   const light = resolvedTheme === 'light';
-  const canChangeTheme = ['ready', 'saving', 'save-error'].includes(status);
   function setTheme(next: ResolvedThemeMode) {
-    // 仅用户点击时提交，复用现有并发、未知字段保留及失败回退逻辑。
-    void dispatch(saveThemeMode(next));
+    dispatch(changeLandingTheme(next));
   }
   const variables = {
     '--landing-background': light ? '#fff' : 'var(--color-surface)',

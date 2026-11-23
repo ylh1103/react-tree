@@ -7,10 +7,66 @@ import { currentUserStorageKey } from '../../utils/userStorage.ts';
 import type { AppStore } from '../index.ts';
 import type { ThemeMode } from '@/types/preferences.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
-import { cancelPreferencesRequests, refreshUserSettings } from '../slices/preferencesSlice.ts';
-import { bootstrapControlRadiusKey, bootstrapThemeKey } from './themeBootstrap.ts';
+import {
+  cancelPreferencesRequests,
+  loadUserSettings,
+  refreshUserSettings,
+  resetPreferences,
+  saveThemeMode,
+  selectUserSettingsOwner,
+  setAnonymousThemeMode,
+} from '../slices/preferencesSlice.ts';
+import {
+  bootstrapControlRadiusKey,
+  bootstrapThemeKey,
+  takeAccountThemeSelection,
+} from './themeBootstrap.ts';
 import { bootstrapLoadingKey } from './loadingBootstrap.ts';
-import { createUserSettingsSyncTransport } from './sync.ts';
+import { createUserSettingsSyncTransport, subscribeToAnonymousTheme } from './sync.ts';
+
+/** 跟随偏好归属安装读写副作用；同一账号的资料变更不重新查询。 */
+export function startUserSettingsSession(store: AppStore) {
+  let owner = selectUserSettingsOwner(store.getState());
+  let selectionHandled = false;
+  let stopEffects: (() => void) | undefined;
+  const load = () => {
+    if (owner === undefined) {
+      stopEffects = subscribeToAnonymousTheme((mode) => {
+        if (mode !== store.getState().preferences.themeMode) {
+          store.dispatch(setAnonymousThemeMode(mode));
+        }
+      });
+      return;
+    }
+    if (owner) stopEffects = startUserSettingsEffects(store);
+    void store.dispatch(loadUserSettings());
+  };
+  const unsubscribe = store.subscribe(() => {
+    const state = store.getState();
+    const nextOwner = selectUserSettingsOwner(state);
+    if (nextOwner === owner) {
+      if (!owner || selectionHandled || state.preferences.status !== 'ready') return;
+      selectionHandled = true;
+      const mode = takeAccountThemeSelection(owner);
+      if (mode && mode !== state.preferences.savedThemeMode) {
+        void store.dispatch(saveThemeMode(mode));
+      }
+      return;
+    }
+    owner = nextOwner;
+    selectionHandled = false;
+    stopEffects?.();
+    stopEffects = undefined;
+    // 清除上一账号的配置和请求编号，迟到响应不能恢复旧配置。
+    store.dispatch(resetPreferences());
+    load();
+  });
+  load();
+  return () => {
+    unsubscribe();
+    stopEffects?.();
+  };
+}
 
 /** 安装配置副作用；按字段去重缓存写入，按保存版本广播，读写期间合并外部刷新通知。 */
 export function startUserSettingsEffects(
@@ -21,7 +77,10 @@ export function startUserSettingsEffects(
   const themeKey = currentUserStorageKey(bootstrapThemeKey);
   const loadingKey = currentUserStorageKey(bootstrapLoadingKey);
   const radiusKey = currentUserStorageKey(bootstrapControlRadiusKey);
-  const isCurrentUser = () => themeKey === currentUserStorageKey(bootstrapThemeKey);
+  const owner = selectUserSettingsOwner(store.getState());
+  const isCurrentUser = () =>
+    owner === selectUserSettingsOwner(store.getState()) &&
+    themeKey === currentUserStorageKey(bootstrapThemeKey);
   // 只记录成功写入的值；字段分别处理，某一项存储失败不阻塞另一项，后续更新仍可重试。
   let persistedTheme: ThemeMode | undefined;
   let persistedLoading: LoadingStyleId | undefined;
@@ -65,7 +124,7 @@ export function startUserSettingsEffects(
   };
   const unsubscribeTransport = transport?.subscribe(receive);
   const unsubscribeStore = store.subscribe(() => {
-    if (!isCurrentUser()) return;
+    if (stopped || !isCurrentUser()) return;
     const current = store.getState().preferences;
     // initialized 也可能来自读取失败，不能据此确认回退值；重试期间同样不写缓存。
     // 连续保存中较早成功的请求会在 saving 时推进 saved*，必须保留这次已确认的缓存。

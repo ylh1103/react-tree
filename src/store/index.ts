@@ -2,7 +2,7 @@
  * Redux Store 的装配入口；统一注册 Slice 并设置启动主题和图标，使用 Redux Toolkit 默认中间件。
  * Store 管理登录资料、显示偏好和抽屉等客户端状态，服务端业务清单交给 React Query。
  */
-import { configureStore } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import preferencesReducer from './slices/preferencesSlice.ts';
 import userReducer from './slices/userSlice.ts';
 import { readBootstrapTheme } from './preferences/themeBootstrap.ts';
@@ -10,6 +10,13 @@ import { readBootstrapLoading } from './preferences/loadingBootstrap.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
 import type { ThemeMode } from '@/types/preferences.ts';
 import { defaultUserSettings } from '@/types/preferences.ts';
+import type { LoginUser } from '@/types/user.ts';
+import { readLoginUser } from '@/utils/loginStorage.ts';
+
+const rootReducer = combineReducers({
+  preferences: preferencesReducer,
+  user: userReducer,
+});
 
 /** Store 启动选项；业务 API 由各 Slice 直接调用，不参与 Store 装配。 */
 export interface AppStoreOptions {
@@ -17,16 +24,18 @@ export interface AppStoreOptions {
   themeMode?: ThemeMode;
   /** 配置读取前的图标提示，同时作为读取失败时的回退值，不代表服务端配置已初始化。 */
   loadingStyle?: LoadingStyleId;
+  /** 已恢复的登录资料，让首屏配置请求直接使用当前用户的 ystId。 */
+  userInfo?: LoginUser | null;
 }
 
 /** 创建相互独立的 Store；保留默认中间件的不可变与可序列化检查。 */
 export function createAppStore({
   themeMode = defaultUserSettings.themeMode,
   loadingStyle = defaultUserSettings.loadingStyle,
+  userInfo = null,
 }: AppStoreOptions = {}) {
   return configureStore({
-    // 新增 Slice 在此注册 reducer；请求与业务流程放在对应 API 和 thunk 中。
-    reducer: { preferences: preferencesReducer, user: userReducer },
+    reducer: rootReducer,
     // themeMode/loadingStyle 先采用启动提示，saved 字段保存相同值，供首次配置读取失败时回退。
     // 这些初始 saved 值尚不代表本次请求已获服务端确认，因此保留 initialized=false 和初始请求状态。
     // 首次读取失败也会结束等待；编辑资格与缓存写入仍需结合 status 判断，不能仅检查 initialized。
@@ -38,6 +47,7 @@ export function createAppStore({
         loadingStyle,
         savedLoadingStyle: loadingStyle,
       },
+      user: { userInfo },
     },
   });
 }
@@ -46,6 +56,7 @@ export function createAppStore({
 export const store = createAppStore({
   themeMode: readBootstrapTheme(),
   loadingStyle: readBootstrapLoading(),
+  userInfo: readLoginUser(),
 });
 /** 应用及同步订阅共用的 Store 类型，随 reducer 和中间件配置自动推导。 */
 export type AppStore = ReturnType<typeof createAppStore>;

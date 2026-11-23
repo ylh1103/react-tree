@@ -129,7 +129,7 @@ function setup(
     future: { v8_middleware: true },
   });
   t.after(() => router.dispose());
-  const store = createAppStore();
+  const store = createAppStore({ userInfo: createDemoLoginUser('1') });
   // 直接派发同一 requestId 的生命周期 action，推进真实 reducer，同时避免发出设置接口请求。
   store.dispatch(loadUserSettings.pending('settings'));
   if (initialized) store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));

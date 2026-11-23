@@ -5,6 +5,7 @@ import { store } from '@/store/index.ts';
 import { setUserInfo } from '@/store/slices/userSlice.ts';
 import { readLoginUser, removeLoginUser } from '@/utils/loginStorage.ts';
 import { cancelPreferencesRequests, closeUserSettings } from '@/store/slices/preferencesSlice.ts';
+import { rememberAnonymousTheme } from '@/store/preferences/themeBootstrap.ts';
 
 /** 仅接受站内地址，排除外部 URL、反斜杠及登录页自身，避免开放重定向和循环。 */
 export function loginReturnTo(value: string | null): string {
@@ -44,6 +45,11 @@ export function loginPath(returnTo: string) {
 export function logoutUser(returnTo: string) {
   const destination = loginPath(returnTo);
   removeLoginUser();
+  const { status, savedThemeMode } = store.getState().preferences;
+  // 由已确认的主题接续匿名首屏。保存中的乐观值可能因本次退出被取消。
+  if (status === 'ready' || status === 'saving' || status === 'save-error') {
+    rememberAnonymousTheme(savedThemeMode);
+  }
   cancelPreferencesRequests(store.getState);
   store.dispatch(closeUserSettings());
   store.dispatch(setUserInfo(null));

@@ -4,6 +4,13 @@
  * HTTP、Mock adapter 和完整配置文档的契约测试继续调用实际 API，不使用此辅助函数。
  */
 import { userSettingsApi } from '../../src/api/preferences.ts';
+import { createDemoLoginUser } from '../../src/mocks/login.ts';
+import { createAppStore } from '../../src/store/index.ts';
+
+/** 配置流程测试使用已登录 Store，浏览器缓存测试可独立控制本地会话。 */
+export function createSignedInStore(options) {
+  return createAppStore({ userInfo: createDemoLoginUser('1'), ...options });
+}
 
 /** 替换当前测试的设置读写方法，不在生产 Store 中增加测试参数或依赖注入。 */
 export function mockUserSettingsApi(t, implementation) {

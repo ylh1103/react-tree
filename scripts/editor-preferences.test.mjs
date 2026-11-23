@@ -10,13 +10,12 @@ import { customEditorThemes } from '../src/components/MonacoEditor/themeCatalog.
 import { registerEditorThemes } from '../src/components/MonacoEditor/themeDefinitions.ts';
 import { settingsFromDocument } from '../src/types/userSettings.ts';
 import { createUserSettingsApi } from '../src/api/preferences.ts';
-import { createAppStore } from '../src/store/index.ts';
 import {
   loadUserSettings,
   refreshUserSettings,
   saveUserSettings,
 } from '../src/store/slices/preferencesSlice.ts';
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import { mockConfig } from '../src/mocks/config.ts';
 import { readMock, writeMock } from '../src/mocks/storage.ts';
 
@@ -60,12 +59,12 @@ test('精选主题注册及保存重读：每款保留源色板和持久化设�
   let persisted = defaultUserSettings;
   mockUserSettingsApi(t, {
     load: async () => persisted,
-    save: async (settings) => {
+    save: async (_, settings) => {
       persisted = settings;
       return settings;
     },
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   await store.dispatch(loadUserSettings());
   assert.equal(registered.size, 5);
   for (const theme of customEditorThemes) {
@@ -76,7 +75,7 @@ test('精选主题注册及保存重读：每款保留源色板和持久化设�
     await store.dispatch(
       saveUserSettings({ editor: { ...defaultEditorPreferences, theme: theme.value } }),
     );
-    const reloaded = createAppStore();
+    const reloaded = createSignedInStore();
     await reloaded.dispatch(loadUserSettings());
     assert.equal(reloaded.getState().preferences.editor.theme, theme.value);
     assert.equal(persisted.theme, defaultUserSettings.theme);
@@ -205,20 +204,23 @@ test('旧相对行号兼容为普通行号，读取不写回，后续保存保�
     theme: 'vs-dark',
     editor: { lineNumbers: 'relative', fontSize: 18, minimap: true },
   });
-  writeMock('display-settings:anonymous', legacy);
-  const settings = await api.load();
+  writeMock('display-settings:user:editor-preferences-test', legacy);
+  const settings = await api.load('editor-preferences-test');
   assert.equal(settings.editor.lineNumbers, 'on');
   assert.equal(settings.editor.fontSize, 18);
   assert.equal(settings.editor.minimap, true);
-  assert.equal(readMock('display-settings:anonymous', ''), legacy);
+  assert.equal(readMock('display-settings:user:editor-preferences-test', ''), legacy);
   for (const lineNumbers of ['off', 'on']) {
-    const saved = await api.save({
+    const saved = await api.save('editor-preferences-test', {
       ...settings,
       editor: { ...settings.editor, lineNumbers },
     });
     assert.equal(saved.editor.lineNumbers, lineNumbers);
-    assert.equal((await api.load()).editor.lineNumbers, lineNumbers);
-    assert.equal(JSON.parse(readMock('display-settings:anonymous', '')).theme, 'vs-dark');
+    assert.equal((await api.load('editor-preferences-test')).editor.lineNumbers, lineNumbers);
+    assert.equal(
+      JSON.parse(readMock('display-settings:user:editor-preferences-test', '')).theme,
+      'vs-dark',
+    );
   }
 });
 
@@ -231,7 +233,7 @@ test('真实设置 API 保存编辑器选项，保留历史及嵌套未知字段
     future: 1,
     editor: { future: { enabled: true } },
   };
-  writeMock('display-settings:anonymous', JSON.stringify(original));
+  writeMock('display-settings:user:editor-preferences-test', JSON.stringify(original));
   const editor = {
     ...defaultEditorPreferences,
     wordWrap: 'on',
@@ -240,17 +242,17 @@ test('真实设置 API 保存编辑器选项，保留历史及嵌套未知字段
     tabSize: 4,
     minimap: true,
   };
-  await api.save({ ...defaultUserSettings, editor });
-  assert.deepEqual(JSON.parse(readMock('display-settings:anonymous', '')), {
+  await api.save('editor-preferences-test', { ...defaultUserSettings, editor });
+  assert.deepEqual(JSON.parse(readMock('display-settings:user:editor-preferences-test', '')), {
     ...original,
     ...defaultUserSettings,
     editor: { ...original.editor, ...editor },
   });
-  assert.deepEqual((await api.load()).editor, editor);
+  assert.deepEqual((await api.load('editor-preferences-test')).editor, editor);
   for (const broken of ['{', '{"editor":{"wordWrap":true}}']) {
-    writeMock('display-settings:anonymous', broken);
-    await assert.rejects(api.save(defaultUserSettings));
-    assert.equal(readMock('display-settings:anonymous', ''), broken);
+    writeMock('display-settings:user:editor-preferences-test', broken);
+    await assert.rejects(api.save('editor-preferences-test', defaultUserSettings));
+    assert.equal(readMock('display-settings:user:editor-preferences-test', ''), broken);
   }
 });
 
@@ -261,7 +263,7 @@ test('连续编辑串行发送，较早响应不覆盖新值，失败回退最�
   let failing = true;
   mockUserSettingsApi(t, {
     load: async () => persisted,
-    save: async (settings) => {
+    save: async (_, settings) => {
       writes.push(settings);
       if (writes.length === 1) await first.promise;
       if (writes.length === 2 && failing) throw Error('编辑器保存失败');
@@ -269,7 +271,7 @@ test('连续编辑串行发送，较早响应不覆盖新值，失败回退最�
       return settings;
     },
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   await store.dispatch(loadUserSettings());
   const editor = { ...defaultEditorPreferences, theme: 'hc-black', wordWrap: 'on' };
   const saving = store.dispatch(saveUserSettings({ editor }));
@@ -286,7 +288,7 @@ test('连续编辑串行发送，较早响应不覆盖新值，失败回退最�
   await store.dispatch(saveUserSettings(store.getState().preferences.failedSettings));
   await store.dispatch(saveUserSettings({ themeMode: 'light' }));
   assert.deepEqual(persisted.editor, nextEditor);
-  const reloaded = createAppStore();
+  const reloaded = createSignedInStore();
   await reloaded.dispatch(loadUserSettings());
   assert.deepEqual(reloaded.getState().preferences.editor, nextEditor);
   persisted = { ...persisted, editor: { ...editor, fontSize: 24 } };
@@ -301,12 +303,12 @@ test('取消编辑器保存后，迟到的响应不能改变回退值', async (t
   const pending = deferred();
   mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
-    save: async (settings) => {
+    save: async (_, settings) => {
       await pending.promise;
       return settings;
     },
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   await store.dispatch(loadUserSettings());
   const saving = store.dispatch(
     saveUserSettings({ editor: { ...defaultEditorPreferences, theme: 'vs-dark' } }),

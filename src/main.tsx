@@ -23,14 +23,13 @@ import '@/styles/index.css';
 import { router } from '@/router';
 import { routes } from '@/router/routes';
 import { RouteLoadingContext } from '@/router/loading';
-import { loadUserSettings } from '@/store/slices/preferencesSlice';
 import { AppThemeProvider } from '@/providers/AppThemeProvider';
-import { startUserSettingsEffects } from '@/store/preferences/effects';
+import { startUserSettingsSession } from '@/store/preferences/effects';
 import { waitForBootstrapStyles } from '@/utils/bootstrapStyles';
 import { BootstrapLoadingProvider } from '@/providers/BootstrapLoadingProvider';
 
-// 一个 Store 订阅处理启动缓存、跨页签广播与排队刷新；DOM 配色仍由 Provider 管理。
-const stopUserSettingsEffects = startUserSettingsEffects(store);
+// 已恢复登录资料时立即读取配置，与路由及样式加载并行；匿名页面直接使用默认配置。
+const stopUserSettingsSession = startUserSettingsSession(store);
 // 进度库独立下载，不增加首屏静态包；初始化导航仍由启动画面处理。
 let progressDisposed = false;
 let stopRouteProgress: (() => void) | undefined;
@@ -42,7 +41,7 @@ void import('@/router/progress')
   .catch(console.error);
 // 共享会话改变后释放旧账号内存并重载，避免其他页签继续展示旧账号工作区。
 const stopLoginSessionSync = startLoginSessionSync(() => {
-  stopUserSettingsEffects();
+  stopUserSettingsSession();
   queryClient.clear();
   window.location.reload();
 });
@@ -51,12 +50,8 @@ import.meta.hot?.dispose(() => {
   progressDisposed = true;
   stopRouteProgress?.();
   stopLoginSessionSync();
-  stopUserSettingsEffects();
+  stopUserSettingsSession();
 });
-
-// router 在模块初始化时已启动路由加载；此处立即读取设置，不让它与样式等待形成串行请求。
-// 样式结束并挂载 React 后，根路由/App 先保留 HTML 原动画，首次配置等待结束后再展示骨架或正文。
-void store.dispatch(loadUserSettings());
 
 const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 

@@ -24,6 +24,7 @@ import { parseThemeMode } from '../src/types/themeMode.ts';
 import {
   bootstrapControlRadiusKey,
   bootstrapThemeKey,
+  pendingThemeKey,
   readControlRadius,
 } from '../src/store/preferences/themeBootstrap.ts';
 
@@ -36,6 +37,7 @@ function initializeTheme(
   scopeKey,
   parseCache,
   key,
+  selectionKey,
   fallback,
   colorNames,
   colors,
@@ -47,9 +49,10 @@ function initializeTheme(
   try {
     let cached;
     try {
-      cached = parseCache(
-        window.localStorage.getItem(scopeKey(key, window.localStorage))?.split('|', 1)[0],
-      );
+      const storage = window.localStorage;
+      cached =
+        parseCache(storage.getItem(scopeKey(selectionKey, storage))) ??
+        parseCache(storage.getItem(scopeKey(key, storage))?.split('|', 1)[0]);
     } catch {
       // 获取 localStorage 本身也可能抛错，仍继续按系统主题绘制。
     }
@@ -160,6 +163,7 @@ function createThemeScript() {
   });
   const args = serializeArguments([
     bootstrapThemeKey,
+    pendingThemeKey,
     defaultUserSettings.themeMode,
     colorNames,
     colors,

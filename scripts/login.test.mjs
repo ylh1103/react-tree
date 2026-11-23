@@ -13,7 +13,16 @@ import { createDemoLoginUser } from '../src/mocks/login.ts';
 import { readLoginUser, writeLoginUser, loginStorageKey } from '../src/utils/loginStorage.ts';
 import { store } from '../src/store/index.ts';
 import { setUserInfo } from '../src/store/slices/userSlice.ts';
-import { openUserSettings, closeUserSettings } from '../src/store/slices/preferencesSlice.ts';
+import {
+  closeUserSettings,
+  loadUserSettings,
+  openUserSettings,
+  resetPreferences,
+  saveThemeMode,
+} from '../src/store/slices/preferencesSlice.ts';
+import { readBootstrapTheme } from '../src/store/preferences/themeBootstrap.ts';
+import { defaultUserSettings } from '../src/types/preferences.ts';
+import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 
 let records;
 function mockGlobal(t, key, value) {
@@ -133,6 +142,45 @@ test('退出时存储移除失败不伪造成功，不清空 Redux 或跳转', (
   assert.throws(() => logoutUser('/systems/CAC'), /blocked/);
   assert.deepEqual(readLoginUser(), user);
   assert.deepEqual(store.getState().user.userInfo, user);
+});
+
+test('退出后公开页沿用最后确认的主题，不采用退出时仍在保存的配色', async (t) => {
+  const user = createDemoLoginUser('1');
+  writeLoginUser(user);
+  store.dispatch(setUserInfo(user));
+  t.after(() => store.dispatch(resetPreferences()));
+  let finishSave;
+  mockUserSettingsApi(t, {
+    load: async () => defaultUserSettings,
+    save: async (_, settings) =>
+      settings.themeMode === 'dark'
+        ? settings
+        : new Promise((resolve) => {
+            finishSave = () => resolve(settings);
+          }),
+  });
+  mockGlobal(t, 'window', {
+    localStorage,
+    location: {
+      replace: (path) => {
+        assert.equal(path, loginPath('/landing'));
+        assert.equal(readLoginUser(), null);
+        assert.equal(readBootstrapTheme(), 'dark');
+      },
+    },
+  });
+  await store.dispatch(loadUserSettings()).unwrap();
+  await store.dispatch(saveThemeMode('dark')).unwrap();
+  const pending = store.dispatch(saveThemeMode('light'));
+  assert.equal(store.getState().preferences.themeMode, 'light');
+  try {
+    logoutUser('/landing');
+  } finally {
+    finishSave();
+    await pending;
+  }
+  assert.equal(readBootstrapTheme(), 'dark');
+  assert.equal(records.size, 1, '匿名首屏只保存主题');
 });
 
 test('缺失、损坏、无登录标志、无用户资料及未知版本均视为未登录', () => {

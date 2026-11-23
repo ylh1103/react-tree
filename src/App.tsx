@@ -6,7 +6,7 @@
 import type { ReactNode } from 'react';
 import { App as AntdApp, Alert, Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loadUserSettings } from '@/store/slices/preferencesSlice';
+import { loadUserSettings, selectWaitingForUserSettings } from '@/store/slices/preferencesSlice';
 import { Outlet, useMatch } from 'react-router';
 import { AppViewport } from '@/layouts/LayoutFrame';
 import { DeferredUserSettingsDrawer } from '@/layouts/UserSettingsDrawer/Deferred';
@@ -17,13 +17,13 @@ import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapH
 export default function App({ children }: { children?: ReactNode }) {
   const dispatch = useAppDispatch();
   const landingMatch = useMatch('/landing');
-  const initialized = useAppSelector((state) => state.preferences.initialized);
+  const waitingForSettings = useAppSelector(selectWaitingForUserSettings);
   const settingsError = useAppSelector((state) =>
     state.preferences.status === 'load-error' ? state.preferences.error : null,
   );
   return (
     <AntdApp component={false}>
-      {!initialized ? (
+      {waitingForSettings ? (
         <ResourceLoading />
       ) : (
         <BootstrapLoadingHandoff>

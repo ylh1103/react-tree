@@ -7,6 +7,7 @@ export function mockPreferencesBrowser(t) {
     localStorage: {
       getItem: (key) => values.get(key) ?? null,
       setItem: (key, value) => values.set(key, value),
+      removeItem: (key) => values.delete(key),
     },
   });
   globalThis.document = Object.assign(new EventTarget(), { visibilityState: 'visible' });

@@ -8,6 +8,7 @@ import { HeaderSkeleton } from '@/components/RouteSkeleton/components/HeaderSkel
 import { NavigationSkeleton } from '@/components/RouteSkeleton/components/NavigationSkeleton';
 import { AppViewport, SiteFrame, WorkspaceFrame } from '@/layouts/LayoutFrame';
 import { useAppSelector } from '@/store/hooks';
+import { selectWaitingForUserSettings } from '@/store/slices/preferencesSlice';
 import { applicationRouteConfig as navigationItems } from './application';
 import { databaseRouteConfig as databaseNavigationItems } from './database';
 
@@ -47,8 +48,8 @@ function InitialLayoutSkeleton({ children }: { children: ReactNode }) {
 export function InitialRouteFallback() {
   const routes = useContext(RouteLoadingContext);
   const location = useLocation();
-  const initialized = useAppSelector((state) => state.preferences.initialized);
-  if (!initialized) return <ResourceLoading />;
+  const waitingForSettings = useAppSelector(selectWaitingForUserSettings);
+  if (waitingForSettings) return <ResourceLoading />;
   const skeleton = matchPageSkeleton(routes, location.pathname);
   return skeleton ? (
     <BootstrapLoadingHandoff>

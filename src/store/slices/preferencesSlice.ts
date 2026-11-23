@@ -7,9 +7,12 @@
  * refreshUserSettings 只在后台更新，不进入 loading；抽屉关闭也不会取消已提交的保存。
  */
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { AppDispatch, RootState } from '../index.ts';
 import { createAppAsyncThunk } from '../createAppAsyncThunk.ts';
+import { rememberAnonymousThemeSelection } from '../preferences/themeBootstrap.ts';
 import { userSettingsApi } from '@/api/preferences.ts';
 import type { LoadingStyleId } from '@/types/loading.ts';
+import type { LoginUser } from '@/types/user.ts';
 import {
   defaultUserSettings,
   parseUserSettings,
@@ -116,33 +119,65 @@ async function settingsRequest(
     requests.delete(controller);
   }
 }
-/** 偏好请求协调器只读取本 Slice；其他 Slice 的新增不改变取消与串行保存的契约。 */
+/** 配置只依赖当前偏好和登录资料中的归属标识。 */
 interface PreferencesStoreState {
   /** 当前 Store 的偏好状态；getState 函数同时作为请求集合与队列的隔离键。 */
   preferences: PreferencesState;
+  user: { userInfo: LoginUser | null };
 }
 
-/** 首次配置读取或错误重试，不依赖用户资料初始化。 */
+/** undefined 表示匿名，null 表示已有登录资料但缺少有效的一事通 ID。 */
+export function selectUserSettingsOwner({
+  user,
+}: PreferencesStoreState): string | null | undefined {
+  if (!user.userInfo) return undefined;
+  const { ystId } = user.userInfo;
+  return typeof ystId === 'string' && ystId.trim() ? ystId : null;
+}
+
+/** 只有已登录页面需要等待首次配置，请求失败也会结束等待。 */
+export function selectWaitingForUserSettings({ user, preferences }: PreferencesStoreState) {
+  return Boolean(user.userInfo) && !preferences.initialized;
+}
+
+/** 首次读取与后台同步遵循相同的偏好归属和取消规则。 */
+function readUserSettings(getState: () => PreferencesStoreState, signal: AbortSignal) {
+  const ystId = selectUserSettingsOwner(getState());
+  if (!ystId) throw new Error('登录资料缺少一事通 ID，无法读取用户配置');
+  return settingsRequest(getState, signal, (requestSignal) =>
+    userSettingsApi.load(ystId, requestSignal),
+  );
+}
+
+/** 首次读取与重试使用同一登录身份，并为缺少一事通 ID 的资料提供错误反馈。 */
 export const loadUserSettings = createAppAsyncThunk<UserSettings, void>(
   'preferences/load',
-  async (_, { signal, getState }) =>
-    settingsRequest(getState, signal, (requestSignal) => userSettingsApi.load(requestSignal)),
+  (_, { signal, getState }) => readUserSettings(getState, signal),
   {
     /** 仅未读取或读取失败时允许启动，避免重复读取以及覆盖正在编辑的配置。 */
-    condition: (_, { getState }) => ['idle', 'load-error'].includes(getState().preferences.status),
+    condition: (_, { getState }) => {
+      const state = getState();
+      return (
+        Boolean(state.user.userInfo) && ['idle', 'load-error'].includes(state.preferences.status)
+      );
+    },
   },
 );
 /** 后台同步不切换首屏或保存状态；已有读取或保存时拒绝启动，由同步协调层合并通知。 */
 export const refreshUserSettings = createAppAsyncThunk<UserSettings, void>(
   'preferences/refresh',
-  async (_, { signal, getState }) =>
-    settingsRequest(getState, signal, (requestSignal) => userSettingsApi.load(requestSignal)),
+  (_, { signal, getState }) => readUserSettings(getState, signal),
   {
     /** 首次等待结束且没有读取、保存或后台同步时才允许刷新，避免并发覆盖。 */
     condition: (_, { getState }) => {
-      const { initialized, status, refreshRequestId } = getState().preferences;
+      const state = getState();
+      const { initialized, status, refreshRequestId } = state.preferences;
       return (
-        initialized && status !== 'loading' && status !== 'saving' && refreshRequestId === null
+        Boolean(selectUserSettingsOwner(state)) &&
+        initialized &&
+        status !== 'loading' &&
+        status !== 'saving' &&
+        refreshRequestId === null
       );
     },
   },
@@ -186,15 +221,22 @@ function currentSettings(state: PreferencesState): UserSettings {
 export const saveUserSettings = createAppAsyncThunk<UserSettings, Partial<UserSettings>>(
   'preferences/save',
   async (changes, { signal, getState }) => {
+    const ystId = selectUserSettingsOwner(getState());
+    if (!ystId) throw new Error('登录资料缺少一事通 ID，无法保存用户配置');
     const revision = requestRevisions.get(getState) ?? 0;
     // pending reducer 已同步应用本次修改；在入队时固定快照，保证连续操作按发生顺序保存。
     const settings = parseUserSettings({ ...currentSettings(getState().preferences), ...changes });
     /** 轮到本快照时检查取消信号与取消代次，再发送可取消的保存请求。 */
     const send = async () => {
       signal.throwIfAborted();
-      if ((requestRevisions.get(getState) ?? 0) !== revision) throw new Error('配置保存已取消');
+      if (
+        (requestRevisions.get(getState) ?? 0) !== revision ||
+        selectUserSettingsOwner(getState()) !== ystId
+      ) {
+        throw new Error('配置保存已取消');
+      }
       const saved = await settingsRequest(getState, signal, (requestSignal) =>
-        userSettingsApi.save(settings, requestSignal),
+        userSettingsApi.save(ystId, settings, requestSignal),
       );
       return saved;
     };
@@ -215,8 +257,13 @@ export const saveUserSettings = createAppAsyncThunk<UserSettings, Partial<UserSe
   },
   {
     /** 只允许读取成功后的编辑和失败重试；首次读取未完成或失败时禁止覆盖服务端文档。 */
-    condition: (_, { getState }) =>
-      ['ready', 'saving', 'save-error'].includes(getState().preferences.status),
+    condition: (_, { getState }) => {
+      const state = getState();
+      return (
+        Boolean(selectUserSettingsOwner(state)) &&
+        ['ready', 'saving', 'save-error'].includes(state.preferences.status)
+      );
+    },
   },
 );
 
@@ -309,6 +356,10 @@ const preferencesSlice = createSlice({
     /** 清空显示偏好与请求标识，恢复默认状态；整体重置前应另行取消在途请求。 */
     resetPreferences() {
       return initialState;
+    },
+    /** 匿名主题只驱动显示，账号保存和回退基线由正常配置流程维护。 */
+    setAnonymousThemeMode(state, action: PayloadAction<ThemeMode>) {
+      state.themeMode = action.payload;
     },
     /** 打开设置抽屉，不触发额外读取或保存。 */
     openUserSettings(state) {
@@ -462,6 +513,7 @@ const preferencesSlice = createSlice({
 /** 对外提供状态重置、抽屉开关与滑块预览动作；配置初始化统一经过可取消的读取请求。 */
 export const {
   resetPreferences,
+  setAnonymousThemeMode,
   openUserSettings,
   closeUserSettings,
   previewLayoutGap,
@@ -477,3 +529,14 @@ export const saveLayoutMode = (layoutMode: LayoutMode) => saveUserSettings({ lay
 
 /** 主题修改复用设置串行保存、乐观更新及失败回退，不在 UI 事件中直接写启动缓存。 */
 export const saveThemeMode = (themeMode: ThemeMode) => saveUserSettings({ themeMode });
+
+/** 落地页切换主题的统一入口，匿名选择在下一次登录时交给账号。 */
+export const changeLandingTheme =
+  (mode: ThemeMode) => (dispatch: AppDispatch, getState: () => RootState) => {
+    if (getState().user.userInfo) {
+      void dispatch(saveThemeMode(mode));
+    } else {
+      dispatch(setAnonymousThemeMode(mode));
+      rememberAnonymousThemeSelection(mode);
+    }
+  };

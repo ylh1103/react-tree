@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router';
 import { createDemoLoginUser } from '@/mocks/login';
 import { writeLoginUser } from '@/utils/loginStorage';
 import { loginReturnTo } from '@/router/login';
+import { claimAnonymousThemeSelection } from '@/store/preferences/themeBootstrap';
 import type { LoginUser } from '@/types/user';
 
 export default function Login() {
@@ -22,6 +23,7 @@ export default function Login() {
     try {
       const user = createDemoLoginUser(role, netEnv);
       writeLoginUser(user);
+      claimAnonymousThemeSelection();
       // 完整重载固定新身份的缓存、同步通道和请求生命周期，释放旧账号页面状态。
       window.location.replace(loginReturnTo(searchParams.get('redirect')));
     } catch {

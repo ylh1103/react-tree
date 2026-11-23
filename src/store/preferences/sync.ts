@@ -1,8 +1,11 @@
 /**
- * 跨页签配置通知通道：优先使用 BroadcastChannel，不可用时回退 storage 事件。
- * 只传递变更信号，不传递配置正文；Store 订阅和请求协调由 effects.ts 统一管理。
+ * 跨页签配置同步：账号偏好广播变更信号，游客主题由浏览器存储同步。
+ * Store 订阅和账号请求协调由 effects.ts 统一管理。
  */
-import { currentUserStorageKey } from '../../utils/userStorage.ts';
+import { currentUserStorageKey, userStorageKey } from '../../utils/userStorage.ts';
+import { defaultUserSettings } from '../../types/preferences.ts';
+import { parseThemeMode, type ThemeMode } from '../../types/themeMode.ts';
+import { bootstrapThemeKey } from './themeBootstrap.ts';
 /** 通知通道契约；取消接收与关闭通道分别释放监听和底层资源。 */
 export interface UserSettingsSyncTransport {
   publish: () => void;
@@ -12,6 +15,31 @@ export interface UserSettingsSyncTransport {
 
 const syncResource = 'parameter-management:display-settings:v1';
 const changedMessage = 'user-settings-changed';
+
+/** 游客页签只接收匿名首屏主题；读取当前缓存避免排队事件应用已被覆盖的旧值。 */
+export function subscribeToAnonymousTheme(applyTheme: (mode: ThemeMode) => void) {
+  if (typeof window === 'undefined') return;
+  const browser = window;
+  let storage: Storage;
+  try {
+    storage = browser.localStorage;
+  } catch {
+    return;
+  }
+  const themeKey = userStorageKey(bootstrapThemeKey);
+  const receive = (event: StorageEvent) => {
+    if (event.storageArea !== storage || (event.key !== themeKey && event.key !== null)) return;
+    let cached: string | null;
+    try {
+      cached = storage.getItem(themeKey);
+    } catch {
+      return;
+    }
+    applyTheme(parseThemeMode(cached?.split('|', 1)[0]) ?? defaultUserSettings.themeMode);
+  };
+  browser.addEventListener('storage', receive);
+  return () => browser.removeEventListener('storage', receive);
+}
 
 /** 只传递变更通知，接收方重新读取设置接口，不在广播中传递配置正文。 */
 export function createUserSettingsSyncTransport(): UserSettingsSyncTransport | null {

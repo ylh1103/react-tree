@@ -1,10 +1,9 @@
 /** 验证默认 thunk 中间件的跨 thunk 编排，以及共用设置 API 时的 Store 状态、请求与队列隔离。 */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAppStore } from '../src/store/index.ts';
 import { createAppAsyncThunk } from '../src/store/createAppAsyncThunk.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import {
   cancelPreferencesRequests,
   loadUserSettings,
@@ -16,9 +15,9 @@ test('共享 thunk 可派发设置 thunk，启动主题被实际读取的配置�
   let persisted = { ...defaultUserSettings, themeMode: 'light' };
   mockUserSettingsApi(t, {
     load: async () => persisted,
-    save: async (settings) => (persisted = settings),
+    save: async (_, settings) => (persisted = settings),
   });
-  const store = createAppStore({ themeMode: 'dark' });
+  const store = createSignedInStore({ themeMode: 'dark' });
   assert.equal(store.getState().preferences.themeMode, 'dark');
   assert.equal(store.getState().preferences.initialized, false);
 
@@ -53,7 +52,7 @@ test('共用设置 API 时取消一个 Store 的在途与排队保存，不阻�
   });
   mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings }),
-    save: async (settings, signal) => {
+    save: async (_, settings, signal) => {
       writes++;
       assert.equal(signal.aborted, false);
       if (writes === 1) {
@@ -63,8 +62,8 @@ test('共用设置 API 时取消一个 Store 的在途与排队保存，不阻�
       return settings;
     },
   });
-  const first = createAppStore();
-  const second = createAppStore();
+  const first = createSignedInStore();
+  const second = createSignedInStore();
   await Promise.all([
     first.dispatch(loadUserSettings()).unwrap(),
     second.dispatch(loadUserSettings()).unwrap(),

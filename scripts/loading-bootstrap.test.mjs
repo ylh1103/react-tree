@@ -12,8 +12,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 import { createServer } from 'vite';
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
-import { createAppStore } from '../src/store/index.ts';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 import {
   loadUserSettings,
   refreshUserSettings,
@@ -70,8 +69,8 @@ test('首次等待沿用缓存图标，加载成功才校准；读取失败及�
   values.set(bootstrapLoadingKey, 'data-wave');
   const first = deferred();
   let loading = first.promise;
-  mockUserSettingsApi(t, { load: () => loading, save: async (value) => value });
-  const store = createAppStore({ loadingStyle: readBootstrapLoading() });
+  mockUserSettingsApi(t, { load: () => loading, save: async (_, value) => value });
+  const store = createSignedInStore({ loadingStyle: readBootstrapLoading() });
   t.after(startUserSettingsEffects(store, null));
   const request = store.dispatch(loadUserSettings());
   assert.equal(store.getState().preferences.loadingStyle, 'data-wave');
@@ -97,8 +96,8 @@ test('乐观选择与失败保存不污染启动图标，后台同步及恢复�
   const saving = deferred();
   let save = () => saving.promise;
   let persisted = { ...defaultUserSettings, loadingStyle: 'data-comet' };
-  mockUserSettingsApi(t, { load: async () => persisted, save: (value) => save(value) });
-  const store = createAppStore();
+  mockUserSettingsApi(t, { load: async () => persisted, save: (_, value) => save(value) });
+  const store = createSignedInStore();
   t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings()).unwrap();
   const request = store.dispatch(saveUserSettings({ loadingStyle: 'flat-split' }));
@@ -124,13 +123,13 @@ test('连续保存中较早成功的图标推进缓存，后续保存失败仍�
   let calls = 0;
   mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
-    save: async (value) => {
+    save: async (_, value) => {
       if (++calls === 1) await first.promise;
       else throw Error('后续保存失败');
       return value;
     },
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   t.after(startUserSettingsEffects(store, null));
   await store.dispatch(loadUserSettings()).unwrap();
   const one = store.dispatch(saveUserSettings({ loadingStyle: 'flat-split' }));
@@ -152,9 +151,9 @@ test('存储写入失败后可重试，无关更新不重复写入，重置及�
   };
   mockUserSettingsApi(t, {
     load: async () => ({ ...defaultUserSettings, loadingStyle: 'data-wave' }),
-    save: async (value) => value,
+    save: async (_, value) => value,
   });
-  const store = createAppStore();
+  const store = createSignedInStore();
   const stop = startUserSettingsEffects(store, null);
   t.after(stop);
   await store.dispatch(loadUserSettings());
@@ -254,7 +253,7 @@ test('HTML 内联五款正式图标及 UnoCSS，脚本先于外部资源；React
       css[1].includes(`[data-bootstrap-loading-style=${expected}]`),
       '工具类必须生成可匹配的祖先选择器',
     );
-    const store = createAppStore({ loadingStyle: expected });
+    const store = createSignedInStore({ loadingStyle: expected });
     const waiting = renderToStaticMarkup(
       createElement(Provider, { store }, createElement(ResourceLoading)),
     );

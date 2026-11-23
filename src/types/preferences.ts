@@ -51,9 +51,9 @@ export const defaultUserSettings: UserSettings = {
 /** 显示偏好的读写契约，不依赖用户资料；完整文档仅在 HTTP 边界合并。 */
 export interface UserSettingsApi {
   /** 获取最新显示配置，取消信号贯穿实际请求。 */
-  load: (signal?: AbortSignal) => Promise<UserSettings>;
+  load: (ystId: string, signal?: AbortSignal) => Promise<UserSettings>;
   /** 保存平台配置，接口先读取完整文档以保留未知字段。 */
-  save: (settings: UserSettings, signal?: AbortSignal) => Promise<UserSettings>;
+  save: (ystId: string, settings: UserSettings, signal?: AbortSignal) => Promise<UserSettings>;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { createSystemTestRouter } from './helpers/systemRouter.mjs';
-import { mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
+import { createSignedInStore, mockUserSettingsApi } from './helpers/userSettingsApi.mjs';
 /** 系统接口回归：平台角色与成员关系决定系统访问，保留接口错误、请求去重、配置完整性及取消边界。 */
 import assert from 'node:assert/strict';
 import { CancelledError } from '@tanstack/react-query';
@@ -271,18 +271,20 @@ test('接口返回 403 时传播错误，系统与业务缓存不再由全局监
 
 test('显示偏好保留完整文档；配置损坏时禁止覆盖并允许独立重试', async () => {
   writeMock(
-    'display-settings:anonymous',
+    'display-settings:user:platform-access-test',
     JSON.stringify({ theme: 'vs-dark', defaultCheckAllEnvTag: false, future: { value: 3 } }),
   );
-  const local = createAppStore();
+  const local = createSignedInStore({
+    userInfo: { ...createDemoLoginUser('1'), ystId: 'platform-access-test' },
+  });
   await local.dispatch(loadUserSettings()).unwrap();
   await local.dispatch(saveUserSettings({ themeMode: 'dark' })).unwrap();
-  const document = JSON.parse(readMock('display-settings:anonymous', ''));
+  const document = JSON.parse(readMock('display-settings:user:platform-access-test', ''));
   assert.equal(document.theme, 'vs-dark');
   assert.equal(document.themeMode, 'dark');
   assert.equal(document.defaultCheckAllEnvTag, false);
   assert.deepEqual(document.future, { value: 3 });
-  writeMock('display-settings:anonymous', '{');
+  writeMock('display-settings:user:platform-access-test', '{');
   local.dispatch(resetPreferences());
   await local.dispatch(loadUserSettings());
   assert.equal(local.getState().preferences.status, 'load-error');
@@ -290,8 +292,8 @@ test('显示偏好保留完整文档；配置损坏时禁止覆盖并允许独�
     (await local.dispatch(saveUserSettings({ themeMode: 'light' }))).meta.condition,
     true,
   );
-  assert.equal(readMock('display-settings:anonymous', ''), '{');
-  writeMock('display-settings:anonymous', '{}');
+  assert.equal(readMock('display-settings:user:platform-access-test', ''), '{');
+  writeMock('display-settings:user:platform-access-test', '{}');
   await local.dispatch(loadUserSettings()).unwrap();
   assert.equal(local.getState().preferences.status, 'ready');
 });
@@ -305,14 +307,16 @@ test('整体取消后迟到保存不能恢复配置，排队写入也不会继�
   });
   mockUserSettingsApi(t, {
     load: async () => defaultUserSettings,
-    save: async (settings, requestSignal) => {
+    save: async (_, settings, requestSignal) => {
       writes++;
       signal = requestSignal;
       await pending;
       return settings;
     },
   });
-  const local = createAppStore();
+  const local = createSignedInStore({
+    userInfo: { ...createDemoLoginUser('1'), ystId: 'platform-access-test' },
+  });
   await local.dispatch(loadUserSettings()).unwrap();
   const first = local.dispatch(saveUserSettings({ themeMode: 'dark' }));
   const next = local.dispatch(saveUserSettings({ layoutMode: 'compact' }));

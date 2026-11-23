@@ -7,20 +7,23 @@ import type { UserSettingsApi } from '@/types/preferences.ts';
 import { parseSettingsDocument, settingsFromDocument } from '@/types/userSettings.ts';
 export function createUserSettingsApi(url: string, loadTimeoutMs = 10_000): UserSettingsApi {
   return {
-    load: async (signal) => {
+    load: async (ystId, signal) => {
       const { userSetting } = await requestData<{ userSetting: string }>({
         url,
+        params: { ystId },
         signal,
         timeout: loadTimeoutMs,
       });
       return settingsFromDocument(userSetting);
     },
-    save: async (settings, signal) => {
+    save: async (ystId, settings, signal) => {
+      const params = { ystId };
       // 保存前重新读取完整文档，再覆盖本项目负责的字段，保留编辑器 theme、defaultCheckAllEnvTag
       // 和未知字段。解析失败直接终止，绝不能用默认配置覆盖损坏的服务端 JSON。
       // 这是读后合并，并非跨页签原子更新；本页签的请求顺序由 Slice 的保存队列保证。
       const current = await requestData<{ userSetting: string }>({
         url,
+        params,
         signal,
       });
       const document = parseSettingsDocument(current.userSetting);
@@ -38,6 +41,7 @@ export function createUserSettingsApi(url: string, loadTimeoutMs = 10_000): User
         await requestData<{ userSetting: string }>({
           url,
           method: 'PUT',
+          params,
           data: { userSetting },
           signal,
         })
