@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import VersionFlowPreview from './VersionFlowPreview';
 
 const panelClass =
-  'overflow-hidden rounded-14px border border-solid border-border-subtle bg-surface [box-shadow:0_14px_36px_-18px_rgba(0,0,0,0.24)] [transform:var(--core-preview-angle,none)] [animation:landing-feature-panel-in_620ms_ease-out_var(--core-preview-delay,110ms)_both_var(--core-preview-play-state)] motion-reduce:animate-none!';
+  'overflow-hidden rounded-14px border border-solid border-border-subtle bg-surface [box-shadow:0_14px_36px_-18px_rgba(0,0,0,0.24)] [transform:var(--core-preview-angle,none)] [animation:landing-feature-panel-in_620ms_ease-out_var(--core-preview-delay,110ms)_both_var(--core-preview-play-state)]';
 const backPanelClass =
   '[@media(min-width:860px)]:[--core-preview-offset:12px] [@media(min-width:860px)]:[--core-preview-angle:perspective(950px)_rotateY(-13deg)_rotateX(12deg)_rotateZ(-4deg)]';
 const floatingClass =
@@ -20,7 +20,7 @@ function PreviewStage({ label, children }: { label: string; children: ReactNode 
     >
       <div
         aria-hidden="true"
-        className="relative min-w-0 [animation:landing-feature-preview-in_400ms_ease_both_var(--core-preview-play-state)] motion-reduce:animate-none!"
+        className="relative min-w-0 [animation:landing-feature-preview-in_400ms_ease_both_var(--core-preview-play-state)]"
       >
         {children}
       </div>

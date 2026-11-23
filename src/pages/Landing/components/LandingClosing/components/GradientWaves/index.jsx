@@ -233,10 +233,6 @@ const groundAt = (point, aspect, s, look) => {
   return [dir[0] * travel, dir[1] * travel];
 };
 
-const prefersReduced = () =>
-  typeof window !== 'undefined' &&
-  (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false);
-
 export default function GradientWaves({
   horizonColor = '#5227FF',
   waveColor = '#FF9FFC',
@@ -267,6 +263,7 @@ export default function GradientWaves({
   swellOnClick = true,
   paused = false,
   dpr = 2,
+  onReadyChange,
   className = '',
   style,
 }) {
@@ -326,7 +323,12 @@ export default function GradientWaves({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return undefined;
+    if (
+      !container ||
+      typeof IntersectionObserver === 'undefined' ||
+      typeof ResizeObserver === 'undefined'
+    )
+      return undefined;
     const canvas = document.createElement('canvas');
     canvas.className = CANVAS;
     container.appendChild(canvas);
@@ -337,6 +339,8 @@ export default function GradientWaves({
       stencil: false,
       premultipliedAlpha: true,
       powerPreference: 'high-performance',
+      // 逐像素计算在软件渲染下开销很大，交由静态波纹降级。
+      failIfMajorPerformanceCaveat: true,
     });
     if (!gl) {
       canvas.remove();
@@ -406,6 +410,7 @@ export default function GradientWaves({
     gl.useProgram(program);
 
     const swellData = new Float32Array(MAX_SWELLS * 3);
+    let ready = false;
     const state = {
       width: 1,
       height: 1,
@@ -446,12 +451,12 @@ export default function GradientWaves({
       wake();
     };
 
-    const introProgress = (s, reduced) => {
-      if (!s.intro || reduced || state.introAt < 0) return 1;
+    const introProgress = (s) => {
+      if (!s.intro || state.introAt < 0) return 1;
       return clamp((state.clock - state.introAt) / INTRO_SECONDS, 0, 1);
     };
 
-    const render = (reduced) => {
+    const render = () => {
       const s = settingsRef.current;
       gl.viewport(0, 0, state.width, state.height);
       gl.uniform2f(u.uResolution, state.width, state.height);
@@ -493,7 +498,7 @@ export default function GradientWaves({
         s.amplitude *
         ((s.waveScale / 7) * (1 + Math.abs(s.swell) / 20) +
           ((s.waveScale * s.waveRatio) / 3) * (1 + Math.abs(s.turbulence) / 23));
-      const progress = introProgress(s, reduced);
+      const progress = introProgress(s);
       const shown = Math.min(1, progress / 0.22);
       const crest = 160 * Math.pow(3 / 160, easeInOut(Math.max(0, (progress - 0.1) / 0.9)));
       const settle = clamp((progress - 0.75) / 0.25, 0, 1);
@@ -523,16 +528,15 @@ export default function GradientWaves({
 
     const tick = (now) => {
       state.raf = 0;
-      if (!state.visible || document.hidden) return;
+      if (!state.visible || document.hidden || gl.isContextLost()) return;
       const s = settingsRef.current;
       const dt = state.last ? Math.min((now - state.last) / 1000, 0.1) : 0;
       state.last = now;
-      const reduced = prefersReduced();
       state.clock += dt;
       if (state.introAt < 0) state.introAt = state.clock;
-      if (!s.paused && !reduced) state.time += dt * s.speed;
+      if (!s.paused) state.time += dt * s.speed;
 
-      const steering = s.mouseInteraction && state.inside && !reduced;
+      const steering = s.mouseInteraction && state.inside;
       const target = steering ? state.pointer : [0.5, 0.5];
       const ease = 1 - Math.exp(-dt / 0.45);
       const goalX = (target[0] - 0.5) * s.parallaxStrength * 0.35;
@@ -550,21 +554,23 @@ export default function GradientWaves({
         Math.abs(steerX - state.steer[0]) + Math.abs(steerY - state.steer[1]) > 0.0005;
       state.swells = state.swells.filter((swell) => state.clock - swell.at < SWELL_SECONDS);
 
-      const still = s.paused || reduced;
-      const transient =
-        moving || turning || state.swells.length > 0 || introProgress(s, reduced) < 1;
-      if (state.seen !== s || transient || !still) state.quiet = 0;
+      const transient = moving || turning || state.swells.length > 0 || introProgress(s) < 1;
+      if (state.seen !== s || transient || !s.paused) state.quiet = 0;
       else state.quiet += 1;
       state.seen = s;
       if (state.quiet > 3) return;
 
       state.raf = requestAnimationFrame(tick);
       fit();
-      render(reduced);
+      render();
+      if (!ready && state.cssWidth > 0 && state.cssHeight > 0 && !gl.isContextLost()) {
+        ready = true;
+        onReadyChange?.(true);
+      }
     };
 
     const wake = () => {
-      if (state.raf || !state.visible || document.hidden) return;
+      if (state.raf || !state.visible || document.hidden || gl.isContextLost()) return;
       state.last = 0;
       state.raf = requestAnimationFrame(tick);
     };
@@ -598,7 +604,7 @@ export default function GradientWaves({
 
     const onDown = (event) => {
       const s = settingsRef.current;
-      if (!s.swellOnClick || event.button !== 0 || prefersReduced()) return;
+      if (!s.swellOnClick || event.button !== 0) return;
       if (
         event.target instanceof Element &&
         event.target.closest('a, button, input, textarea, select, label, [role="button"]')
@@ -626,6 +632,13 @@ export default function GradientWaves({
     const sizes = new ResizeObserver(measure);
     sizes.observe(container);
     measure();
+    const onContextLost = () => {
+      cancelAnimationFrame(state.raf);
+      state.raf = 0;
+      ready = false;
+      onReadyChange?.(false);
+    };
+    canvas.addEventListener('webglcontextlost', onContextLost);
     document.addEventListener('visibilitychange', wake);
     window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerdown', onDown);
@@ -634,6 +647,8 @@ export default function GradientWaves({
 
     return () => {
       cancelAnimationFrame(state.raf);
+      canvas.removeEventListener('webglcontextlost', onContextLost);
+      if (ready) onReadyChange?.(false);
       wakeRef.current = null;
       document.removeEventListener('visibilitychange', wake);
       visibility.disconnect();
@@ -647,7 +662,7 @@ export default function GradientWaves({
       gl.getExtension('WEBGL_lose_context')?.loseContext();
       canvas.remove();
     };
-  }, []);
+  }, [onReadyChange]);
 
   return (
     <div ref={containerRef} className={[ROOT, className].filter(Boolean).join(' ')} style={style} />

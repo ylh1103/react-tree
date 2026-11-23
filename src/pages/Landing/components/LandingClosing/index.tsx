@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { m as motion, useReducedMotion, type Variants } from 'motion/react';
+import { m as motion, type Variants } from 'motion/react';
 import logo from '@/assets/logo.jpg';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
 import LandingWordmark from './components/LandingWordmark';
@@ -42,11 +42,10 @@ const entrance: Variants = {
 /** 落地页页尾沿用平台主题，组装行动区与页脚导航。 */
 export default function LandingClosing() {
   const { theme } = useLandingTheme();
-  const reduce = useReducedMotion();
   const reveal = {
     variants: entrance,
-    initial: reduce ? false : 'hidden',
-    whileInView: reduce ? undefined : 'show',
+    initial: 'hidden',
+    whileInView: 'show',
     viewport: { once: true, margin: '-80px' },
   } as const;
   const edge =

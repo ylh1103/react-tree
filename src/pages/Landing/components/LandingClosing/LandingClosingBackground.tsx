@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { theme } from 'antd';
-import { useReducedMotion } from 'motion/react';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
+import { withAlpha } from '../../model/themeColors';
 
 const GradientWaves = lazy(() => import('./components/GradientWaves'));
 const mask = `linear-gradient(
@@ -20,13 +20,20 @@ const mask = `linear-gradient(
     #000 78%
   )`;
 
-/** 在行动区接近视口时加载波浪，尊重减少动态效果的偏好。 */
+/** 先显示静态波纹，行动区接近视口且 WebGL 成功绘制后再切换为动态波浪。 */
 export default function LandingClosingBackground() {
   const rootRef = useRef<HTMLDivElement>(null);
   const [near, setNear] = useState(() => typeof IntersectionObserver === 'undefined');
-  const reducedMotion = useReducedMotion();
+  const [wavesReady, setWavesReady] = useState(false);
   const { theme: mode } = useLandingTheme();
   const { token } = theme.useToken();
+  const light = mode === 'light';
+  const staticShadow = withAlpha(token.colorPrimary, light ? 0.26 : 0.24);
+  const staticCrest = withAlpha(token.colorPrimaryBorder, light ? 0.46 : 0.34);
+  const staticWaves = `radial-gradient(ellipse at 60% 132%, ${staticShadow} 0 26%, transparent 48%),
+    radial-gradient(ellipse at 31% 123%, ${staticCrest} 0 22%, transparent 45%),
+    radial-gradient(ellipse at 96% 116%, ${staticShadow}, transparent 53%),
+    radial-gradient(ellipse at 5% 115%, ${staticCrest}, transparent 46%)`;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -48,17 +55,24 @@ export default function LandingClosingBackground() {
       ref={rootRef}
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 -z-1 overflow-hidden"
-      style={{ maskImage: mask, WebkitMaskImage: mask, opacity: mode === 'light' ? 0.88 : 1 }}
+      style={{
+        backgroundImage: wavesReady ? undefined : staticWaves,
+        maskImage: mask,
+        WebkitMaskImage: mask,
+        opacity: light ? 0.88 : 1,
+      }}
     >
-      {near && !reducedMotion && (
+      {near && (
         <Suspense fallback={null}>
           <GradientWaves
             horizonColor={token.colorPrimary}
             waveColor={token.colorPrimaryBorder}
             crestColor={token.colorPrimaryBgHover}
-            lightMode={mode === 'light'}
+            lightMode={light}
             tilt={58}
             dpr={1.25}
+            intro={false}
+            onReadyChange={setWavesReady}
             style={{ transform: 'scaleX(1.18)' }}
           />
         </Suspense>

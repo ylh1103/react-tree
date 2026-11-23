@@ -6,11 +6,9 @@ import { heroFade } from '../HeroParticles/masks';
 import HeroParticles from '../HeroParticles';
 import LandingPreview from '../LandingPreview';
 import { useLandingTheme } from '../../hooks/useLandingTheme';
-import { useLandingEntrance } from '../../hooks/useLandingEntrance';
 
 const HeroLightKnot = lazy(() => import('../HeroLightKnot'));
 export default function LandingHero() {
-  const entrance = useLandingEntrance('hero');
   const { theme, particleColors } = useLandingTheme();
   const light = theme === 'light';
   const variables = {
@@ -40,8 +38,10 @@ export default function LandingHero() {
         />
       </div>
       <m.div
-        {...entrance}
-        className="pointer-events-none relative z-2 mx-auto w-full max-w-1280px pl-44px pr-32px pt-[clamp(104px,16vh,144px)] desktop:pt-[clamp(184px,calc(17vh+40px),216px)] [@media(max-width:768px)]:px-22px [@media(max-width:768px)]:pt-[clamp(88px,13svh,110px)] motion-reduce:opacity-100! motion-reduce:transform-none! motion-reduce:filter-none!"
+        initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: 1.1, ease: [0.23, 1, 0.32, 1] }}
+        className="pointer-events-none relative z-2 mx-auto w-full max-w-1280px pl-44px pr-32px pt-[clamp(104px,16vh,144px)] desktop:pt-[clamp(184px,calc(17vh+40px),216px)] [@media(max-width:768px)]:px-22px [@media(max-width:768px)]:pt-[clamp(88px,13svh,110px)]"
       >
         <div className="relative">
           <div

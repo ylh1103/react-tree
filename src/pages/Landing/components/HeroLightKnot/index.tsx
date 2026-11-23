@@ -32,7 +32,6 @@ interface Settings {
   intro: boolean;
   paused: boolean;
   dpr: number;
-  reduced: boolean;
 }
 
 interface Controller {
@@ -109,7 +108,6 @@ uniform float uWidth;
 uniform float uTwists;
 uniform float uPhase;
 uniform float uTime;
-uniform float uMotion;
 uniform float uReveal;
 uniform vec4 uWaves[${MAX_WAVES}];
 in vec3 position;
@@ -139,7 +137,7 @@ vec3 knotTangent(float t) {
 }
 
 float twistAt(float u) {
-  float angle = PI * uTwists * u + uPhase + 0.5 * uMotion * sin(u * TAU * 2.0 + uTime * 0.15);
+  float angle = PI * uTwists * u + uPhase + 0.5 * sin(u * TAU * 2.0 + uTime * 0.15);
   for (int i = 0; i < ${MAX_WAVES}; i++) {
     vec4 wave = uWaves[i];
     if (wave.z <= 0.0) continue;
@@ -167,7 +165,7 @@ void main() {
   float head = mix(smoothstep(uReveal, uReveal - 0.06, u), 1.0, closing);
   float tail = mix(smoothstep(0.0, 0.06, u), 1.0, closing);
   float drawn = uReveal >= 0.9999 ? 1.0 : head * tail;
-  float breath = 1.0 - 0.2 * uMotion + 0.2 * uMotion * sin(u * TAU * 3.0 + uTime * 0.13);
+  float breath = 0.8 + 0.2 * sin(u * TAU * 3.0 + uTime * 0.13);
   vec3 point = center + across * v * uWidth * breath * drawn;
   vec4 world = modelMatrix * vec4(point, 1.0);
   vWorld = world.xyz;
@@ -418,7 +416,6 @@ function createKnot(
     uTwists: { value: 4 },
     uPhase: { value: 0 },
     uTime: { value: 0 },
-    uMotion: { value: 1 },
     uReveal: { value: 1 },
     uWaves: { value: waveSlots },
     uLabA: { value: new THREE.Vector3() },
@@ -708,7 +705,7 @@ function createKnot(
       0,
     );
     const tilt = (clamp(finite(s.tilt, 32), -90, 90) * Math.PI) / 180;
-    const motion = s.reduced || s.paused ? 0 : 1;
+    const motion = s.paused ? 0 : 1;
     ribbon.rotation.set(
       -tilt + tumbleX + parallaxY + 0.08 * motion * Math.sin(clock * 0.1),
       tumbleY + parallaxX + 0.15 * motion * Math.sin(clock * 0.07),
@@ -733,7 +730,6 @@ function createKnot(
     u.uTwists.value = clamp(Math.round(finite(s.twists, 4)), 0, 12);
     u.uPhase.value = phase;
     u.uTime.value = clock;
-    u.uMotion.value = s.reduced ? 0 : 1;
     u.uReveal.value = reveal;
     u.uFlow.value = flow;
     u.uGlow.value = clamp(finite(s.glow, 1), 0, 4) * 0.07;
@@ -838,7 +834,7 @@ function createKnot(
     if (last && now - last < 100) adapt(now - last);
     const dt = last && now - last < 100 ? Math.min(Math.max((now - last) / 1000, 0), 0.05) : 1 / 60;
     last = now;
-    const moving = !s.reduced && !s.paused;
+    const moving = !s.paused;
     if (moving) {
       clock += dt;
       const speed = clamp(finite(s.flowSpeed, 0.5), 0, 3);
@@ -854,19 +850,19 @@ function createKnot(
         tumbleY += tumbleVY * dt;
       }
     }
-    if (s.intro && !s.reduced) {
+    if (s.intro) {
       if (introStart < 0) introStart = now;
       const k = clamp((now - introStart) / 1000 / INTRO, 0, 1);
       reveal = k >= 1 ? 1 : k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
     } else {
       reveal = 1;
     }
-    const follow = s.reduced ? 1 : 1 - Math.exp(-dt / 0.5);
+    const follow = 1 - Math.exp(-dt / 0.5);
     parallaxX += (parallaxTargetX - parallaxX) * follow;
     parallaxY += (parallaxTargetY - parallaxY) * follow;
     const aimX = lightTargetX ?? -0.5 + 0.3 * Math.sin(clock * 0.09);
     const aimY = lightTargetX === null ? 0.7 : lightTargetY;
-    const glide = s.reduced ? 1 : 1 - Math.exp(-dt * 2.5);
+    const glide = 1 - Math.exp(-dt * 2.5);
     lightX += (aimX - lightX) * glide;
     lightY += (aimY - lightY) * glide;
     for (let i = waves.length - 1; i >= 0; i--)
@@ -937,8 +933,8 @@ function createKnot(
         tumbleY += turnX;
         tumbleX = clamp(tumbleX + turnY, -1.4, 1.4);
         const elapsed = Math.max((now - drag.time) / 1000, 0.008);
-        tumbleVY = s.reduced ? 0 : clamp(turnX / elapsed, -8, 8);
-        tumbleVX = s.reduced ? 0 : clamp(turnY / elapsed, -8, 8);
+        tumbleVY = clamp(turnX / elapsed, -8, 8);
+        tumbleVX = clamp(turnY / elapsed, -8, 8);
         drag.time = now;
       }
       drag.lastX = event.clientX;
@@ -971,7 +967,7 @@ function createKnot(
       tumbleVY *= 0.2;
     }
     const s = settings();
-    if (!current.moved && s.interactive && !s.reduced && !s.paused) {
+    if (!current.moved && s.interactive && !s.paused) {
       const at = positionAt(event.clientX, event.clientY);
       if (at !== null) addWave(at, clamp(finite(s.flip, 1), 0, 2));
     }
@@ -1036,7 +1032,7 @@ function createKnot(
   canvas.addEventListener('webglcontextrestored', onRestored);
   resizeObserver.observe(root);
   intersection.observe(root);
-  if (settings().intro && !settings().reduced) reveal = 0;
+  if (settings().intro) reveal = 0;
   readSize();
   syncColors();
 
@@ -1052,7 +1048,6 @@ function createKnot(
     },
     flip: (position, strength) => {
       const s = settings();
-      if (s.reduced) return;
       addWave(
         position === undefined ? Math.random() : ((position % 1) + 1) % 1,
         clamp(finite(strength ?? s.flip, 1), 0, 2),
@@ -1060,12 +1055,10 @@ function createKnot(
       schedule();
     },
     spin: (velocity) => {
-      if (settings().reduced) return;
       tumbleVY = clamp(finite(velocity ?? 4, 4), -8, 8);
       schedule();
     },
     replay: () => {
-      if (settings().reduced) return;
       introStart = -1;
       reveal = 0;
       last = 0;
@@ -1116,7 +1109,6 @@ export default function HeroLightKnot({
     const section = root.current;
     const stage = stageRef.current;
     if (!section || !stage) return;
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     // 调整色相而非仅提亮，保留两条主题近邻色之间的过渡。
     const accent = new THREE.Color(accentColor);
     const companion =
@@ -1151,7 +1143,6 @@ export default function HeroLightKnot({
         intro: true,
         paused: false,
         dpr: 2,
-        reduced: motionQuery.matches,
       },
     };
     const knot = createKnot(section, stage, settingsRef);
@@ -1163,14 +1154,8 @@ export default function HeroLightKnot({
       knot.sync();
     });
     resizer.observe(section);
-    const onMotion = () => {
-      settingsRef.current.reduced = motionQuery.matches;
-      knot.sync();
-    };
-    motionQuery.addEventListener('change', onMotion);
     return () => {
       resizer.disconnect();
-      motionQuery.removeEventListener('change', onMotion);
       knot.destroy();
     };
   }, [theme, accentColor]);

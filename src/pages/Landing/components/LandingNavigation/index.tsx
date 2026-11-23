@@ -12,7 +12,7 @@ const navigation = [
   { label: '常见问题', href: '#faq' },
 ];
 const linkClass =
-  'relative z-1 rounded-12px px-2.5 py-1.5 text-13px font-500 tracking-[0.04em] text-text layout-focus active:scale-96 motion-reduce:transform-none';
+  'relative z-1 rounded-12px px-2.5 py-1.5 text-13px font-500 tracking-[0.04em] text-text layout-focus active:scale-96';
 
 function subscribeToScroll(onChange: () => void) {
   window.addEventListener('scroll', onChange, { passive: true });
@@ -72,10 +72,10 @@ export default function LandingNavigation() {
   const glass = scrolled || menuOpen;
   return (
     <header
-      className={`pointer-events-none sticky z-1500 h-0 flex flex-col items-center transition-[top] duration-300 motion-reduce:transition-none [@media(max-width:768px)]:px-4 ${scrolled ? 'top-4' : 'top-2'}`}
+      className={`pointer-events-none sticky z-1500 h-0 flex flex-col items-center transition-[top] duration-300 [@media(max-width:768px)]:px-4 ${scrolled ? 'top-4' : 'top-2'}`}
     >
       <div
-        className={`pointer-events-auto relative flex h-56px w-full shrink-0 items-center justify-between rounded-14px border border-solid py-0 transition-[max-width,padding,background,border-color] duration-500 ease-out motion-reduce:transition-none [@media(max-width:768px)]:rounded-16px [@media(max-width:768px)]:px-5px ${glass ? 'max-w-[calc(100%-12px)] border-[var(--landing-glass-border)] bg-[var(--landing-glass)] px-20px shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] [@media(min-width:769px)]:max-w-[min(1204px,calc(100%-76px))] [@media(min-width:769px)]:left-6px' : 'max-w-1280px border-transparent bg-transparent pl-43px pr-31px'}`}
+        className={`pointer-events-auto relative flex h-56px w-full shrink-0 items-center justify-between rounded-14px border border-solid py-0 transition-[max-width,padding,background,border-color] duration-500 ease-out [@media(max-width:768px)]:rounded-16px [@media(max-width:768px)]:px-5px ${glass ? 'max-w-[calc(100%-12px)] border-[var(--landing-glass-border)] bg-[var(--landing-glass)] px-20px shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] [@media(min-width:769px)]:max-w-[min(1204px,calc(100%-76px))] [@media(min-width:769px)]:left-6px' : 'max-w-1280px border-transparent bg-transparent pl-43px pr-31px'}`}
       >
         <a
           href="#landing-top"
@@ -96,7 +96,7 @@ export default function LandingNavigation() {
           <span
             ref={highlight}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 rounded-12px border border-solid border-border-subtle bg-[var(--landing-glass)] opacity-0 shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] transition-[transform,width,height,opacity] duration-300 motion-reduce:transition-none"
+            className="pointer-events-none absolute left-0 top-0 rounded-12px border border-solid border-border-subtle bg-[var(--landing-glass)] opacity-0 shadow-[var(--landing-shadow)] [backdrop-filter:blur(24px)_saturate(1.4)] transition-[transform,width,height,opacity] duration-300"
           />
           {navigation.map(({ label, href }) => (
             <a
@@ -145,7 +145,7 @@ export default function LandingNavigation() {
               <span
                 key={index}
                 aria-hidden="true"
-                className={`block h-1.5px w-full rounded-1px bg-text transition-[transform,opacity] duration-250 motion-reduce:transition-none ${menuOpen ? (index === 0 ? 'translate-y-5.5px rotate-45' : index === 1 ? 'opacity-0' : '-translate-y-5.5px -rotate-45') : ''}`}
+                className={`block h-1.5px w-full rounded-1px bg-text transition-[transform,opacity] duration-250 ${menuOpen ? (index === 0 ? 'translate-y-5.5px rotate-45' : index === 1 ? 'opacity-0' : '-translate-y-5.5px -rotate-45') : ''}`}
               />
             ))}
           </Button>
@@ -154,7 +154,7 @@ export default function LandingNavigation() {
           id="landing-menu"
           aria-label="移动端导航"
           inert={!menuOpen}
-          className={`absolute right-5px top-[calc(100%+8px)] z-1001 hidden min-w-200px flex-col gap-0.5 rounded-14px border border-solid border-border-subtle bg-[var(--landing-menu)] p-2 shadow-[var(--landing-menu-shadow)] [backdrop-filter:blur(32px)_saturate(1.3)] transition-[opacity,transform,visibility] duration-200 motion-reduce:transition-none [@media(max-width:768px)]:flex ${menuOpen ? 'visible translate-y-0 opacity-100' : 'pointer-events-none invisible -translate-y-1.5 opacity-0'}`}
+          className={`absolute right-5px top-[calc(100%+8px)] z-1001 hidden min-w-200px flex-col gap-0.5 rounded-14px border border-solid border-border-subtle bg-[var(--landing-menu)] p-2 shadow-[var(--landing-menu-shadow)] [backdrop-filter:blur(32px)_saturate(1.3)] transition-[opacity,transform,visibility] duration-200 [@media(max-width:768px)]:flex ${menuOpen ? 'visible translate-y-0 opacity-100' : 'pointer-events-none invisible -translate-y-1.5 opacity-0'}`}
         >
           {navigation.map(({ label, href }) => (
             <a

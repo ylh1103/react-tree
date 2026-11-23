@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { m as motion, useReducedMotion, type Variants } from 'motion/react';
+import { m as motion, type Variants } from 'motion/react';
 
 import { useLandingTheme } from '../../hooks/useLandingTheme';
 
@@ -77,7 +77,7 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
           <a
             key={channel.label}
             href={channel.href}
-            className="group flex cursor-pointer items-center gap-4 [background-color:var(--faq-doc-row)] p-5 text-[var(--faq-doc-text)] transition-colors duration-200 hover:[background-color:var(--faq-doc-hover)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
+            className="group flex cursor-pointer items-center gap-4 [background-color:var(--faq-doc-row)] p-5 text-[var(--faq-doc-text)] transition-colors duration-200 hover:[background-color:var(--faq-doc-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-current"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full [background-color:var(--faq-doc-background)] ring-1 ring-[var(--faq-doc-border)]">
               <span aria-hidden="true" className={`${channel.icon} size-4`} />
@@ -90,7 +90,7 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
             </div>
             <span
               aria-hidden="true"
-              className="i-lucide-arrow-up-right size-4 shrink-0 text-[var(--faq-doc-muted)] group-hover:text-[var(--faq-doc-text)] transition-colors duration-200 motion-reduce:transition-none"
+              className="i-lucide-arrow-up-right size-4 shrink-0 text-[var(--faq-doc-muted)] group-hover:text-[var(--faq-doc-text)] transition-colors duration-200"
             />
           </a>
         ))}
@@ -112,7 +112,6 @@ function FaqChannels({ className, variants }: { className?: string; variants: Va
 /** 保留 FAQ 6 的双栏、文档入口，解答参数发布常见问题。 */
 export default function LandingFaq() {
   const { theme } = useLandingTheme();
-  const reduce = useReducedMotion();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const container: Variants = {
@@ -120,7 +119,7 @@ export default function LandingFaq() {
     show: { transition: { staggerChildren: 0.08, delayChildren: 0.05 } },
   };
   const item: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : 16 },
+    hidden: { opacity: 0, y: 16 },
     show: {
       opacity: 1,
       y: 0,
@@ -139,7 +138,7 @@ export default function LandingFaq() {
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-16 xl:gap-20">
               <motion.div
                 variants={container}
-                initial={reduce ? false : 'hidden'}
+                initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: '-80px' }}
                 className="lg:sticky lg:top-24 lg:self-start"
@@ -162,7 +161,7 @@ export default function LandingFaq() {
 
               <motion.div
                 variants={container}
-                initial={reduce ? false : 'hidden'}
+                initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: '-80px' }}
                 className="flex min-w-0 flex-col gap-12px lg:gap-8px"
@@ -190,7 +189,7 @@ export default function LandingFaq() {
                           <span>{faq.question}</span>
                           <span
                             aria-hidden="true"
-                            className={`i-lucide-plus size-17px shrink-0 text-[var(--color-text-secondary)] transition-transform duration-350 motion-reduce:transition-none ${isOpen ? 'rotate-135' : ''}`}
+                            className={`i-lucide-plus size-17px shrink-0 text-[var(--color-text-secondary)] transition-transform duration-350 ${isOpen ? 'rotate-135' : ''}`}
                           />
                         </button>
                       </h3>
@@ -200,7 +199,7 @@ export default function LandingFaq() {
                         aria-labelledby={triggerId}
                         aria-hidden={!isOpen}
                         inert={!isOpen}
-                        className={`grid transition-[grid-template-rows] duration-350 motion-reduce:transition-none ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+                        className={`grid transition-[grid-template-rows] duration-350 ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
                       >
                         <div className="min-h-0 overflow-hidden">
                           <p className="m-0 mx-20px mb-20px text-15px leading-[1.7] text-[var(--color-text-secondary)]">
@@ -215,7 +214,7 @@ export default function LandingFaq() {
 
               <motion.div
                 variants={container}
-                initial={reduce ? false : 'hidden'}
+                initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, margin: '-80px' }}
                 className="lg:hidden"

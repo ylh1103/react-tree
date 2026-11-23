@@ -7,11 +7,7 @@ export default function LandingPreview({ light }: { light: boolean }) {
   const y = useSpring(0, { stiffness: 180, damping: 24 });
 
   function trackPointer(event: PointerEvent<HTMLDivElement>) {
-    if (
-      event.pointerType !== 'mouse' ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-      return;
+    if (event.pointerType !== 'mouse') return;
     const bounds = event.currentTarget.getBoundingClientRect();
     x.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 12);
     y.set(((event.clientY - bounds.top) / bounds.height - 0.5) * 10);
@@ -31,7 +27,7 @@ export default function LandingPreview({ light }: { light: boolean }) {
     >
       <m.div
         style={{ x, y }}
-        className={`pointer-events-none overflow-hidden rounded-16px border border-solid bg-[var(--landing-preview-frame)] p-4px shadow-sm motion-reduce:transform-none! ${light ? 'border-border-subtle' : 'border-white/10'}`}
+        className={`pointer-events-none overflow-hidden rounded-16px border border-solid bg-[var(--landing-preview-frame)] p-4px shadow-sm ${light ? 'border-border-subtle' : 'border-white/10'}`}
       >
         <div className="relative flex h-9 items-center justify-center">
           <div className="absolute left-3 flex items-center gap-1.5">

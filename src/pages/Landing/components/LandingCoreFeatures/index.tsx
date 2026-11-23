@@ -1,6 +1,6 @@
 /** 三项核心功能依次展开，每项插图在自己的展示区域内播放。 */
 import { theme } from 'antd';
-import { m as motion, useReducedMotion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { withAlpha } from '../../model/themeColors';
 import { RuntimePreview, VersionPreview } from './previews';
@@ -32,11 +32,9 @@ const features = [
 ];
 
 function FeatureCopy({ feature }: { feature: (typeof features)[number] }) {
-  const reduce = useReducedMotion();
-
   return (
     <motion.div
-      initial={feature.id === 'version' && !reduce ? 'hidden' : 'visible'}
+      initial={feature.id === 'version' ? 'hidden' : 'visible'}
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
     >

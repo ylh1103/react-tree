@@ -41,7 +41,6 @@ export default function GhostReveal({
     const spot = spotRef.current;
     const dots = dotsRef.current;
     if (!node || !host || !spot || !dots || !active) return undefined;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
     const cell = DOT.size + DOT.gap;
     const wrap = (value: number) => ((value % cell) + cell) % cell;
     const bounds = host.getBoundingClientRect();
@@ -75,7 +74,7 @@ export default function GhostReveal({
   return (
     <div
       ref={ref}
-      className={`pointer-events-none absolute inset-0 z-0 overflow-hidden transition-opacity ease-out motion-reduce:transition-none ${active ? 'opacity-[var(--ghost-strength)] duration-1600' : 'opacity-0 duration-700'}`}
+      className={`pointer-events-none absolute inset-0 z-0 overflow-hidden transition-opacity ease-out ${active ? 'opacity-[var(--ghost-strength)] duration-1600' : 'opacity-0 duration-700'}`}
       data-on={active ? '' : undefined}
       aria-hidden="true"
       style={

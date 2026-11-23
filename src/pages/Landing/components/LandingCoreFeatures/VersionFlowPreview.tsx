@@ -1,4 +1,4 @@
-import { m as motion, useReducedMotion } from 'motion/react';
+import { m as motion } from 'motion/react';
 import { useId, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { customEditorThemes, platformEditorThemes } from '@/components/MonacoEditor/themeCatalog';
 import { useEditorTheme } from '@/components/MonacoEditor/useEditorTheme';
@@ -159,7 +159,7 @@ function TerminalContent({
           cx={x}
           cy="16"
           r="2.8"
-          className={`transition-colors duration-150 motion-reduce:transition-none ${active && x === 14 ? 'fill-[var(--core-feature-ink)]' : 'fill-[var(--landing-preview-dot)]'}`}
+          className={`transition-colors duration-150 ${active && x === 14 ? 'fill-[var(--core-feature-ink)]' : 'fill-[var(--landing-preview-dot)]'}`}
         />
       ))}
       <text x="46" y="17" dominantBaseline="middle" className="fill-current text-14px font-650">
@@ -176,7 +176,7 @@ function TerminalContent({
               height="16"
               rx="3"
               opacity={highlighted ? 1 : 0}
-              className={`fill-[var(--core-feature-tint)] transition-opacity duration-150 motion-reduce:transition-none ${highlighted ? 'delay-150' : ''}`}
+              className={`fill-[var(--core-feature-tint)] transition-opacity duration-150 ${highlighted ? 'delay-150' : ''}`}
             />
             <text
               x="17"
@@ -239,7 +239,7 @@ function InteractiveFlowCard({
         width={width}
         height={rows.length === 2 ? 80 : 100}
         rx={cardRadius}
-        className={`${cardClass} transition-colors duration-150 motion-reduce:transition-none group-focus-visible:stroke-2 group-focus-visible:stroke-[var(--core-feature-ink)] ${active ? 'stroke-[var(--core-feature-ink)]!' : ''}`}
+        className={`${cardClass} transition-colors duration-150 group-focus-visible:stroke-2 group-focus-visible:stroke-[var(--core-feature-ink)] ${active ? 'stroke-[var(--core-feature-ink)]!' : ''}`}
       />
       <TerminalContent
         label={label}
@@ -260,7 +260,7 @@ function FlowHighlight({ path }: { path: string }) {
       strokeDasharray="16 100"
       strokeWidth="3"
       vectorEffect="non-scaling-stroke"
-      className="stroke-[var(--core-feature-ink)] [animation:landing-version-highlight_260ms_ease-out_both_var(--core-preview-play-state)] motion-reduce:hidden"
+      className="stroke-[var(--core-feature-ink)] [animation:landing-version-highlight_260ms_ease-out_both_var(--core-preview-play-state)]"
     />
   );
 }
@@ -291,7 +291,6 @@ export default function VersionFlowPreview() {
       ? preferredPalette
       : (customEditorThemes.find(({ value }) => value === platformEditorThemes[theme]) ??
         customEditorThemes[0]);
-  const reduce = useReducedMotion();
   const [hovered, setHovered] = useState<number | 'snapshot' | null>(null);
   const active = typeof hovered === 'number' ? sources[hovered] : null;
   const publishing = hovered === 'snapshot';
@@ -301,7 +300,7 @@ export default function VersionFlowPreview() {
 
   return (
     <motion.div
-      initial={reduce ? 'visible' : 'hidden'}
+      initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
       className="relative mx-auto grid w-full max-w-440px gap-4 [@media(min-width:1024px)]:max-w-680px"
@@ -363,7 +362,7 @@ export default function VersionFlowPreview() {
                   d={path}
                   strokeWidth={lit ? 1.75 : 1.25}
                   vectorEffect="non-scaling-stroke"
-                  className={`transition-[stroke,opacity] duration-150 motion-reduce:transition-none ${lit ? 'stroke-[var(--core-feature-ink)]' : active ? 'stroke-divider opacity-50' : 'stroke-border-subtle'}`}
+                  className={`transition-[stroke,opacity] duration-150 ${lit ? 'stroke-[var(--core-feature-ink)]' : active ? 'stroke-divider opacity-50' : 'stroke-border-subtle'}`}
                 />
                 {lit && <FlowHighlight path={path} />}
                 {hovered === null && (
@@ -375,7 +374,7 @@ export default function VersionFlowPreview() {
                     strokeWidth="1.5"
                     vectorEffect="non-scaling-stroke"
                     style={{ animationDelay: `${index * 0.55}s` }}
-                    className="stroke-[var(--core-feature-ink)] [animation:landing-version-trace_2.2s_linear_infinite_var(--core-preview-play-state)] motion-reduce:hidden"
+                    className="stroke-[var(--core-feature-ink)] [animation:landing-version-trace_2.2s_linear_infinite_var(--core-preview-play-state)]"
                   />
                 )}
               </g>
@@ -392,7 +391,7 @@ export default function VersionFlowPreview() {
             d={layout.uploadPath}
             strokeWidth={publishing ? 1.75 : 1.25}
             vectorEffect="non-scaling-stroke"
-            className={`transition-colors duration-150 motion-reduce:transition-none ${publishing ? 'stroke-[var(--core-feature-ink)]' : 'stroke-border-subtle'}`}
+            className={`transition-colors duration-150 ${publishing ? 'stroke-[var(--core-feature-ink)]' : 'stroke-border-subtle'}`}
           />
           {publishing && <FlowHighlight path={layout.uploadPath} />}
           {hovered === null && (
@@ -402,7 +401,7 @@ export default function VersionFlowPreview() {
               strokeDasharray="24 76"
               strokeWidth="1.5"
               vectorEffect="non-scaling-stroke"
-              className="stroke-[var(--core-feature-ink)] [animation:landing-version-upload_2.2s_linear_infinite_var(--core-preview-play-state)] motion-reduce:hidden"
+              className="stroke-[var(--core-feature-ink)] [animation:landing-version-upload_2.2s_linear_infinite_var(--core-preview-play-state)]"
             />
           )}
         </motion.g>
@@ -427,8 +426,8 @@ export default function VersionFlowPreview() {
           transform={`translate(${layout.snapshot.join(' ')})`}
         >
           <motion.g
-            animate={{ scale: active && !reduce ? 1.05 : 1 }}
-            transition={{ duration: reduce ? 0 : 0.3, ease }}
+            animate={{ scale: active ? 1.05 : 1 }}
+            transition={{ duration: 0.3, ease }}
             className="origin-center [transform-box:fill-box]"
           >
             {/* 按键和值匹配，避免高亮被应用参数覆盖的公共端口。 */}

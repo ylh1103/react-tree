@@ -118,7 +118,6 @@ export function useDotGrid(settings: DotGridSettings) {
     gl.vertexAttribDivisor(2, 1);
     gl.bindVertexArray(null);
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const view = { width: 0, height: 0, left: 0, top: 0, ratio: 1 };
     const grid = { count: 0, cols: 1, rows: 1, cell: 1, centerX: 0, centerY: 0, reach: 1 };
     let rest = new Float32Array(0);
@@ -131,7 +130,7 @@ export function useDotGrid(settings: DotGridSettings) {
     let instances = new Float32Array(0);
     const pointer = { x: 0, y: 0, vx: 0, vy: 0, time: 0, inside: false, presence: 0 };
     const shocks: { x: number; y: number; start: number }[] = [];
-    let introStart = settingsRef.current.intro && !reduced ? -1 : null;
+    let introStart = settingsRef.current.intro ? -1 : null;
     let visible = true;
     let raf = 0;
     let last = 0;
@@ -186,7 +185,6 @@ export function useDotGrid(settings: DotGridSettings) {
 
     const step = (dt: number, now: number) => {
       const s = settingsRef.current;
-      const motion = reduced ? 0 : 1;
       const zeta = 1 - 0.85 * Math.min(1, Math.max(0, s.bounce));
       const omega = 4 / (zeta * Math.max(0.2, s.returnDuration));
       const stiffness = omega * omega;
@@ -194,9 +192,7 @@ export function useDotGrid(settings: DotGridSettings) {
       const radius = Math.max(1, s.proximity);
       const speed = Math.hypot(pointer.vx, pointer.vy);
       const drive =
-        s.mouseInteraction && pointer.inside
-          ? 6500 * Math.tanh(speed / 900) * s.strength * motion
-          : 0;
+        s.mouseInteraction && pointer.inside ? 6500 * Math.tanh(speed / 900) * s.strength : 0;
       const dirX = speed > 0.001 ? pointer.vx / speed : 0;
       const dirY = speed > 0.001 ? pointer.vy / speed : 0;
       const width = grid.cell * 1.4;
@@ -204,7 +200,7 @@ export function useDotGrid(settings: DotGridSettings) {
       const active = shocks.map((shock) => {
         const front = ((now - shock.start) / 1000) * travel;
         const power = smootherstep(1 - front / Math.max(1, s.shockRadius));
-        return { ...shock, front, amplitude: power * s.shockStrength * grid.cell * 0.24 * motion };
+        return { ...shock, front, amplitude: power * s.shockStrength * grid.cell * 0.24 };
       });
       const coupling = (Math.max(0, s.tension) * 900) ** 2 / (grid.cell * grid.cell);
       const viscosity = Math.sqrt(coupling) * 0.06;
@@ -380,8 +376,8 @@ export function useDotGrid(settings: DotGridSettings) {
       gl.useProgram(program);
       gl.uniform2f(uniforms.uResolution, view.width, view.height);
       gl.uniform1f(uniforms.uSize, Math.max(0.5, s.dotSize));
-      gl.uniform1f(uniforms.uSwell, reduced ? 0 : Math.max(0, s.swell));
-      gl.uniform1f(uniforms.uStretch, reduced ? 0 : Math.max(0, s.stretch));
+      gl.uniform1f(uniforms.uSwell, Math.max(0, s.swell));
+      gl.uniform1f(uniforms.uStretch, Math.max(0, s.stretch));
       gl.uniform1f(uniforms.uGlow, Math.max(0, s.glow));
       gl.uniform3f(uniforms.uBase, base[0], base[1], base[2]);
       gl.uniform3f(uniforms.uActive, accent[0], accent[1], accent[2]);
@@ -469,7 +465,7 @@ export function useDotGrid(settings: DotGridSettings) {
     };
 
     const onDown = (event: PointerEvent) => {
-      if (!settingsRef.current.clickShock || reduced) return;
+      if (!settingsRef.current.clickShock) return;
       const [x, y] = locate(event);
       if (x < 0 || y < 0 || x > view.width || y > view.height) return;
       shocks.push({ x, y, start: performance.now() });

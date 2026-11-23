@@ -41,7 +41,6 @@ export default function LandingWordmark() {
     const mask = document.createElement('canvas');
     const maskContext = mask.getContext('2d');
     if (!root || !staticCanvas || !live || !context || !patternContext || !maskContext) return;
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const pointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     let renderer: ReturnType<typeof createRenderer>;
     let attempted = false;
@@ -67,7 +66,7 @@ export default function LandingWordmark() {
       if (!root || !live || !staticCanvas || !context || !pattern.width) return;
       // 字形在可见区域下方起步，滚动较快时也保留一段平滑的升起过程。
       const progress = Math.max(0, Math.min(1, revealProgress.get()));
-      const offset = motion.matches ? 0 : (1 - progress) * revealDistance * scale;
+      const offset = (1 - progress) * revealDistance * scale;
       if (renderer && live.style.visibility === 'visible') {
         renderer.moveWord(offset / staticCanvas.height);
         return;
@@ -81,7 +80,7 @@ export default function LandingWordmark() {
 
     function syncRenderer() {
       if (!live || !staticCanvas) return;
-      const active = visible && !document.hidden && !motion.matches && pointer.matches;
+      const active = visible && !document.hidden && pointer.matches;
       if (active && !attempted) {
         attempted = true;
         renderer = createRenderer(live, toWebGLColor(base), toWebGLColor(hover));
@@ -240,7 +239,6 @@ export default function LandingWordmark() {
     void document.fonts.ready.then(resize);
     root.addEventListener('pointermove', onPointerMove, { passive: true });
     root.addEventListener('pointerleave', onPointerLeave);
-    motion.addEventListener('change', syncRenderer);
     pointer.addEventListener('change', syncRenderer);
     document.addEventListener('visibilitychange', syncRenderer);
     live.addEventListener('webglcontextlost', onContextLost);
@@ -253,7 +251,6 @@ export default function LandingWordmark() {
       visibilityObserver.disconnect();
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerleave', onPointerLeave);
-      motion.removeEventListener('change', syncRenderer);
       pointer.removeEventListener('change', syncRenderer);
       document.removeEventListener('visibilitychange', syncRenderer);
       live.removeEventListener('webglcontextlost', onContextLost);

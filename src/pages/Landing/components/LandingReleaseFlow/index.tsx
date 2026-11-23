@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type KeyboardEvent } from 'react';
-import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
+import { AnimatePresence, motion, type Variants } from 'motion/react';
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -50,7 +50,6 @@ const steps = [
 /** 沿用 how-it-works-9 的步骤切换，演示同一次参数变更的发布流程。 */
 export default function LandingReleaseFlow() {
   const [active, setActive] = useState(0);
-  const reduce = useReducedMotion();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const container: Variants = {
@@ -59,7 +58,7 @@ export default function LandingReleaseFlow() {
   };
 
   const item: Variants = {
-    hidden: { opacity: 0, y: reduce ? 0 : 24 },
+    hidden: { opacity: 0, y: 24 },
     show: {
       opacity: 1,
       y: 0,
@@ -175,9 +174,9 @@ export default function LandingReleaseFlow() {
                           {isActive && (
                             <motion.span
                               key="copy"
-                              initial={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
-                              animate={reduce ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
-                              exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.35, ease: EASE }}
                               className="block overflow-hidden"
                             >
@@ -215,9 +214,9 @@ export default function LandingReleaseFlow() {
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={active}
-                    initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10 }}
+                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.3, ease: EASE }}
                     className="p-5 sm:p-7"
                   >
