@@ -9,7 +9,7 @@ import { parameterTypesOptions } from '@/queries/systems';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
 import { SplitPane } from '@/components/SplitPane';
 import { CollectionSkeleton } from '@/components/CollectionSkeleton';
-import { databasePath } from '@/router/paths';
+import { databasePath } from '@/router/workspace/paths';
 import { ParameterTypeList } from './components/ParameterTypeList';
 import { ParameterTypeDetails } from './components/ParameterTypeDetails';
 

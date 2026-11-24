@@ -164,29 +164,52 @@ export const executeMockRequest: AxiosAdapter = async (config) => {
     [
       '/api/applications',
       '/api/applications/groups',
+      '/api/applications/detail',
       '/api/applications/environments',
       '/api/parameters',
     ].includes(url.pathname)
   ) {
     const system = accessSystem(systemName, fail);
-    if (url.pathname === '/api/applications/environments' && method === 'GET') {
+    if (
+      ['/api/applications', '/api/applications/detail', '/api/applications/environments'].includes(
+        url.pathname,
+      )
+    ) {
+      const { mockApplicationCatalog } = await import('./applicationService.ts');
       const appName = config.params?.appName ?? url.searchParams.get('appName');
-      const { createMockApplications } = await import('./applications.ts');
-      if (!createMockApplications(system.appCount).some((app) => app.appName === appName))
-        return fail(404, '应用不存在或已移除');
-      const { createMockApplicationEnvironments } = await import('./applicationEnvironments.ts');
+      const environmentModule =
+        url.pathname === '/api/applications/environments'
+          ? await import('./applicationEnvironments.ts')
+          : undefined;
       if (config.signal?.aborted) throw new CanceledError();
-      return response(createMockApplicationEnvironments(systemName, appName));
+      const catalog = mockApplicationCatalog(systemName, system.appCount);
+      if (url.pathname === '/api/applications') {
+        if (method === 'GET') return response([...catalog.items.values()]);
+        if (method === 'POST' || method === 'PATCH') {
+          return response(
+            catalog.save(
+              body as unknown as import('@/types/applications').ApplicationDetails,
+              method === 'PATCH',
+              fail,
+            ),
+            method === 'POST' ? 201 : 200,
+          );
+        }
+      } else if (method === 'GET') {
+        const app = catalog.details(appName);
+        if (!app) return fail(404, '应用不存在或已移除');
+        return response(
+          environmentModule
+            ? environmentModule.createMockApplicationEnvironments(systemName, appName, app.envTags)
+            : app,
+        );
+      }
     }
     if (url.pathname === '/api/parameters' && method === 'GET') {
       const { createMockParameters } = await import('./parameters.ts');
       return response(
         system.paramTypeCount ? createMockParameters().slice(0, system.paramTypeCount) : [],
       );
-    }
-    if (url.pathname === '/api/applications' && method === 'GET') {
-      const { createMockApplications } = await import('./applications.ts');
-      return response(createMockApplications(system.appCount));
     }
     if (url.pathname === '/api/applications/groups') {
       const { readMock, writeMock } = await import('./storage.ts');

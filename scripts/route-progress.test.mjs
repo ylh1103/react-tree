@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createMemoryRouter, redirect } from 'react-router';
-import { startRouteProgress } from '../src/router/progress.ts';
+import { startRouteProgress } from '../src/router/loading/progress.ts';
 
 /** 使用真实 Router 的等待阶段验证订阅生命周期，驱动替身避免依赖浏览器 DOM。 */
 function fixture() {

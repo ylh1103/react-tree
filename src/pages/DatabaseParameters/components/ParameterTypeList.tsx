@@ -4,7 +4,7 @@ import { Button, Empty, Input, Menu, Tag } from 'antd';
 import { NavLink } from 'react-router';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
-import { databasePath } from '@/router/paths';
+import { databasePath } from '@/router/workspace/paths';
 import type { ParameterType } from '@/types/systems';
 
 export function ParameterTypeList({

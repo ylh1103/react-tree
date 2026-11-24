@@ -332,10 +332,15 @@ test('应用环境独立加载，业务与公共工具栏分流，403/404 优先
       path: '/systems/CAC/application/demo',
       staleTime: Infinity,
     });
-    assert.match(fixture.render(), /正在加载应用环境/);
+    const pending = fixture.render();
+    assert.match(pending, /aria-label="应用列表"/);
+    assert.match(pending, /aria-label="正在加载应用环境"/);
+    assert.equal([...pending.matchAll(/w-500px/g)].length, 3);
+    assert.doesNotMatch(pending, /ant-spin/);
     fixture.client.setQueryData(key, envs);
     const html = fixture.render();
     assert.match(html, /dev 环境参数配置/);
+    assert.doesNotMatch(html, /正在加载应用环境/);
     assert.match(html, /st 环境参数配置/);
     // st 的配置为空，仍须提供与 dev 相同的编辑区域，不能回退到空状态或只读面板。
     assert.equal(envs.find((env) => env.envTag === 'st').configInfo.trim(), '');
@@ -355,6 +360,27 @@ test('应用环境独立加载，业务与公共工具栏分流，403/404 优先
       assert.match(html, /批量发布快照/);
       assert.doesNotMatch(html, /最新快照版本|运行时快照版本|一键发布|刷新差异数/);
     }
+    let finishRefresh;
+    const refresh = fixture.client.query({
+      queryKey: key,
+      staleTime: 0,
+      queryFn: () =>
+        new Promise((resolve) => {
+          finishRefresh = resolve;
+        }),
+    });
+    const refreshing = fixture.render();
+    assert.match(refreshing, /aria-label="正在刷新应用环境"[\s\S]*?ant-spin-spinning/);
+    const { css } = await uno.generate(refreshing, { preflights: false });
+    assert.match(
+      css,
+      /background-color:color-mix\(in srgb,var\(--color-surface\) 55%,transparent\)/,
+    );
+    assert.match(refreshing, /dev 环境参数配置/);
+    finishRefresh(envs);
+    await refresh;
+    assert.doesNotMatch(fixture.render(), /正在刷新应用环境/);
+
     await assert.rejects(
       fixture.client.query({
         queryKey: key,
@@ -447,7 +473,10 @@ test('页面分栏骨架沿用 URL 解码和历史折叠尺寸，不创建交互
     const html = fixture.render();
     assert.ok(reads.includes(`parameter-management:split-pane:${storageKey}:v1:anonymous`));
     assert.match(html, /width:min\(420px/);
-    assert.match(html, /aria-label="(?:应用|类型) \/ 100%列表"/);
+    assert.match(
+      html,
+      storageKey === 'application' ? /aria-label="应用列表"/ : /aria-label="类型 \/ 100%列表"/,
+    );
     assert.doesNotMatch(html, /role="separator"|切换侧边栏|调整.*列表宽度/);
     visible = false;
     assert.match(fixture.render(), /data-sidebar-expanded="false"/);

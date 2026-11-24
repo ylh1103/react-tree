@@ -33,7 +33,7 @@
 
 # 路由与授权
 
-- URL 是系统、平台和清单选择的唯一来源；应用、数据库路由及菜单图标分别在 `src/router/application.ts`、`src/router/database.ts` 维护，`routes.tsx` 统一装配，布局消费对应平台配置。
+- URL 是系统、平台和清单选择的唯一来源；路由表按功能模块存放，`src/router/routes.tsx` 统一装配并划分访问分组。站点路由在 `src/router/site/routes.ts` 维护，应用、数据库路由及菜单图标分别在 `src/router/workspace/application/routes.ts`、`src/router/workspace/database/routes.ts` 维护，布局消费对应平台配置。各平台的预取实现放在同目录的 `loader.ts`，路由表直接引用。
 - 父子 loader 并行执行，系统父路由 middleware 统一在业务 loader 前执行访问校验；业务 loader 不重复鉴权。首次进入、跨系统、离开后重进及身份变化时校验；同系统内部导航仅复用同身份、成功且未失效的 Query 授权结果。导航来源取已提交路由，兼容前进后退、重定向和取消。
 - 系统访问校验使用 `queryClient.query` 传播失败，普通页面预取可消费错误并保留查询错误状态供页面重试；403 优先于旧数据并移除工作区 Outlet，404、取消和网络失败分别处理。HTTP 层只传播错误，不通过全局监听批量取消请求或清理业务缓存。
 - 临时登录角色由 localStorage 持久化，用户资料存 Redux；平台角色与系统角色独立，V/D/R 暂不区分操作权限。不从负责人、姓名、员工类型或网络环境推导权限；真实后端须校验登录及授权。

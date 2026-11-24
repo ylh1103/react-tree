@@ -4,7 +4,7 @@ import { lazy, useState } from 'react';
 import { DeferredPanel } from './DeferredPanel';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { openUserSettings } from '@/store/slices/preferencesSlice';
-import { logoutUser } from '@/router/login';
+import { logoutUser } from '@/router/middleware/login';
 
 const UserProfileContent = lazy(() => import('./UserProfileModal'));
 const menuItemClass = 'min-h-40px px-3! rounded-control!';

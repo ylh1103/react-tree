@@ -8,7 +8,7 @@ import {
   loginPath,
   loginReturnTo,
   logoutUser,
-} from '../src/router/login.ts';
+} from '../src/router/middleware/login.ts';
 import { createDemoLoginUser } from '../src/mocks/login.ts';
 import { readLoginUser, writeLoginUser, loginStorageKey } from '../src/utils/loginStorage.ts';
 import { store } from '../src/store/index.ts';

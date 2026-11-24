@@ -1,6 +1,6 @@
 import { Activity, useContext, useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigation } from 'react-router';
-import { matchPageSkeleton, RouteLoadingContext } from './loading';
+import { matchPageSkeleton, RouteLoadingContext } from './routeLoading';
 
 /** 同一布局内延迟显示目标骨架，跨布局或保留工作区时继续显示原页面；全局进度由 Router 订阅处理。 */
 export function RouteOutlet({ layoutId, delayMs = 250 }: { layoutId: string; delayMs?: number }) {

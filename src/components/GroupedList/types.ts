@@ -33,7 +33,8 @@ export type ListNodeMenuItems =
 
 export interface ListNodeActions {
   menuItems?: ListNodeMenuItems;
-  onSettings?: ListNodeAction;
+  /** 打开节点的设置界面，实际写入由设置界面负责。 */
+  onSettings?: (node: LeafNode['data']) => void;
 }
 
 export interface GroupedListConfig {

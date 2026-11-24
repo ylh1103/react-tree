@@ -1,5 +1,5 @@
 /** 应用参数页私有的空状态、环境工具栏和参数面板；环境选择由页面统一持有。 */
-import { App as AntdApp, Button, Checkbox, Empty, Popover, Switch, Tooltip } from 'antd';
+import { App as AntdApp, Button, Checkbox, Dropdown, Empty, Popover, Switch, Tooltip } from 'antd';
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import {
   actionLabelModes,
@@ -65,7 +65,7 @@ export function ApplicationParametersEmptyState({
             </h3>
             <p className="m-0 mt-3 text-14px leading-24px text-text-secondary">
               {hasApplications
-                ? '从左侧应用列表中选择一个应用，查看各环境的参数配置。'
+                ? '从应用列表中选择一个应用，查看各环境的参数配置。'
                 : '应用接入后，可在此查看参数配置。刷新列表可获取最新应用。'}
             </p>
           </div>
@@ -90,7 +90,8 @@ export function ApplicationParametersToolbar({
   environments = emptyEnvironments,
   selectedEnvironments,
   onChange,
-}: EnvironmentSelectionProps) {
+  obscured,
+}: EnvironmentSelectionProps & { obscured?: boolean }) {
   const [comparisonEnabled, setComparisonEnabled] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const comparisonRef = useRef<HTMLDivElement>(null);
@@ -137,6 +138,7 @@ export function ApplicationParametersToolbar({
           all: widthOf('[data-actions="all"]'),
           primary: widthOf('[data-actions="primary"]'),
           icons: widthOf('[data-actions="icons"]'),
+          menu: widthOf('[data-actions="menu"]'),
         },
         groupGap: gap,
         previous,
@@ -183,7 +185,11 @@ export function ApplicationParametersToolbar({
     },
   };
   return (
-    <div ref={toolbarRef} className="ml-2 flex min-w-0 flex-1 items-center justify-between gap-3">
+    <div
+      ref={toolbarRef}
+      inert={obscured}
+      className={`ml-2 flex min-w-0 flex-1 items-center justify-between gap-3 [@container_split-pane-content_(max-width:440px)]:flex-wrap [@container_split-pane-content_(max-width:440px)]:gap-y-1 ${obscured ? 'opacity-0' : ''}`}
+    >
       <div
         aria-hidden="true"
         inert
@@ -321,6 +327,25 @@ function ToolbarActions({
   labelMode: ActionLabelMode;
   onAction?: (label: string) => void;
 }) {
+  if (labelMode === 'menu') {
+    return (
+      <div className="ml-auto flex shrink-0">
+        <Dropdown
+          trigger={['click']}
+          menu={{
+            items: toolbarActions.map(({ label }) => ({ key: label, label })),
+            onClick: ({ key }) => onAction?.(key),
+          }}
+        >
+          <Button
+            aria-label="更多参数操作"
+            className="w-32px! px-0!"
+            icon={<span className="i-lucide-ellipsis h-16px w-16px" aria-hidden="true" />}
+          />
+        </Dropdown>
+      </div>
+    );
+  }
   return (
     <div className="ml-auto flex shrink-0 items-center gap-2">
       {toolbarActions.map((action) => {
@@ -422,7 +447,7 @@ export function ApplicationParametersWorkspace({
   const { systemName, appName } = useParams();
   const environments = allEnvironments.filter((item) => selectedEnvironments.includes(item.key));
   return (
-    <div className="flex min-w-0 min-h-full flex-col">
+    <div className="flex min-w-0 min-h-full flex-col [container:application-environments/inline-size]">
       <OverlayScroll className={compact ? '' : 'bg-canvas'} label="各环境参数配置">
         <EnvironmentPanels
           key={`${systemName}/${appName}`}
@@ -475,7 +500,7 @@ function EnvironmentPanels({
       </div>
     );
   return (
-    <div className="flex flex-1 min-w-0 min-h-full">
+    <div className="flex flex-1 min-w-0 min-h-full [@container_application-environments_(max-width:510px)]:gap-layout">
       {environments.map((environment) => (
         <ResizableEnvironmentPanel
           key={environment.key}

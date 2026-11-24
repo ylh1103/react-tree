@@ -3,7 +3,7 @@ import { createMemoryRouter } from 'react-router';
 import {
   createSystemNavigationContext,
   systemAccessMiddleware,
-} from '../../src/router/systemAccess.ts';
+} from '../../src/router/middleware/systemAccess.ts';
 
 export function createSystemTestRouter(
   children,

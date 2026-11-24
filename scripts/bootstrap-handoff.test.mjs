@@ -13,8 +13,8 @@ import { createAppStore } from '../src/store/index.ts';
 import { loadUserSettings } from '../src/store/slices/preferencesSlice.ts';
 import { defaultUserSettings } from '../src/types/preferences.ts';
 import { createGenerator } from 'unocss';
-import { applicationRouteConfig } from '../src/router/application.ts';
-import { databaseRouteConfig } from '../src/router/database.ts';
+import { applicationRouteConfig } from '../src/router/workspace/application/routes.ts';
+import { databaseRouteConfig } from '../src/router/workspace/database/routes.ts';
 import { createDemoLoginUser } from '../src/mocks/login.ts';
 import { loginStorageKey } from '../src/utils/loginStorage.ts';
 
@@ -26,6 +26,7 @@ let rootRoute;
 let BootstrapLoadingProvider;
 let RouteLoadingContext;
 let RouteSkeleton;
+let ApplicationSkeleton;
 before(async () => {
   vite = await createServer({
     server: { middlewareMode: true, hmr: false, ws: false },
@@ -37,8 +38,11 @@ before(async () => {
   ({ BootstrapLoadingProvider } = await vite.ssrLoadModule(
     '/src/providers/BootstrapLoadingProvider.tsx',
   ));
-  ({ RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading.ts'));
+  ({ RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading/routeLoading.ts'));
   ({ RouteSkeleton } = await vite.ssrLoadModule('/src/components/RouteSkeleton/index.tsx'));
+  ({ ApplicationSkeleton } = await vite.ssrLoadModule(
+    '/src/components/RouteSkeleton/components/ApplicationSkeleton.tsx',
+  ));
 });
 after(() => vite?.close());
 
@@ -159,9 +163,9 @@ const routeCases = [
     route.label,
     '/systems/CAC/' + route.path.replace(/\/:[^/]+\?/g, ''),
     route.path,
-    '页面加载中',
+    route.skeleton === 'application' ? '列表资源加载中' : '页面加载中',
   ]),
-  ['指定应用', '/systems/CAC/application/demo', 'application/:appName?', '页面加载中'],
+  ['指定应用', '/systems/CAC/application/demo', 'application/:appName?', '列表资源加载中'],
   ['指定数据库类型', '/systems/CAC/db/数据库连接', 'db/:paramTypeName?', '页面加载中'],
 ];
 
@@ -245,12 +249,13 @@ test('统一路由骨架不包含基础布局或业务分栏，也不读取分�
 });
 
 for (const [name, path, routePath, message] of routeCases) {
-  test(`真实路由 ${path}（${name}）等待配置后再展示统一路由骨架`, (t) => {
+  test(`真实路由 ${path}（${name}）等待配置后再展示目标骨架`, (t) => {
     const fixture = setup(t, { path, actualRoutes: true, initialized: false });
     const target = matchRoutes(fixture.routes, path)?.at(-1)?.route;
     assert.equal(target?.path, routePath, '静态设置地址不应被数据库类型动态路由覆盖');
     if (path === '/') assert.equal(target?.index, true);
-    assert.equal(target?.HydrateFallback, RouteSkeleton);
+    const isApplication = routePath === 'application/:appName?';
+    assert.equal(target?.HydrateFallback, isApplication ? ApplicationSkeleton : RouteSkeleton);
     assert.equal(fixture.router.state.initialized, false);
     assert.equal(fixture.render(), '', '有缓存和静态骨架也不能提前交接 HTML 启动画面');
     fixture.store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'settings'));
@@ -258,7 +263,14 @@ for (const [name, path, routePath, message] of routeCases) {
     assert.match(html, new RegExp(message));
     assert.match(html, /ant-skeleton/);
     assert.doesNotMatch(html, /<svg/, '目标骨架交接后不应重新挂载启动图标');
-    assert.doesNotMatch(html, /data-split-pane=|demo|数据库连接/, '路由骨架不依赖业务选中项');
+    assert.doesNotMatch(html, /demo|数据库连接/, '等待授权时骨架只展示结构');
+    if (isApplication) {
+      assert.match(html, /data-split-pane="true"[\s\S]*aria-label="应用列表"/);
+      assert.match(html, path.endsWith('/demo') ? /workspace-titlebar-detached/ : /max-w-300px/);
+      assert.equal([...html.matchAll(/w-500px/g)].length, path.endsWith('/demo') ? 3 : 0);
+    } else {
+      assert.doesNotMatch(html, /data-split-pane=/);
+    }
   });
 }
 

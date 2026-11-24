@@ -3,7 +3,7 @@ import { App, Badge, Button, Space, Tooltip, type TooltipProps } from 'antd';
 import { MonacoEditor, type MonacoEditorProps } from '@/components/MonacoEditor';
 import type { ApplicationEnvironment } from '@/types/applicationEnvironments';
 import { useNavigate } from 'react-router';
-import { applicationOperationPath } from '@/router/paths';
+import { applicationOperationPath } from '@/router/workspace/paths';
 import { useCallback, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { EnvironmentTag } from './EnvironmentTag';
 import { EnvironmentModificationInfo } from './EnvironmentModificationInfo';
@@ -250,7 +250,7 @@ export function EnvironmentPanel({
         )}
       </header>
       <div
-        className="relative flex-1 min-h-280px min-w-320px overflow-hidden"
+        className="relative flex-1 min-h-280px min-w-320px overflow-hidden [@container_application-environments_(max-width:510px)]:min-w-0"
         role="region"
         aria-label={`${env.envTag} 配置内容（可编辑）`}
       >

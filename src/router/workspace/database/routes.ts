@@ -1,6 +1,7 @@
 /** 数据库参数平台的路由与菜单定义；类型清单与设置页独立于应用参数平台维护。 */
-import { preloadDatabase, revalidateSystemCollection } from './loaders.ts';
-import type { WorkspaceRouteConfig } from './types.ts';
+import { revalidateSystemCollection } from '../loaders.ts';
+import type { WorkspaceRouteConfig } from '../types.ts';
+import { preloadDatabase } from './loader.ts';
 
 /** 数据库参数平台独立维护类型页和设置页，setting 为保留的静态路径。 */
 export const databaseRouteConfig: WorkspaceRouteConfig[] = [

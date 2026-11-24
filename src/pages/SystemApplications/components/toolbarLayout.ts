@@ -1,5 +1,5 @@
 /** 应用参数工具栏：根据控件实测宽度分配空间，优先保留环境，再保留操作文字。 */
-export type ActionLabelMode = 'all' | 'primary' | 'icons';
+export type ActionLabelMode = 'all' | 'primary' | 'icons' | 'menu';
 
 /** 一次布局结果；扩展时沿用上一结果，为临界宽度预留缓冲。 */
 export interface ToolbarLayout {
@@ -8,7 +8,7 @@ export interface ToolbarLayout {
   showMoreLabel: boolean;
 }
 
-export const actionLabelModes: ActionLabelMode[] = ['all', 'primary', 'icons'];
+export const actionLabelModes: ActionLabelMode[] = ['all', 'primary', 'icons', 'menu'];
 
 /** 输入只包含独立测量的自然宽度，避免当前收纳结果反过来影响下一轮计算。 */
 export function fitToolbarLayout({
@@ -30,11 +30,15 @@ export function fitToolbarLayout({
 }): ToolbarLayout {
   const candidates: ToolbarLayout[] = [];
   for (let count = environmentWidths.length; count >= 1; count--) {
-    for (const mode of actionLabelModes) {
+    for (const mode of actionLabelModes.slice(0, -1)) {
       for (const label of count < environmentWidths.length ? [true, false] : [false]) {
         candidates.push({ visibleCount: count, actionLabelMode: mode, showMoreLabel: label });
       }
     }
+  }
+  // 三个图标也放不下时，把操作集中到一个入口。
+  for (let count = environmentWidths.length; count >= 0; count--) {
+    candidates.push({ visibleCount: count, actionLabelMode: 'menu', showMoreLabel: false });
   }
   const previousIndex = previous
     ? candidates.findIndex(
@@ -62,5 +66,5 @@ export function fitToolbarLayout({
     )
       return candidate;
   }
-  return { visibleCount: 1, actionLabelMode: 'icons', showMoreLabel: false };
+  return { visibleCount: 0, actionLabelMode: 'menu', showMoreLabel: false };
 }

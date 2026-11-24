@@ -11,7 +11,7 @@ import { setUserInfo } from '../src/store/slices/userSlice.ts';
 import { createDemoLoginUser } from '../src/mocks/login.ts';
 import { queryClient } from '../src/queries/client.ts';
 import { systemAccessOptions } from '../src/queries/systems.ts';
-import { preloadSystems } from '../src/router/loaders.ts';
+import { preloadSystems } from '../src/router/workspace/loaders.ts';
 
 beforeEach(() => {
   mockConfig.delayMs = 0;

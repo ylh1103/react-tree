@@ -29,7 +29,9 @@ import {
   systemsOptions,
   systemPageOptions,
 } from '../src/queries/systems.ts';
-import { preloadApplications, preloadDatabase, preloadSystems } from '../src/router/loaders.ts';
+import { preloadApplications } from '../src/router/workspace/application/loader.ts';
+import { preloadDatabase } from '../src/router/workspace/database/loader.ts';
+import { preloadSystems } from '../src/router/workspace/loaders.ts';
 import {
   loadUserSettings,
   saveUserSettings,

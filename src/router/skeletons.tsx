@@ -1,7 +1,7 @@
-/** 首次路由等待的启动交接与外壳组装；所有静态展示骨架集中在 RouteSkeleton，不引入业务占位。 */
+/** 首次路由等待的启动交接与外壳组装；静态占位从 RouteSkeleton 目录加载。 */
 import { useContext, type ReactNode } from 'react';
 import { matchRoutes, useLocation } from 'react-router';
-import { matchPageSkeleton, RouteLoadingContext } from './loading';
+import { matchPageSkeleton, RouteLoadingContext } from './loading/routeLoading';
 import { ResourceLoading } from '@/components/ResourceLoading';
 import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 import { HeaderSkeleton } from '@/components/RouteSkeleton/components/HeaderSkeleton';
@@ -9,8 +9,8 @@ import { NavigationSkeleton } from '@/components/RouteSkeleton/components/Naviga
 import { AppViewport, SiteFrame, WorkspaceFrame } from '@/layouts/LayoutFrame';
 import { useAppSelector } from '@/store/hooks';
 import { selectWaitingForUserSettings } from '@/store/slices/preferencesSlice';
-import { applicationRouteConfig as navigationItems } from './application';
-import { databaseRouteConfig as databaseNavigationItems } from './database';
+import { applicationRouteConfig as navigationItems } from './workspace/application/routes';
+import { databaseRouteConfig as databaseNavigationItems } from './workspace/database/routes';
 
 /** 仅根级等待补齐外壳；页内回退仍只渲染页面骨架，避免在已挂载布局中重复页头和导航。 */
 function InitialLayoutSkeleton({ children }: { children: ReactNode }) {

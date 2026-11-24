@@ -17,7 +17,7 @@ import 'virtual:uno.css';
 import '@/styles/index.css';
 import { router } from '@/router';
 import { routes } from '@/router/routes';
-import { RouteLoadingContext } from '@/router/loading';
+import { RouteLoadingContext } from '@/router/loading/routeLoading';
 import { AppThemeProvider } from '@/providers/AppThemeProvider';
 import { startUserSettingsSession } from '@/store/preferences/effects';
 import { waitForBootstrapStyles } from '@/utils/bootstrapStyles';
@@ -28,7 +28,7 @@ const stopUserSettingsSession = startUserSettingsSession(store);
 // 进度库独立下载，不增加首屏静态包；初始化导航仍由启动画面处理。
 let progressDisposed = false;
 let stopRouteProgress: (() => void) | undefined;
-void import('@/router/progress')
+void import('@/router/loading/progress')
   .then(({ startRouteProgress }) => {
     if (!progressDisposed) stopRouteProgress = startRouteProgress(router);
   })

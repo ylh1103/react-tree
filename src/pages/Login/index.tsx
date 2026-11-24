@@ -4,7 +4,7 @@ import { Alert, Button, Radio } from 'antd';
 import { useSearchParams } from 'react-router';
 import { createDemoLoginUser } from '@/mocks/login';
 import { writeLoginUser } from '@/utils/loginStorage';
-import { loginReturnTo } from '@/router/login';
+import { loginReturnTo } from '@/router/middleware/login';
 import { claimAnonymousThemeSelection } from '@/store/preferences/themeBootstrap';
 import type { LoginUser } from '@/types/user';
 

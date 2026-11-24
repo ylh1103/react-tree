@@ -2,10 +2,10 @@
 import { Tooltip } from 'antd';
 import { useAppSelector } from '@/store/hooks';
 import { generatePath, NavLink, useLocation, useMatch } from 'react-router';
-import { applicationRouteConfig as navigationItems } from '@/router/application';
-import { databaseRouteConfig as databaseNavigationItems } from '@/router/database';
+import { applicationRouteConfig as navigationItems } from '@/router/workspace/application/routes';
+import { databaseRouteConfig as databaseNavigationItems } from '@/router/workspace/database/routes';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
-import { applicationPath, systemPath } from '@/router/paths';
+import { applicationPath, systemPath } from '@/router/workspace/paths';
 import { NavigationFrame } from './LayoutFrame';
 
 export function AppNavigation() {

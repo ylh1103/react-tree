@@ -1,4 +1,5 @@
 /** 环境参数演示数据故意乱序，覆盖生产、审批、空配置与负数差异状态。 */
+import { defaultApplicationEnvironmentTags } from '@/types/applications.ts';
 import type { ApplicationEnvironment } from '@/types/applicationEnvironments.ts';
 
 /** 覆盖常见服务配置及 YAML 数据类型，供主题高亮、折叠、格式化和环境差异演示；地址与凭据均为示例。 */
@@ -153,13 +154,26 @@ yaml-examples:
 export function createMockApplicationEnvironments(
   systemName: string,
   appName: string,
+  envTags = defaultApplicationEnvironmentTags,
 ): ApplicationEnvironment[] {
-  return [
+  const defaults = [
     { envTag: 'uat', envOrder: 30, envDesc: '验收测试' },
     { envTag: 'dev', envOrder: 10, envDesc: '开发环境' },
     { envTag: 'prd', envOrder: 50, envDesc: '生产环境' },
     { envTag: 'st', envOrder: 20, envDesc: '系统测试' },
     { envTag: 'stp', envOrder: 40, envDesc: '预生产环境' },
+  ];
+  const knownTags = new Set(defaults.map((env) => env.envTag));
+  const selected = new Set(envTags);
+  return [
+    ...defaults.filter((env) => selected.has(env.envTag)),
+    ...envTags
+      .filter((tag) => !knownTags.has(tag))
+      .map((envTag, index) => ({
+        envTag,
+        envOrder: 60 + index,
+        envDesc: envTag,
+      })),
   ].map((env) => ({
     ...env,
     systemName,

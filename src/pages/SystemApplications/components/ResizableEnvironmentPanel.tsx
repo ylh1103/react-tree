@@ -245,6 +245,7 @@ export function ResizableEnvironmentPanel({
         // 紧凑布局的边界由后方 1px 拖拽线统一绘制，避免与面板右边框叠成双线。
         className={`
           group/environment relative min-w-0 shrink-0 overflow-hidden
+          [@container_application-environments_(max-width:510px)]:max-w-full
           ${compact ? 'bg-surface' : 'workspace-panel'}
           ${hidden ? 'hidden' : ''}
           ${collapsed || maximized || layout.fixed ? '' : 'grow'}
@@ -283,7 +284,7 @@ export function ResizableEnvironmentPanel({
           ref={separatorRef}
           data-environment-separator={environment.key}
           // 普通布局保留完整拖拽热区，只高亮中央细线；紧凑布局沿用既有边界高亮。
-          className={`${splitPaneSeparatorClassName({ compact, hovered, dragging })} ${
+          className={`${splitPaneSeparatorClassName({ compact, hovered, dragging })} [@container_application-environments_(max-width:510px)]:hidden! ${
             compact
               ? ''
               : `

@@ -7,7 +7,7 @@ import { Alert, App, Button, Input, Select, Table, Tabs, Tag } from 'antd';
 import { useNavigate, useParams } from 'react-router';
 import { MonacoDiffEditor, type MonacoDiffEditorProps } from '@/components/MonacoDiffEditor';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
-import { applicationPath } from '@/router/paths';
+import { applicationPath } from '@/router/workspace/paths';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
 
 /** 各操作只声明标题、比较方向与提示，共享视图不持有服务器状态。 */

@@ -56,10 +56,13 @@ export function GroupedList({
   listId,
   config,
   onSettings,
+  onAdd,
   menuItems,
   selectedKey: controlledSelectedKey,
   onSelect,
   getNodeTo,
+  onReselect,
+  onLinkActivate,
   embedded = false,
 }: ListNodeActions & {
   service: GroupedListService;
@@ -69,6 +72,12 @@ export function GroupedList({
   onSelect?: (node: LeafNode['data']) => void;
   /** 提供时由真实链接负责叶子导航，选中项应由 URL 通过 selectedKey 传入。 */
   getNodeTo?: (node: LeafNode['data']) => To;
+  /** 普通激活当前叶子链接时在原位执行操作，修饰键继续交给链接。 */
+  onReselect?: () => void;
+  /** 普通激活叶子链接时通知外层容器，可用于关闭列表抽屉。 */
+  onLinkActivate?: () => void;
+  /** 在列表页脚提供新增入口；分组草稿期间隐藏。 */
+  onAdd?: () => void;
   embedded?: boolean;
 }) {
   // TanStack Virtual 实例内部可变，暂不参与 Compiler 自动缓存；兼容后移除。
@@ -97,9 +106,9 @@ export function GroupedList({
   );
   const handleSettings = useCallback(
     (node: LeafNode) => {
-      if (onSettings) void runNodeAction(onSettings, node.data);
+      onSettings?.(node.data);
     },
-    [onSettings, runNodeAction],
+    [onSettings],
   );
   const { state, dispatch } = useTreeReducer(treeData);
   const { draft, isEditing, editingKey } = state;
@@ -456,6 +465,8 @@ export function GroupedList({
                       }
                       config={config}
                       to={node.type === 'leaf' && !isEditing ? getNodeTo?.(node.data) : undefined}
+                      onReselect={selectedKey === node.key ? onReselect : undefined}
+                      onLinkActivate={onLinkActivate}
                       onSettings={!isEditing && onSettings ? handleSettings : undefined}
                       menuItems={
                         node.type === 'leaf'
@@ -483,6 +494,20 @@ export function GroupedList({
               />
             </DndContext>
           </div>
+          {onAdd && !isEditing && (
+            <div className="shrink-0 px-4 py-2">
+              <Button
+                block
+                color="primary"
+                variant="outlined"
+                className="h-9 font-500"
+                onClick={onAdd}
+                icon={<span className="i-lucide-plus size-16px" aria-hidden="true" />}
+              >
+                新增{config.label}
+              </Button>
+            </div>
+          )}
         </div>
       )}
       {loading && (

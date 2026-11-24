@@ -13,6 +13,7 @@ import type { SystemAccessIdentity } from '@/types/user.ts';
 interface SystemNavigationSource {
   systemName: string | null;
   user: SystemAccessIdentity | null;
+  matches?: DataRouter['state']['matches'];
   /** 同次导航的 action/loader 可分阶段执行，只记录已检查的键，结果仍以 Query 当前状态为准。 */
   checkedKey?: string;
 }
@@ -31,11 +32,18 @@ export function createSystemNavigationContext(getRouter: () => DataRouter | unde
       systemName: state?.initialized
         ? (state.matches.find((match) => match.route.id === 'system')?.params.systemName ?? null)
         : null,
+      matches: state?.initialized ? state.matches : undefined,
       // 根登录 middleware 随后可能恢复新身份，此处保留恢复前的来源身份用于比较。
       user: store.getState().user.userInfo,
     });
     return context;
   };
+}
+
+/** 读取已提交页面的参数，用于判断目标页会重新挂载还是复用当前工作区。 */
+export function getCommittedRouteParams(context: RouterContextProvider, routeId: string) {
+  return context.get(navigationSourceContext)?.matches?.find(({ route }) => route.id === routeId)
+    ?.params;
 }
 
 /** 系统内导航仅复用同身份、成功且未失效的结果；进入、跨系统及失效后等待最新授权。 */

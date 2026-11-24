@@ -1,6 +1,7 @@
 /** 应用参数平台的路由与菜单定义；业务页面按目录懒加载，完整图标类名供 UnoCSS 提取。 */
-import { preloadApplications, revalidateSystemCollection } from './loaders.ts';
-import type { WorkspaceRouteConfig } from './types.ts';
+import { revalidateSystemCollection } from '../loaders.ts';
+import type { WorkspaceRouteConfig } from '../types.ts';
+import { applicationWorkspaceRouteId, preloadApplications } from './loader.ts';
 
 /** 应用环境操作嵌套在配置页下，切换操作不会卸载父工作区；不生成独立导航菜单。 */
 const applicationOperationRoutes: WorkspaceRouteConfig[] = [
@@ -33,10 +34,12 @@ export const applicationRouteConfig: WorkspaceRouteConfig[] = [
     page: () => import('@/pages/SystemOverview/index.tsx'),
   },
   {
+    id: applicationWorkspaceRouteId,
     path: 'application/:appName?',
     label: '应用',
     icon: 'i-lucide-cloud',
     splitPane: true,
+    skeleton: 'application',
     loader: preloadApplications,
     shouldRevalidate: revalidateSystemCollection,
     page: () => import('@/pages/SystemApplications/index.tsx'),

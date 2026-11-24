@@ -25,6 +25,8 @@ export const groupedListKeys = {
 export function groupedListOptions(id: GroupedListId, service: GroupedListService) {
   return queryOptions({
     ...routeQueryMountOptions,
+    // 系统应用清单由路由刷新，侧栏和详情挂载时只接续同一个结果。
+    refetchOnMount: id.startsWith('applications:') ? false : routeQueryMountOptions.refetchOnMount,
     queryKey: groupedListKeys.list(id),
     queryFn: ({ signal }) => service.load(signal),
   });

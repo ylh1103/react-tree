@@ -60,3 +60,61 @@ test('真实清单、分组读取和分组保存都携带系统名称', async (t
     appGroupInfo: '[]',
   });
 });
+
+test('应用新增和编辑按系统持久化，更新分组内叶子以及环境清单', async (t) => {
+  const { store } = await import('../src/store/index.ts');
+  const { setUserInfo } = await import('../src/store/slices/userSlice.ts');
+  const { createDemoLoginUser } = await import('../src/mocks/login.ts');
+  const { mockConfig } = await import('../src/mocks/config.ts');
+  const { createSystemApplicationApi, loadApplicationDetails, saveApplication } =
+    await import('../src/api/applications.ts');
+  const { loadApplicationEnvironments } = await import('../src/api/applicationEnvironments.ts');
+  const { createSystemApplicationService } = await import('../src/queries/applications.ts');
+  const delay = mockConfig.delayMs;
+  t.after(() => {
+    mockConfig.delayMs = delay;
+  });
+  mockConfig.delayMs = 0;
+  store.dispatch(setUserInfo(createDemoLoginUser('1')));
+
+  const systemName = 'CACTEST1';
+  const api = createSystemApplicationApi(systemName);
+  const oldGroups = await api.getGroups();
+  t.after(() => api.saveGroups(oldGroups));
+  const [legacy, shared] = await api.getItems();
+  assert.equal((await loadApplicationDetails(systemName, legacy.appName)).appDesc, legacy.appDesc);
+  const draft = {
+    appName: 'application-form-regression',
+    appType: '0',
+    appDesc: '新增应用',
+    releaseUnit: 'CAC.Test',
+    envTags: ['dev', 'local'],
+    sharedModules: [shared.appName],
+  };
+  await saveApplication(systemName, draft, false);
+  assert.deepEqual(await loadApplicationDetails(systemName, draft.appName), draft);
+  await assert.rejects(saveApplication(systemName, draft, false), { status: 409 });
+  await assert.rejects(loadApplicationDetails('CAC', draft.appName), { status: 404 });
+  await assert.rejects(saveApplication(systemName, { ...draft, appName: 'missing' }, true), {
+    status: 404,
+  });
+  await api.saveGroups({
+    appGroupInfo: JSON.stringify([
+      {
+        key: 'test-group',
+        title: '测试分组',
+        children: [{ key: draft.appName, title: draft.appName }],
+      },
+    ]),
+  });
+  const edited = { ...draft, appDesc: '编辑后的描述', envTags: ['prd'] };
+  await saveApplication(systemName, edited, true);
+  assert.deepEqual(await loadApplicationDetails(systemName, draft.appName), edited);
+  const nodes = await createSystemApplicationService(systemName).load();
+  assert.equal(nodes[0].children[0].desc, edited.appDesc);
+  const environments = await loadApplicationEnvironments(systemName, draft.appName);
+  assert.deepEqual(
+    environments.map((env) => env.envTag),
+    ['prd'],
+  );
+});

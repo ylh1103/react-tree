@@ -7,7 +7,7 @@ import { AppFailure } from '@/components/AppFailure';
 import JoinSystemAction from '@/components/JoinSystemAction';
 import type { SystemJoinTarget } from '@/types/systems';
 import { SystemContext } from '@/contexts/SystemContext';
-import { platformHome } from '@/router/paths';
+import { platformHome } from '@/router/workspace/paths';
 import StatusIllustration from './StatusIllustration';
 
 interface RouteStatusProps {

@@ -1,11 +1,7 @@
-/** 应用与数据库页面首次数据等待的分栏骨架；仅随业务页面加载，不参与静态路由注册。 */
+/** 通用业务清单的数据等待占位，随使用它的页面按需加载。 */
 import { Skeleton } from 'antd';
-import { useState } from 'react';
-import { SplitPaneFrame } from '@/components/SplitPane/components/Frame';
-import { readSplitPaneLayout } from '@/components/SplitPane/model/layout';
-import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
+import { CollectionSkeletonFrame } from '@/components/RouteSkeleton/components/CollectionSkeletonFrame';
 
-/** 只读历史尺寸；容器宽度由 CSS 限制，骨架不安装 ResizeObserver 或注册分栏交互。 */
 export function CollectionSkeleton({
   storageKey,
   defaultWidth = 290,
@@ -17,8 +13,6 @@ export function CollectionSkeleton({
   title: string;
   integratedHeader?: boolean;
 }) {
-  const { layoutMode } = useLayoutPreferences();
-  const [layout] = useState(() => readSplitPaneLayout(storageKey, defaultWidth));
   const content = integratedHeader ? (
     <div className="grid min-h-full min-w-0 place-items-center px-6 py-12">
       <div className="flex w-full max-w-440px flex-col items-center gap-6">
@@ -33,34 +27,19 @@ export function CollectionSkeleton({
     </div>
   );
   return (
-    <section className="h-full min-h-full min-w-0" aria-busy>
-      <span className="sr-only" role="status">
-        列表资源加载中…
-      </span>
-      <SplitPaneFrame
-        sidebarLabel={`${title}列表`}
-        expanded={layout.visible}
-        width={`min(${layout.width}px, max(0px, calc(100% - ${layoutMode === 'compact' ? 241 : 244}px)))`}
-        titleContent={<Skeleton.Input active size="small" className="max-w-full" />}
-        separator={
-          <div
-            aria-hidden="true"
-            className={
-              layoutMode === 'compact'
-                ? `shrink-0 ${layout.visible ? 'w-1px bg-divider' : 'w-0'}`
-                : 'shrink-0 w-[var(--layout-gap)]'
-            }
-          />
-        }
-        integratedHeader={integratedHeader}
-        sidebar={
-          <div className="workspace-panel min-h-full p-4">
-            <Skeleton active paragraph={{ rows: 12 }} />
-          </div>
-        }
-      >
-        {content}
-      </SplitPaneFrame>
-    </section>
+    <CollectionSkeletonFrame
+      storageKey={storageKey}
+      defaultWidth={defaultWidth}
+      sidebarLabel={`${title}列表`}
+      integratedHeader={integratedHeader}
+      titleContent={<Skeleton.Input active size="small" className="max-w-full" />}
+      sidebar={
+        <div className="workspace-panel min-h-full p-4">
+          <Skeleton active paragraph={{ rows: 12 }} />
+        </div>
+      }
+    >
+      {content}
+    </CollectionSkeletonFrame>
   );
 }

@@ -20,7 +20,7 @@ import SystemManagementModal from './SystemManagementModal';
 import { Link } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
-import { platformHome } from '@/router/paths';
+import { platformHome } from '@/router/workspace/paths';
 import JoinSystemAction from '@/components/JoinSystemAction';
 import { peopleList } from '@/utils/systemPeople';
 import {

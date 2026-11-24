@@ -4,7 +4,7 @@ import { useContext, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import logo from '@/assets/logo.jpg';
 import { SystemContext } from '@/contexts/SystemContext';
-import { platformHome } from '@/router/paths';
+import { platformHome } from '@/router/workspace/paths';
 import { useAppSelector } from '@/store/hooks';
 import { HeaderUserMenu } from './HeaderUserMenu';
 

@@ -1,6 +1,6 @@
 /** 站点入口与系统访问失败共用页头外壳；正常导航在内容区消费路由加载状态。 */
 import type { ReactNode } from 'react';
-import { RouteOutlet } from '@/router/RouteOutlet';
+import { RouteOutlet } from '@/router/loading/RouteOutlet';
 import { AppHeader } from './AppHeader';
 import { SiteFrame } from './LayoutFrame';
 

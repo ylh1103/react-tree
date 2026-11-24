@@ -35,6 +35,8 @@ interface TreeRowProps {
   dropLine: { position: DropIndicator['position']; depth: number } | null;
   config: GroupedListConfig;
   to?: To;
+  onReselect?: () => void;
+  onLinkActivate?: () => void;
   onSettings?: (node: LeafNode) => void;
   menuItems?: readonly ListNodeMenuItem[];
   onMenuAction: (action: ListNodeAction, node: LeafNode) => void;
@@ -64,6 +66,8 @@ export const GroupedListRow = memo(function GroupedListRow({
   dropLine,
   config,
   to,
+  onReselect,
+  onLinkActivate,
   onSettings,
   menuItems,
   onMenuAction,
@@ -292,7 +296,23 @@ export const GroupedListRow = memo(function GroupedListRow({
                 aria-label={node.title}
                 aria-current={isSelected ? 'page' : undefined}
                 draggable={false}
-                onClick={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.altKey ||
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.shiftKey
+                  )
+                    return;
+                  onLinkActivate?.();
+                  if (onReselect) {
+                    event.preventDefault();
+                    onReselect();
+                  }
+                }}
               />
             )}
             {isRenaming ? (

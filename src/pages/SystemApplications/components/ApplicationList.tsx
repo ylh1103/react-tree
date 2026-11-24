@@ -3,11 +3,9 @@
  * 分组编辑等交互由复用 GroupedList 提供，系统应用使用路由链接并由 URL 控制选中。
  */
 import { GroupedList } from '@/components/GroupedList';
-import type { GroupedListConfig } from '@/components/GroupedList/types';
-import { applicationService } from '@/queries/applications';
-import type { GroupedListService } from '@/components/GroupedList/types';
+import type { GroupedListConfig, GroupedListService } from '@/components/GroupedList/types';
 import { applicationListId } from '@/queries/groupedList';
-import { applicationPath } from '@/router/paths';
+import { applicationPath } from '@/router/workspace/paths';
 
 const config: GroupedListConfig = {
   label: '应用',
@@ -25,27 +23,37 @@ const config: GroupedListConfig = {
   },
 };
 
+interface ApplicationListProps {
+  systemName: string;
+  service: GroupedListService;
+  selectedAppName: string | null;
+  onReselect: () => void;
+  onAdd: () => void;
+  onEdit: (appName: string) => void;
+  onLinkActivate?: () => void;
+}
+
 export default function ApplicationList({
   systemName,
-  service = applicationService,
+  service,
   selectedAppName,
-  embedded = false,
-}: {
-  systemName?: string;
-  service?: GroupedListService;
-  selectedAppName?: string | null;
-  embedded?: boolean;
-} = {}) {
+  onReselect,
+  onAdd,
+  onEdit,
+  onLinkActivate,
+}: ApplicationListProps) {
   return (
     <GroupedList
-      listId={systemName === undefined ? 'applications' : applicationListId(systemName)}
+      listId={applicationListId(systemName)}
       service={service}
       config={config}
       selectedKey={selectedAppName}
-      getNodeTo={
-        systemName === undefined ? undefined : (node) => applicationPath(systemName, node.key)
-      }
-      embedded={embedded}
+      getNodeTo={(node) => applicationPath(systemName, node.key)}
+      onReselect={onReselect}
+      onAdd={onAdd}
+      onSettings={(node) => onEdit(node.key)}
+      onLinkActivate={onLinkActivate}
+      embedded
     />
   );
 }

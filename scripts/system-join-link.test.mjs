@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loginPath, loginReturnTo } from '../src/router/login.ts';
+import { loginPath, loginReturnTo } from '../src/router/middleware/login.ts';
 import { readSystemJoinLink, systemJoinRequestPath } from '../src/utils/systemJoinLink.ts';
 
 test('申请链接跨设备传递申请信息，登录回跳保留经过编码的值', () => {

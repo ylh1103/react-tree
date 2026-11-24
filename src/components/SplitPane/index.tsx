@@ -11,7 +11,13 @@ import { dragResize } from './dragResize';
 import { splitPaneSeparatorClassName } from './separatorStyle';
 import type { DragResizeState } from './dragResize';
 import { useLayoutPreferences } from '@/hooks/useLayoutPreferences';
-import { SplitPaneFrame } from './components/Frame';
+import {
+  SplitPaneFrame,
+  splitPaneCompactWidth,
+  splitPaneSidebarRatio,
+  splitPaneSingleWidth,
+  type SplitPaneFrameProps,
+} from './components/Frame';
 import { readSplitPaneLayout } from './model/layout';
 import { ShortcutHint } from '@/components/ShortcutHint';
 import { useActionTooltip } from '@/hooks/useActionTooltip';
@@ -25,6 +31,9 @@ export interface SplitPaneProps {
   toolbar?: ReactNode;
   /** 标题栏与主体共用面板，不显示分隔线或间距。 */
   integratedHeader?: boolean;
+  narrowPane?: SplitPaneFrameProps['narrowPane'];
+  /** 窄屏详情把同一侧栏定位为抽屉，开关由调用方随业务导航管理。 */
+  narrowDrawer?: { open: boolean; onOpen: () => void; onClose: () => void };
   /** 加载占位只读取布局，不注册交互或写入偏好。 */
   readOnly?: boolean;
   defaultWidth?: number;
@@ -43,6 +52,8 @@ export function SplitPane({
   title,
   toolbar,
   integratedHeader = false,
+  narrowPane,
+  narrowDrawer,
   readOnly = false,
   defaultWidth = 290,
   minWidth = 260,
@@ -60,6 +71,8 @@ export function SplitPane({
   const sidebarId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const drawerWasOpen = useRef(false);
   const toggleHint = useActionTooltip();
   const separatorRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragResizeState | null>(null);
@@ -117,16 +130,40 @@ export function SplitPane({
     setDragging(false);
   }, [flushDragLayout]);
   // 优先给右侧内容留出空间，小容器中允许侧栏小于配置的最小宽度。
+  const singlePane = Boolean(
+    narrowPane && availableWidth !== null && availableWidth <= splitPaneSingleWidth,
+  );
+  const showDrawerTrigger = singlePane && narrowPane === 'content' && narrowDrawer !== undefined;
+  const drawerOpen = Boolean(showDrawerTrigger && narrowDrawer?.open);
+  const sidebarLimit =
+    narrowPane && availableWidth !== null && availableWidth <= splitPaneCompactWidth
+      ? availableWidth * splitPaneSidebarRatio
+      : maxWidth;
   const upper = Math.max(
     0,
     Math.min(
       maxWidth,
+      sidebarLimit,
       availableWidth === null ? maxWidth : availableWidth - minContentWidth - separatorWidth,
     ),
   );
   const lower = Math.min(Math.max(0, minWidth), upper);
   const width = Math.max(lower, Math.min(layout.width, upper));
   const expanded = layout.visible && upper > 0;
+  const toggleExpanded = showDrawerTrigger ? drawerOpen : expanded;
+  const toggleLabel = toggleExpanded ? '收起侧边栏' : '展开侧边栏';
+  const toggleDisabled = readOnly || (!showDrawerTrigger && upper === 0);
+  const closeDrawer = narrowDrawer?.onClose;
+
+  useEffect(() => {
+    // 展开时聚焦列表容器以支持 Esc；闭合后回到原侧栏按钮。
+    if (drawerOpen) drawerRef.current?.focus({ preventScroll: true });
+    else if (drawerWasOpen.current) {
+      toggleRef.current?.focus({ preventScroll: true });
+      if (!showDrawerTrigger) closeDrawer?.();
+    }
+    drawerWasOpen.current = drawerOpen;
+  }, [drawerOpen, showDrawerTrigger, closeDrawer]);
 
   useEffect(() => {
     if (!scopedStorageKey || dragging || readOnly || ownerKey !== currentUserStorageKey('')) return;
@@ -148,6 +185,7 @@ export function SplitPane({
         event.defaultPrevented ||
         event.repeat ||
         event.isComposing ||
+        singlePane ||
         upper === 0 ||
         !event.ctrlKey ||
         event.metaKey ||
@@ -196,8 +234,13 @@ export function SplitPane({
     }
   }
   function toggle() {
-    if (readOnly || upper === 0) return;
+    if (toggleDisabled) return;
     toggleHint.run(() => {
+      if (showDrawerTrigger) {
+        if (drawerOpen) narrowDrawer.onClose();
+        else narrowDrawer.onOpen();
+        return;
+      }
       endDrag();
       toggleRef.current?.focus();
       setLayout((previous) => ({ ...previous, visible: !previous.visible }));
@@ -217,7 +260,19 @@ export function SplitPane({
       expanded={expanded}
       width={width}
       sidebar={sidebar}
+      drawer={
+        narrowDrawer && {
+          active: showDrawerTrigger,
+          open: drawerOpen,
+          sidebarInert: showDrawerTrigger
+            ? !drawerOpen
+            : !expanded && !(singlePane && narrowPane === 'sidebar'),
+          onClose: narrowDrawer.onClose,
+          ref: drawerRef,
+        }
+      }
       integratedHeader={integratedHeader}
+      narrowPane={narrowPane}
       toolbar={toolbar}
       separator={
         <div
@@ -322,23 +377,31 @@ export function SplitPane({
             title={
               readOnly ? (
                 '加载中，布局暂不可调整'
+              ) : showDrawerTrigger ? (
+                toggleLabel
               ) : upper === 0 ? (
                 '当前空间不足以展开侧边栏'
               ) : (
-                <ShortcutHint label={expanded ? '收起侧边栏' : '展开侧边栏'} keys={['Ctrl', 'B']} />
+                <ShortcutHint label={toggleLabel} keys={['Ctrl', 'B']} />
               )
             }
           >
             <Button
               ref={toggleRef}
+              className={
+                narrowPane && !showDrawerTrigger
+                  ? '[@container_split-pane_(max-width:520px)]:hidden!'
+                  : undefined
+              }
               type="text"
               htmlType="button"
               {...toggleHint.getTriggerProps()}
               onClick={toggle}
-              disabled={readOnly || upper === 0}
+              disabled={toggleDisabled}
+              aria-haspopup={showDrawerTrigger ? 'dialog' : undefined}
               aria-controls={sidebarId}
-              aria-expanded={expanded}
-              aria-label={expanded ? '收起侧边栏' : '展开侧边栏'}
+              aria-expanded={toggleExpanded}
+              aria-label={toggleLabel}
               icon={
                 // 沿用 VS Code 的侧栏状态表达：展开时填充左栏，收起时仅显示轮廓。
                 <svg
@@ -349,7 +412,7 @@ export function SplitPane({
                   aria-hidden="true"
                 >
                   <rect x="1.5" y="1.5" width="13" height="13" rx="2" />
-                  {expanded && (
+                  {toggleExpanded && (
                     <path
                       d="M3.5 1.5H6v13H3.5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"
                       fill="currentColor"

@@ -4,6 +4,7 @@ import {
   generatePath,
   matchRoutes,
   createMemoryRouter,
+  RouterContextProvider,
   RouterProvider,
   Outlet,
 } from 'react-router';
@@ -11,15 +12,15 @@ import { createElement } from 'react';
 import { Provider } from 'react-redux';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { applicationRouteConfig as navigationItems } from '../src/router/application.ts';
-import { databaseRouteConfig as databaseNavigationItems } from '../src/router/database.ts';
+import { applicationRouteConfig as navigationItems } from '../src/router/workspace/application/routes.ts';
+import { databaseRouteConfig as databaseNavigationItems } from '../src/router/workspace/database/routes.ts';
 import {
   applicationPath,
   applicationOperationPath,
   databasePath,
   platformHome,
   systemPath,
-} from '../src/router/paths.ts';
+} from '../src/router/workspace/paths.ts';
 import { filterSystems, isAccessDenied } from '../src/utils/systems.ts';
 import { mockSystems } from '../src/mocks/systems.ts';
 
@@ -46,9 +47,12 @@ after(async () => {
 const match = (path) => matchRoutes(routes, path)?.at(-1);
 
 test('真实路由按分组划分公开页与业务页，根身份恢复不承担登录拦截', async () => {
-  const { loginMiddleware, restoreLoginMiddleware } =
-    await vite.ssrLoadModule('/src/router/login.ts');
-  const { systemAccessMiddleware } = await vite.ssrLoadModule('/src/router/systemAccess.ts');
+  const { loginMiddleware, restoreLoginMiddleware } = await vite.ssrLoadModule(
+    '/src/router/middleware/login.ts',
+  );
+  const { systemAccessMiddleware } = await vite.ssrLoadModule(
+    '/src/router/middleware/systemAccess.ts',
+  );
   const middlewares = (path) =>
     matchRoutes(routes, path).flatMap(({ route }) => route.middleware ?? []);
   assert.deepEqual(middlewares('/login'), [restoreLoginMiddleware]);
@@ -342,7 +346,9 @@ test('系统 middleware 的 403/404 在系统边界展示站点页头，不挂�
   const { store } = await vite.ssrLoadModule('/src/store/index.ts');
   const { loadUserSettings } = await vite.ssrLoadModule('/src/store/slices/preferencesSlice.ts');
   const { defaultUserSettings } = await vite.ssrLoadModule('/src/types/preferences.ts');
-  const { createSystemNavigationContext } = await vite.ssrLoadModule('/src/router/systemAccess.ts');
+  const { createSystemNavigationContext } = await vite.ssrLoadModule(
+    '/src/router/middleware/systemAccess.ts',
+  );
   store.dispatch(loadUserSettings.pending('error-layout'));
   store.dispatch(loadUserSettings.fulfilled(defaultUserSettings, 'error-layout'));
   // 保留真实路由层级与边界，只跳过依赖浏览器存储的登录恢复；授权 middleware 仍照常执行。
@@ -426,7 +432,8 @@ test('导航菜单都对应显式路由，动态页面具有懒加载入口', ()
     assert.equal(typeof route.lazy, 'function');
     assert.equal(route.Component, undefined);
     assert.equal(typeof route.HydrateFallback, 'function');
-    assert.equal(route.HydrateFallback, match('/').route.HydrateFallback);
+    if (path !== 'application/:appName?')
+      assert.equal(route.HydrateFallback, match('/').route.HydrateFallback);
   }
   assert.equal(typeof match('/').route.lazy, 'function');
 });
@@ -554,8 +561,8 @@ test('实际懒加载页面可解析默认和具名导出，占位页面保留�
 });
 
 test('首次加载及导航使用统一骨架，加载完成显示页面，取消导航恢复原页面', async (t) => {
-  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/RouteOutlet.tsx');
-  const { RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading.ts');
+  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/loading/RouteOutlet.tsx');
+  const { RouteLoadingContext } = await vite.ssrLoadModule('/src/router/loading/routeLoading.ts');
   const { RouteSkeleton } = await vite.ssrLoadModule('/src/components/RouteSkeleton/index.tsx');
   function deferred() {
     let resolve;
@@ -645,8 +652,8 @@ test('首次加载及导航使用统一骨架，加载完成显示页面，取�
 });
 
 test('全局进度订阅覆盖跨布局授权和 loader 等待，完成、失败、取消与清理正确结束', async (t) => {
-  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/RouteOutlet.tsx');
-  const { startRouteProgress } = await vite.ssrLoadModule('/src/router/progress.ts');
+  const { RouteOutlet } = await vite.ssrLoadModule('/src/router/loading/RouteOutlet.tsx');
+  const { startRouteProgress } = await vite.ssrLoadModule('/src/router/loading/progress.ts');
   const deferred = () => {
     let resolve;
     const promise = new Promise((done) => {
@@ -760,7 +767,7 @@ test('middleware 授权后父子 loader 并行预取，与组件共享系统维�
     return original({ ...options, queryFn: async () => [] });
   });
   const { createSystemNavigationContext, systemAccessMiddleware } = await vite.ssrLoadModule(
-    '/src/router/systemAccess.ts',
+    '/src/router/middleware/systemAccess.ts',
   );
   let activeRouter;
   const router = createMemoryRouter(
@@ -822,7 +829,11 @@ test('应用列表写入期间导航预取遵守同一个写入锁', async (t) =
     requests.push(options.queryKey);
     return original(options);
   });
-  await match('/systems/CAC/application').route.loader({ params: { systemName: 'CAC' } });
+  await match('/systems/CAC/application').route.loader({
+    params: { systemName: 'CAC' },
+    request: new Request('http://localhost/systems/CAC/application'),
+    context: new RouterContextProvider(),
+  });
   const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
   assert.deepEqual(lock, groupedListKeys.write('applications:CAC'));
   // loader 只遵守写入锁，授权已由系统路由 middleware 完成。
@@ -887,8 +898,9 @@ test('页面 chunk 失败显示静态恢复入口，并保留父级布局', asyn
 });
 
 test('同系统切换应用或类型不替换整页骨架，跨系统和跨页面仍显示骨架', async () => {
-  const { matchPageSkeleton, matchLoadingParams } =
-    await vite.ssrLoadModule('/src/router/loading.ts');
+  const { matchPageSkeleton, matchLoadingParams } = await vite.ssrLoadModule(
+    '/src/router/loading/routeLoading.ts',
+  );
   assert.equal(
     matchPageSkeleton(
       routes,
@@ -919,9 +931,13 @@ test('同系统切换应用或类型不替换整页骨架，跨系统和跨页�
       '/systems/CAC/application/a',
     ),
   );
-  assert.ok(
-    matchPageSkeleton(routes, '/systems/CAC/application/b', 'workspace', '/systems/CAC/overview'),
+  const pendingApplication = matchPageSkeleton(
+    routes,
+    '/systems/CAC/application/b',
+    'workspace',
+    '/systems/CAC/overview',
   );
+  assert.equal(pendingApplication?.props.params?.appName, 'b');
   for (const name of ['公共配置', '核心 / 100% #?', '字面%25']) {
     assert.equal(matchLoadingParams(routes, applicationPath('CAC', name)).appName, name);
     assert.equal(matchLoadingParams(routes, databasePath('CAC', name)).paramTypeName, name);
@@ -929,7 +945,7 @@ test('同系统切换应用或类型不替换整页骨架，跨系统和跨页�
 });
 
 test('配置页与同一应用的三个子操作往返不切换骨架或重复执行配置 loader', async (t) => {
-  const { matchPageSkeleton } = await vite.ssrLoadModule('/src/router/loading.ts');
+  const { matchPageSkeleton } = await vite.ssrLoadModule('/src/router/loading/routeLoading.ts');
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   const { groupedListKeys } = await vite.ssrLoadModule('/src/queries/groupedList.ts');
   queryClient.setQueryData(groupedListKeys.list('applications:CAC'), [{ key: 'demo' }]);

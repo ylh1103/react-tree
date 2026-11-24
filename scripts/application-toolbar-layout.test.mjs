@@ -6,7 +6,7 @@ const sizes = {
   allWidth: 50,
   environmentWidths: [50, 50, 50, 50, 50],
   moreWidths: { label: 70, icon: 40 },
-  actionWidths: { all: 400, primary: 180, icons: 112 },
+  actionWidths: { all: 400, primary: 180, icons: 112, menu: 32 },
   groupGap: 12,
 };
 const fit = (availableWidth, previous, overrides = {}) =>
@@ -17,7 +17,8 @@ test('按实测内容宽度展开操作文字，没有固定容器断点', () =>
   assert.deepEqual(fit(735), { visibleCount: 5, actionLabelMode: 'primary', showMoreLabel: false });
   assert.deepEqual(fit(515), { visibleCount: 5, actionLabelMode: 'icons', showMoreLabel: false });
   assert.equal(
-    fit(700, undefined, { actionWidths: { all: 350, primary: 180, icons: 112 } }).actionLabelMode,
+    fit(700, undefined, { actionWidths: { all: 350, primary: 180, icons: 112, menu: 32 } })
+      .actionLabelMode,
     'all',
   );
 });
@@ -54,6 +55,7 @@ test('重复测量相同空间不会在两种布局之间反复切换', () => {
   }
 });
 
-test('极窄空间仍保留全选、第一个环境和操作入口', () => {
-  assert.deepEqual(fit(20), { visibleCount: 1, actionLabelMode: 'icons', showMoreLabel: false });
+test('极窄空间将环境和参数操作收进各自的菜单', () => {
+  assert.deepEqual(fit(210), { visibleCount: 1, actionLabelMode: 'menu', showMoreLabel: false });
+  assert.deepEqual(fit(20), { visibleCount: 0, actionLabelMode: 'menu', showMoreLabel: false });
 });

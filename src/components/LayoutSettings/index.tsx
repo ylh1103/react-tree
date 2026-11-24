@@ -24,7 +24,7 @@ import { EditorSetting } from './components/EditorSetting';
 import { LoadingStyleSetting } from './components/LoadingStyleSetting';
 import { OverlayScroll } from '@/components/OverlayScroll';
 import { SettingsOptionCard, SettingsDefaultBadge } from './components/SettingsOptionCard';
-import { applicationRouteConfig as navigationItems } from '@/router/application';
+import { applicationRouteConfig as navigationItems } from '@/router/workspace/application/routes';
 
 /** 预览取实际导航前两个入口，图标和名称随路由配置更新，不另维护一份示例菜单。 */
 const navigationPreviewItems = navigationItems.filter((item) => !item.bottom).slice(0, 2);
