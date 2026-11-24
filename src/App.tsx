@@ -9,7 +9,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadUserSettings, selectWaitingForUserSettings } from '@/store/slices/preferencesSlice';
 import { Outlet, useMatch } from 'react-router';
 import { AppViewport } from '@/layouts/LayoutFrame';
-import { DeferredUserSettingsDrawer } from '@/layouts/UserSettingsDrawer/Deferred';
+import { UserSettingsDrawer } from '@/layouts/UserSettingsDrawer';
 import { ResourceLoading } from '@/components/ResourceLoading';
 import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 
@@ -38,7 +38,7 @@ export default function App({ children }: { children?: ReactNode }) {
             )}
             {children ?? <Outlet />}
           </AppViewport>
-          <DeferredUserSettingsDrawer />
+          <UserSettingsDrawer />
         </BootstrapLoadingHandoff>
       )}
     </AntdApp>

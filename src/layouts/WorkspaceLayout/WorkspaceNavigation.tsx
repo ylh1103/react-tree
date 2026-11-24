@@ -6,9 +6,9 @@ import { applicationRouteConfig as navigationItems } from '@/router/workspace/ap
 import { databaseRouteConfig as databaseNavigationItems } from '@/router/workspace/database/routes';
 import { useSystemWorkspace } from '@/contexts/SystemContext';
 import { applicationPath, systemPath } from '@/router/workspace/paths';
-import { NavigationFrame } from './LayoutFrame';
+import { NavigationFrame } from '../LayoutFrame';
 
-export function AppNavigation() {
+export function WorkspaceNavigation() {
   const { system, platform } = useSystemWorkspace();
   const { pathname } = useLocation();
   const applicationMatch = useMatch('/systems/:systemName/application/:appName/*');

@@ -2,8 +2,8 @@
 import { Navigate, type RouteObject } from 'react-router';
 import { RouteSkeleton } from '@/components/RouteSkeleton';
 import { ApplicationSkeleton } from '@/components/RouteSkeleton/components/ApplicationSkeleton';
-import AppLayout from '@/layouts/AppLayout';
-import SystemLayout from '@/layouts/SystemLayout';
+import WorkspaceLayout from '@/layouts/WorkspaceLayout';
+import SystemLayout from '@/layouts/WorkspaceLayout/SystemLayout';
 import RouteErrorPage, { SystemRouteErrorPage } from '@/pages/RouteError';
 import RouteStatusPage from '@/pages/RouteStatus';
 import { systemAccessMiddleware } from '../middleware/systemAccess';
@@ -51,7 +51,7 @@ export const systemWorkspaceRoute: RouteObject = {
   children: [
     {
       id: 'workspace',
-      Component: AppLayout,
+      Component: WorkspaceLayout,
       children: [
         { index: true, element: <Navigate to="overview" replace /> },
         ...applicationRouteConfig.map(createWorkspaceRoute),

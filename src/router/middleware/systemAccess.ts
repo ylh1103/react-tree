@@ -7,8 +7,11 @@ import {
 } from 'react-router';
 import { store } from '@/store/index.ts';
 import { queryClient } from '@/queries/client.ts';
-import { requireSystemAccess, systemAccessOptions } from '@/queries/systems.ts';
-import type { SystemAccessIdentity } from '@/types/user.ts';
+import {
+  requireSystemAccess,
+  systemAccessOptions,
+  type SystemAccessIdentity,
+} from '@/queries/systems.ts';
 
 interface SystemNavigationSource {
   systemName: string | null;
@@ -58,13 +61,15 @@ export const systemAccessMiddleware: MiddlewareFunction = async ({ params, conte
   const key = JSON.stringify(options.queryKey);
   const sameWorkspace =
     source?.systemName === systemName &&
-    source.user?.openId === user?.openId &&
+    source.user?.ystId === user?.ystId &&
     source.user?.userType === user?.userType;
+  // 同一工作区内导航或同一导航的后续阶段可以复用授权。
+  // 即便缓存仍有旧数据，失效或刷新失败后也必须重新校验。
   const canReuse =
     (sameWorkspace || source?.checkedKey === key) &&
     state?.status === 'success' &&
     !state.isInvalidated;
-  if (!canReuse) await requireSystemAccess(systemName);
+  if (!canReuse) await requireSystemAccess(systemName, user);
   // Query 在途请求可能被其他导航/布局复用；不因单次导航取消而全局取消，取消后不得继续业务 loader。
   request.signal.throwIfAborted();
   if (source) source.checkedKey = key;

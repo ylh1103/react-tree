@@ -1,5 +1,6 @@
-/** 系统业务契约，列表、创建及授权都通过统一 HTTP 层调用。 */
+/** 系统业务接口，统一封装目录读取、系统检索和写入请求。 */
 import { requestData } from '@/http/request.ts';
+import { SystemAccessError } from './systemAccessError.ts';
 import type {
   AllSystemInfo,
   CreateSystemInput,
@@ -17,6 +18,19 @@ export const loadMySystems = (signal?: AbortSignal) =>
 /** 分页目录与我的系统契约分开，避免首页为分页拉取整份系统清单。 */
 export const loadSystemPage = (params: SystemPageParams, signal?: AbortSignal) =>
   requestData<SystemPage>({ url: '/api/systems/page', params, signal });
+/** 无独立系统详情接口：关键字分页检索后精确匹配；查完全部候选才判定不存在。 */
+export async function loadSystemByName(name: string, signal?: AbortSignal): Promise<AllSystemInfo> {
+  let pageNum = 1;
+  while (true) {
+    const page = await loadSystemPage({ pageNum, pageSize: 999, keyword: name }, signal);
+    const match = page.records.find((item) => item.systemName === name);
+    // 保留接口返回的加入状态，供上层统一判断当前用户是否可访问。
+    if (match) return match;
+    if (page.pageNum * page.pageSize >= page.total) throw new SystemAccessError(404, '系统不存在');
+    pageNum = page.pageNum + 1;
+  }
+}
+
 export const createSystem = (data: CreateSystemInput) =>
   requestData<SystemInfo>({ url: '/api/systems', method: 'POST', data });
 export const requestSystemJoin = (systemName: string) =>

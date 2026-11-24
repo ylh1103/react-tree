@@ -15,7 +15,7 @@ const forbiddenInitialModules = [
   '/src/components/SplitPane/index.tsx',
   '/src/components/CollectionSkeleton/',
   '/src/components/LayoutSettings/',
-  '/src/layouts/UserSettingsDrawer/index.tsx',
+  '/src/layouts/UserSettingsDrawer/UserSettingsContent.tsx',
   '/src/mocks/',
   '/src/pages/',
 ];

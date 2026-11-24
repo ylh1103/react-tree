@@ -141,7 +141,7 @@ test('所有系统仅锁定未加入的普通成员，平台管理员直接进�
         Page,
         path: '/catalog-test',
         routePath: '/catalog-test',
-        key: ['systems', 'catalog', params, user.openId],
+        key: ['systems', 'catalog', params, user.ystId],
         data: { ...params, records: [{ ...system, userRelation }], total: 1 },
         user,
       });

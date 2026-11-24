@@ -1,21 +1,23 @@
 /**
- * 系统清单和数据库类型清单的查询配置，供 loader 与页面共用。
- * 查询键包含系统维度；数据库结果剔除 setting 保留名称，避免与静态设置路由冲突。
+ * 系统目录、工作区访问及数据库类型的查询配置，供路由和页面共用。
+ * 目录缓存用于展示；工作区访问以系统精确检索返回的最新信息为依据。
  */
 import { queryOptions } from '@tanstack/react-query';
 import {
   loadSystems,
   loadMySystems,
   loadSystemPage,
+  loadSystemByName,
   loadFtcSubsystem,
   loadSubsystemMetadata,
 } from '@/api/systems.ts';
-import { queryClient } from './client.ts';
-import type { SystemAccessInfo, SystemPageParams } from '@/types/systems.ts';
+import { SystemAccessError } from '@/api/systemAccessError.ts';
+import { HttpError } from '@/http/request.ts';
+import type { ParameterType, SystemAccessInfo, SystemPageParams } from '@/types/systems.ts';
+import type { LoginUser } from '@/types/user.ts';
 import { loadSystemParameters } from '@/api/parameters.ts';
-import type { ParameterType } from '@/types/systems.ts';
 import { store } from '@/store/index.ts';
-import type { SystemAccessIdentity } from '@/types/user.ts';
+import { queryClient } from './client.ts';
 import { routeQueryMountOptions } from './routeQuery.ts';
 
 export const systemsOptions = () =>
@@ -26,10 +28,10 @@ export const systemsOptions = () =>
   });
 
 /** 我的系统按用户隔离；消费者可显式传入身份快照，避免迟到响应写入另一用户目录。创建后由 systems 前缀失效。 */
-export const mySystemsOptions = (openId = store.getState().user.userInfo?.openId ?? null) =>
+export const mySystemsOptions = (ystId = store.getState().user.userInfo?.ystId ?? null) =>
   queryOptions({
     ...routeQueryMountOptions,
-    queryKey: ['systems', 'mine', openId],
+    queryKey: ['systems', 'mine', ystId],
     queryFn: ({ signal }) => loadMySystems(signal),
   });
 
@@ -38,13 +40,61 @@ export const systemCatalogKey = ['systems', 'catalog'] as const;
 
 export const systemPageOptions = (
   params: SystemPageParams,
-  openId = store.getState().user.userInfo?.openId ?? null,
+  ystId = store.getState().user.userInfo?.ystId ?? null,
 ) =>
   queryOptions({
     ...routeQueryMountOptions,
-    queryKey: [...systemCatalogKey, params, openId],
+    queryKey: [...systemCatalogKey, params, ystId],
     queryFn: ({ signal }) => loadSystemPage(params, signal),
   });
+
+/** 授权缓存以一事通 ID 和平台角色识别用户，资料展示字段不参与。 */
+export type SystemAccessIdentity = Pick<LoginUser, 'ystId' | 'userType'>;
+
+/** 中间件与布局使用同一查询键；角色变化也会切换授权缓存。 */
+export function systemAccessOptions(
+  systemName: string,
+  user: SystemAccessIdentity | null = store.getState().user.userInfo,
+) {
+  return queryOptions<SystemAccessInfo>({
+    queryKey: ['system-access', systemName, user?.ystId ?? null, user?.userType ?? null],
+    queryFn: ({ signal }) => resolveSystemAccess(systemName, user, signal),
+    staleTime: 0,
+    retry: false,
+    // 导航已经校验过，布局挂载时复用结果。窗口重新聚焦时刷新，以发现访问权限变化。
+    refetchOnMount: false,
+    refetchOnWindowFocus: 'always',
+  });
+}
+
+/** 等待最新校验结果；复用同键的在途请求，失败交给路由错误边界。 */
+export async function requireSystemAccess(
+  systemName: string,
+  user: SystemAccessIdentity | null = store.getState().user.userInfo,
+) {
+  return queryClient.query(systemAccessOptions(systemName, user));
+}
+
+/** 平台人员只需确认系统存在，普通用户还须确认已加入。真实后端仍须逐请求鉴权。 */
+async function resolveSystemAccess(
+  systemName: string,
+  user: SystemAccessIdentity | null,
+  signal: AbortSignal,
+): Promise<SystemAccessInfo> {
+  signal.throwIfAborted();
+  if (!user) throw new HttpError(401, '请先登录');
+  if (user.userType !== '0' && user.userType !== '1')
+    throw new SystemAccessError(403, '无系统访问权限');
+  const system = await loadSystemByName(systemName, signal);
+  signal.throwIfAborted();
+  // 只信任本次查询返回的明确加入状态，不再为鉴权读取我的系统或使用其旧缓存。
+  if (user.userType === '0' || system.userRelation === true) return system;
+  throw new SystemAccessError(403, '尚未加入该系统', {
+    systemName: system.systemName,
+    systemChineseName: system.systemChineseName,
+    systemCharges: system.systemCharges,
+  });
+}
 
 export function parameterTypesOptions(systemName: string) {
   return queryOptions({
@@ -62,28 +112,6 @@ export function parameterTypesOptions(systemName: string) {
         }));
     },
   });
-}
-
-/** 本地演示授权：平台人员访问存在的系统，普通用户必须在接口成员清单中；真实后端仍须逐请求鉴权。 */
-export function systemAccessOptions(
-  systemName: string,
-  user: SystemAccessIdentity | null = store.getState().user.userInfo,
-) {
-  return queryOptions<SystemAccessInfo>({
-    queryKey: ['system-access', systemName, user?.openId ?? null, user?.userType ?? null],
-    queryFn: async ({ signal }) => {
-      const { resolveSystemAccess } = await import('./systemAccess.ts');
-      return resolveSystemAccess(systemName, user, signal);
-    },
-    staleTime: 0,
-    retry: false,
-    refetchOnMount: false,
-    refetchOnWindowFocus: 'always',
-  });
-}
-/** middleware 决定何时调用；显式校验始终读取最新授权，共用在途查询，失败不得回退旧缓存。 */
-export async function requireSystemAccess(systemName: string) {
-  return queryClient.query(systemAccessOptions(systemName));
 }
 
 /** 精确查询键隔离快速修改输入时的在途结果，取消信号透传至 HTTP。 */

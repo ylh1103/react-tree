@@ -62,7 +62,7 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
     '/project/src/utils/failureDetails.ts': {},
     '/project/src/components/SplitPane/index.tsx': {},
     '/project/src/components/CollectionSkeleton/index.tsx': {},
-    '/project/src/layouts/UserSettingsDrawer/index.tsx': {},
+    '/project/src/layouts/UserSettingsDrawer/UserSettingsContent.tsx': {},
     '/project/src/mocks/adapter.ts': {},
     '/project/src/mocks/config.ts': {},
     '/project/src/mocks/applications.ts': {},
@@ -77,7 +77,7 @@ test('发现静态回流的设置、交互分栏和 Mock 数据，但允许唯�
     'utils/failureDetails.ts',
     'components/SplitPane/index.tsx',
     'components/CollectionSkeleton/index.tsx',
-    'layouts/UserSettingsDrawer/index.tsx',
+    'layouts/UserSettingsDrawer/UserSettingsContent.tsx',
     'mocks/applications.ts',
     'pages/FutureBusiness/index.tsx',
   ]);

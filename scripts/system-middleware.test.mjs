@@ -144,13 +144,17 @@ test('身份在根 middleware 恢复时变化，即使对应身份曾有成功�
   const oldUser = createDemoLoginUser('1');
   await router.navigate('/systems/CAC/application/one');
   // 预置另一个身份的旧成功结果，验证不能仅按“该键有数据”放行。
-  const otherUser = { ...oldUser, openId: 'another-user' };
+  const otherUser = { ...oldUser, ystId: 'another-user' };
   queryClient.setQueryData(systemAccessOptions('CAC', otherUser).queryKey, { systemName: 'CAC' });
   nextUser = otherUser;
   await router.navigate('/systems/CAC/application/two');
   assert.equal(accessRequests().length, 2);
   nextUser = { ...otherUser, userType: '0' };
   await router.navigate('/systems/CAC/application/three');
+  assert.equal(accessRequests().length, 3);
+  assert.equal(router.state.errors, null);
+  nextUser = { ...otherUser, userType: '0', openId: 'changed-open-id' };
+  await router.navigate('/systems/CAC/application/four');
   assert.equal(accessRequests().length, 3);
   assert.equal(router.state.errors, null);
 });

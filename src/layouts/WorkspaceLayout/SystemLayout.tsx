@@ -13,7 +13,7 @@ import { SystemAccessError } from '@/api/systemAccessError';
 import { SystemContext } from '@/contexts/SystemContext';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
-import SiteLayout from './SiteLayout';
+import SiteLayout from '../SiteLayout';
 
 export default function SystemLayout() {
   const { systemName } = useParams();
@@ -21,11 +21,12 @@ export default function SystemLayout() {
   // 只订阅授权所需字段；姓名、部门等资料变化不触发工作区更新。
   const user = useAppSelector((state) => {
     const info = state.user.userInfo;
-    return info ? { openId: info.openId, userType: info.userType } : null;
+    return info ? { ystId: info.ystId, userType: info.userType } : null;
   }, shallowEqual);
+  // 父路由的中间件先校验；这里订阅相同缓存键，处理工作区打开后的刷新结果。
   const query = useQuery(systemAccessOptions(systemName!, user));
-  // 授权/loader 已填充同用户目录；挂载不重复刷新，失效和手动刷新仍可更新。
-  const list = useQuery({ ...mySystemsOptions(user?.openId ?? null), refetchOnMount: false });
+  // 父路由 loader 预取同用户的切换列表。它与授权查询独立，挂载时复用预取结果。
+  const list = useQuery({ ...mySystemsOptions(user?.ystId ?? null), refetchOnMount: false });
   const system = query.data;
   const systems = list.data ?? [];
   if (query.isPending || (!system && query.isFetching))
@@ -34,7 +35,7 @@ export default function SystemLayout() {
         <Spin />
       </div>
     );
-  // 授权失败优先于旧数据；失效的工作区不能继续保留 Outlet。
+  // 刷新失败时 Query 可能同时保留 error 和上次的 data。403/404 优先展示状态页，卸载工作区。
   if (isAccessDenied(query.error))
     return (
       <SiteLayout>
@@ -51,6 +52,7 @@ export default function SystemLayout() {
         <RouteStatusPage scope="system" />
       </SiteLayout>
     );
+  // 其他请求错误有旧数据时保留工作区，并在下方显示重试入口。
   if (query.error && !system) {
     return (
       <div className="p-6">

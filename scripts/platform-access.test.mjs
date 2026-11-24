@@ -7,6 +7,7 @@ import test, { beforeEach, afterEach } from 'node:test';
 import { mockConfig } from '../src/mocks/config.ts';
 import { writeMock, readMock } from '../src/mocks/storage.ts';
 import {
+  loadSystemByName,
   loadSystems,
   loadMySystems,
   loadSystemPage,
@@ -14,7 +15,6 @@ import {
   requestSystemJoin,
 } from '../src/api/systems.ts';
 import { SystemAccessError } from '../src/api/systemAccessError.ts';
-import { loadSystemAccess } from '../src/api/systemAccess.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
 import { createSystemApplicationApi } from '../src/api/applications.ts';
 import { httpClient, requestData } from '../src/http/request.ts';
@@ -60,8 +60,8 @@ test('全部目录只包含加入标记，空 Store 不自行构造身份，访�
   assert.deepEqual(Object.keys(state), ['preferences', 'user']);
   assert.deepEqual(state.user, { userInfo: null });
   await assert.rejects(requestData({ url: '/api/session' }), (error) => error.status === 404);
-  await assert.rejects(loadSystemAccess('不存在'), (error) => error.status === 404);
-  const access = await loadSystemAccess('CAC');
+  await assert.rejects(loadSystemByName('不存在'), (error) => error.status === 404);
+  const access = await loadSystemByName('CAC');
   for (const field of ['ystId', 'role']) assert.equal(field in access, false);
   assert.equal(access.userRelation, true);
 });
@@ -165,7 +165,7 @@ test('我的系统按独立接口关系返回角色，负责人相同的系统�
 });
 
 test('系统统计与应用、参数实际返回数量一致', async () => {
-  const system = await loadSystemAccess('CAC');
+  const system = await loadSystemByName('CAC');
   assert.equal((await createSystemApplicationApi('CAC').getItems()).length, system.appCount);
   assert.equal((await loadSystemParameters('CAC')).length, system.paramTypeCount);
 });
@@ -411,19 +411,19 @@ test('存在性检索每页 999 条并精确匹配，跨页候选及取消、服
   t.after(() => {
     httpClient.defaults.adapter = original;
   });
-  assert.equal((await loadSystemAccess('TARGET')).systemName, 'TARGET');
+  assert.equal((await loadSystemByName('TARGET')).systemName, 'TARGET');
   assert.deepEqual(
     requests.map((params) => params.pageNum),
     [1, 2],
   );
   httpClient.defaults.adapter = original;
-  await assert.rejects(loadSystemAccess('cac'), (error) => error.status === 404);
+  await assert.rejects(loadSystemByName('cac'), (error) => error.status === 404);
   mockConfig.systemAccessError = 503;
   await assert.rejects(requireSystemAccess('CAC'), (error) => error.status === 503);
   mockConfig.systemAccessError = null;
   mockConfig.delayMs = 50;
   const controller = new AbortController();
-  const pending = loadSystemAccess('CAC', controller.signal);
+  const pending = loadSystemByName('CAC', controller.signal);
   controller.abort();
   await assert.rejects(pending, (error) => error.code === 'ERR_CANCELED');
 });
@@ -527,7 +527,7 @@ test('取消系统鉴权会取消 HTTP，不能继续返回授权成功', async 
 
 test('身份切换清理查询后，迟到的系统响应不会填充新用户缓存或恢复旧授权', async (t) => {
   const firstUser = store.getState().user.userInfo;
-  const otherUser = { ...firstUser, openId: 'another-login-user' };
+  const otherUser = { ...firstUser, ystId: 'another-login-user' };
   let release;
   let started;
   const gate = new Promise((resolve) => {
@@ -559,7 +559,7 @@ test('身份切换清理查询后，迟到的系统响应不会填充新用户�
   assert.equal(queryClient.getQueryData(systemAccessOptions('CAC', firstUser).queryKey), undefined);
   assert.equal(queryClient.getQueryData(systemAccessOptions('CAC', otherUser).queryKey), undefined);
   assert.equal((await requireSystemAccess('CAC')).systemName, 'CAC');
-  assert.equal(queryClient.getQueryData(mySystemsOptions(otherUser.openId).queryKey), undefined);
+  assert.equal(queryClient.getQueryData(mySystemsOptions(otherUser.ystId).queryKey), undefined);
 });
 
 test('鉴权保留接口额外字段，普通用户只有明确的 userRelation=true 才放行', async (t) => {

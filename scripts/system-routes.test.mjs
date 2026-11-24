@@ -439,7 +439,9 @@ test('导航菜单都对应显式路由，动态页面具有懒加载入口', ()
 });
 
 test('应用菜单关闭子操作并保留 URL 中的应用，已选应用重复点击也不清空选择', async (t) => {
-  const { AppNavigation } = await vite.ssrLoadModule('/src/layouts/AppNavigation.tsx');
+  const { WorkspaceNavigation } = await vite.ssrLoadModule(
+    '/src/layouts/WorkspaceLayout/WorkspaceNavigation.tsx',
+  );
   const { SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
   const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
   const system = mockSystems.find((item) => item.systemName === 'CAC');
@@ -454,7 +456,7 @@ test('应用菜单关闭子操作并保留 URL 中的应用，已选应用重复
     systemPath(system.systemName, 'overview'),
   ];
   for (const source of sources) {
-    const router = createMemoryRouter([{ path: '*', Component: AppNavigation }], {
+    const router = createMemoryRouter([{ path: '*', Component: WorkspaceNavigation }], {
       initialEntries: [source],
     });
     t.after(() => router.dispose());
@@ -486,14 +488,16 @@ test('应用菜单关闭子操作并保留 URL 中的应用，已选应用重复
 });
 
 test('设置菜单通过链接进入所属平台页面，设置页不再提供抽屉入口', async (t) => {
-  const { AppNavigation } = await vite.ssrLoadModule('/src/layouts/AppNavigation.tsx');
+  const { WorkspaceNavigation } = await vite.ssrLoadModule(
+    '/src/layouts/WorkspaceLayout/WorkspaceNavigation.tsx',
+  );
   const { SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
   const { createAppStore } = await vite.ssrLoadModule('/src/store/index.ts');
   for (const platform of ['application', 'database']) {
     await t.test(platform, async (t) => {
       const path = systemPath('CAC', platform === 'database' ? 'db/setting' : 'setting');
       const store = createAppStore();
-      const router = createMemoryRouter([{ path: '*', Component: AppNavigation }], {
+      const router = createMemoryRouter([{ path: '*', Component: WorkspaceNavigation }], {
         initialEntries: [platformHome('CAC', platform)],
       });
       t.after(() => router.dispose());
@@ -1072,7 +1076,9 @@ test('工作区切换列表对两种平台角色均只使用我的系统，403 �
   const { queryClient } = await vite.ssrLoadModule('/src/queries/client.ts');
   const { systemAccessOptions, mySystemsOptions, systemsOptions } =
     await vite.ssrLoadModule('/src/queries/systems.ts');
-  const { default: SystemLayout } = await vite.ssrLoadModule('/src/layouts/SystemLayout.tsx');
+  const { default: SystemLayout } = await vite.ssrLoadModule(
+    '/src/layouts/WorkspaceLayout/SystemLayout.tsx',
+  );
   const { useSystemWorkspace } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx');
   const { store } = await vite.ssrLoadModule('/src/store/index.ts');
   const { setUserInfo } = await vite.ssrLoadModule('/src/store/slices/userSlice.ts');

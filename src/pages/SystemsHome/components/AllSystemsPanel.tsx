@@ -33,16 +33,16 @@ export default function AllSystemsPanel({
   defaultPageSize: number;
   onDetails: (system: AllSystemInfo) => void;
 }) {
-  const openId = useAppSelector((state) => state.user.userInfo?.openId ?? null);
+  const ystId = useAppSelector((state) => state.user.userInfo?.ystId ?? null);
   const [pagination, setPagination] = useState({
     keyword,
-    openId,
+    ystId,
     pageNum: 1,
     pageSize: defaultPageSize,
     total: 0,
   });
-  const sameDirectory = pagination.keyword === keyword && pagination.openId === openId;
-  if (!sameDirectory) setPagination({ ...pagination, keyword, openId, pageNum: 1, total: 0 });
+  const sameDirectory = pagination.keyword === keyword && pagination.ystId === ystId;
+  if (!sameDirectory) setPagination({ ...pagination, keyword, ystId, pageNum: 1, total: 0 });
   const params: SystemPageParams = {
     keyword,
     pageNum: sameDirectory ? pagination.pageNum : 1,
@@ -53,7 +53,7 @@ export default function AllSystemsPanel({
   if (draft.keyword !== keyword) setDraft({ keyword, value: keyword });
 
   const isPlatformAdmin = useAppSelector((state) => state.user.userInfo?.userType === '0');
-  const query = useQuery(systemPageOptions(params, openId));
+  const query = useQuery(systemPageOptions(params, ystId));
   const [submittedKeyword, setSubmittedKeyword] = useState<string | null>(null);
   const searching = submittedKeyword === keyword && query.isFetching;
   // 关键词先写入 URL，再由目标查询接管加载状态；分页主动清除搜索标记。
@@ -132,7 +132,7 @@ export default function AllSystemsPanel({
           setSubmittedKeyword(null);
           setPagination({
             keyword,
-            openId,
+            ystId,
             pageNum: pageSize !== params.pageSize ? 1 : pageNum,
             pageSize,
             total: query.data?.total ?? pagination.total,

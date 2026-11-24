@@ -1,12 +1,12 @@
 /** 页头身份卡片：集中展示头像、姓名和账号，保留分组菜单的键盘操作与入口授权边界。 */
 import { App, Button, Dropdown, Modal } from 'antd';
 import { lazy, useState } from 'react';
-import { DeferredPanel } from './DeferredPanel';
+import { DeferredPanel } from '../DeferredPanel';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { openUserSettings } from '@/store/slices/preferencesSlice';
 import { logoutUser } from '@/router/middleware/login';
 
-const UserProfileContent = lazy(() => import('./UserProfileModal'));
+const UserProfileContent = lazy(() => import('./UserProfileContent'));
 const menuItemClass = 'min-h-40px px-3! rounded-control!';
 
 /** 共用菜单项外观，退出项继承 Ant Design 的危险操作配色。 */
