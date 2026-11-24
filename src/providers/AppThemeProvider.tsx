@@ -1,17 +1,22 @@
 /**
- * React 运行期间的主题入口：把 Redux 中的用户选择解析为实际配色，统一驱动 Ant Design 和 CSS 变量。
+ * React 运行期间的主题入口：同步 Redux 显示偏好，并统一配置 Ant Design 主题和运行时样式。
  * HTML 首屏脚本只提前设置画布与文字颜色；此处在首次提交时补齐完整变量，随后响应配置和系统外观变化。
  * 只负责显示同步，主题保存和失败回退由偏好状态机处理，启动缓存由入口订阅维护。
  */
 import { ConfigProvider } from 'antd';
-import { StyleProvider } from '@ant-design/cssinjs';
+import {
+  StyleProvider,
+  legacyLogicalPropertiesTransformer,
+  autoPrefixTransformer,
+} from '@ant-design/cssinjs';
 import { useLayoutEffect, useMemo, type ReactNode } from 'react';
 import { useAppSelector } from '@/store/hooks';
 import { useResolvedTheme } from '@/hooks/useResolvedTheme';
 import { createAppTheme, applyTheme } from '@/styles/theme';
 import { UserLoadingIndicator } from '@/components/LoadingIndicator/UserLoadingIndicator';
-import { appMotionTransformers } from '@/styles/motion';
 
+// Vite 无法转换运行时生成的 CSS，由唯一的 StyleProvider 为 Chrome 86 转换逻辑属性并生成前缀。
+const styleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
 const spinConfig = { indicator: <UserLoadingIndicator /> };
 // 全局文字提示默认隐藏箭头；个别 Tooltip 可通过自身 arrow 属性覆盖。
 const tooltipConfig = { arrow: false };
@@ -42,7 +47,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     applyTheme(resolvedTheme, borderRadius, controlBorderRadius);
   }, [resolvedTheme, borderRadius, controlBorderRadius]);
   return (
-    <StyleProvider transformers={appMotionTransformers}>
+    <StyleProvider hashPriority="high" transformers={styleTransformers}>
       <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>
         {children}
       </ConfigProvider>

@@ -12,11 +12,6 @@ import { queryClient } from '@/queries/client';
 import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { createRoot } from 'react-dom/client';
-import {
-  StyleProvider,
-  legacyLogicalPropertiesTransformer,
-  autoPrefixTransformer,
-} from '@ant-design/cssinjs';
 import { RouterProvider } from 'react-router/dom';
 import 'virtual:uno.css';
 import '@/styles/index.css';
@@ -53,25 +48,21 @@ import.meta.hot?.dispose(() => {
   stopUserSettingsSession();
 });
 
-const legacyStyleTransformers = [legacyLogicalPropertiesTransformer, autoPrefixTransformer];
-
 // 等标记样式结束后再挂载，减少样式尚未应用时的页面闪现；失败的链接也会结束等待。
 // 无需在入口串行等待配置或整个 Router 初始化：各显示分支在首次配置等待结束后再交接 HTML 画面。
 void waitForBootstrapStyles().then(() => {
   createRoot(document.getElementById('root')!).render(
     <BootstrapLoadingProvider initialActive={Boolean(document.getElementById('bootstrap-loading'))}>
       <ErrorBoundary FallbackComponent={AppFailure}>
-        <StyleProvider hashPriority="high" transformers={legacyStyleTransformers}>
-          <QueryClientProvider client={queryClient}>
-            <Provider store={store}>
-              <AppThemeProvider>
-                <RouteLoadingContext value={routes}>
-                  <RouterProvider router={router} />
-                </RouteLoadingContext>
-              </AppThemeProvider>
-            </Provider>
-          </QueryClientProvider>
-        </StyleProvider>
+        <QueryClientProvider client={queryClient}>
+          <Provider store={store}>
+            <AppThemeProvider>
+              <RouteLoadingContext value={routes}>
+                <RouterProvider router={router} />
+              </RouteLoadingContext>
+            </AppThemeProvider>
+          </Provider>
+        </QueryClientProvider>
       </ErrorBoundary>
     </BootstrapLoadingProvider>,
   );
