@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Tabs } from 'antd';
 import { useLocation, useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemRole } from '@/types/systems';
-import SystemManagementModal from './components/SystemManagementModal';
+import LazySystemManagementModal from './components/LazySystemManagementModal';
 import { SystemDetailsModal } from './components/SystemPresentation';
 import MySystemsPanel from './components/MySystemsPanel';
 import AllSystemsPanel from './components/AllSystemsPanel';
@@ -125,7 +125,7 @@ export default function SystemsHomePage() {
         ]}
       />
       {creating && (
-        <SystemManagementModal
+        <LazySystemManagementModal
           onClose={() => setCreating(false)}
           onSaved={() => {
             setCreating(false);

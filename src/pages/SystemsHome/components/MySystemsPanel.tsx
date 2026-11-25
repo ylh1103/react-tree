@@ -1,5 +1,6 @@
 /** 我的系统接口返回完整清单：搜索、角色筛选及分页均在本地完成，翻页不发请求。 */
-import { useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
+import { useDebounceFn } from 'ahooks';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Empty, Input, Select, Spin, Tooltip } from 'antd';
 import { mySystemsOptions } from '@/queries/systems';
@@ -17,6 +18,43 @@ import { SystemItem, SystemViewSwitch } from './SystemPresentation';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import { useSystemQueryError } from '../hooks/useSystemQueryError';
 import CollectionPagination from './CollectionPagination';
+
+function MySystemsSearch({
+  search,
+  onSearchChange,
+}: {
+  search: string;
+  onSearchChange: (search: string) => void;
+}) {
+  // 输入仅更新搜索框，停顿后再同步 URL 并刷新列表。
+  const [draft, setDraft] = useState({ search, value: search });
+  if (draft.search !== search) setDraft({ search, value: search });
+  const { run, cancel } = useDebounceFn(onSearchChange, { wait: 200 });
+
+  // 前进、后退或其他 URL 更新改变关键字时，取消旧草稿的提交。
+  useLayoutEffect(() => cancel, [cancel, search]);
+
+  return (
+    <Input
+      allowClear
+      aria-label="筛选我的系统"
+      placeholder="系统名称、架构编码、组织或人员"
+      className="col-span-2 w-full! min-w-0! @[560px]:col-span-1"
+      value={draft.search === search ? draft.value : search}
+      onChange={(event) => {
+        const value = event.target.value;
+        setDraft({ search, value });
+        if (value === '') {
+          cancel();
+          onSearchChange(value);
+        } else {
+          run(value);
+        }
+      }}
+      prefix={<span className="i-lucide-search w-14px h-14px text-text-muted" aria-hidden="true" />}
+    />
+  );
+}
 
 export default function MySystemsPanel({
   view,
@@ -77,20 +115,7 @@ export default function MySystemsPanel({
         {/* 按可用宽度整组换行，避免中等宽度只把最后一个操作挤到下一行。 */}
         <div className="grid items-center gap-2.5 @[560px]:gap-3 @[960px]:grid-cols-[minmax(0,1fr)_auto]">
           <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 @[560px]:grid-cols-[minmax(0,420px)_150px_auto] @[560px]:justify-start @[560px]:gap-3">
-            <Input
-              allowClear
-              aria-label="筛选我的系统"
-              placeholder="系统名称、架构编码、组织或人员"
-              className="col-span-2 w-full! min-w-0! @[560px]:col-span-1"
-              value={search}
-              onChange={(event) => onSearchChange(event.target.value)}
-              prefix={
-                <span
-                  className="i-lucide-search w-14px h-14px text-text-muted"
-                  aria-hidden="true"
-                />
-              }
-            />
+            <MySystemsSearch search={search} onSearchChange={onSearchChange} />
             <Select
               aria-label="筛选我的系统角色"
               className="w-full! min-w-0!"

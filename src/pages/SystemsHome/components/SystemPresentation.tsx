@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { AppstoreOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { useState, type ReactNode } from 'react';
-import SystemManagementModal from './SystemManagementModal';
+import LazySystemManagementModal from './LazySystemManagementModal';
 import { Link } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemInfo } from '@/types/systems';
 import { descriptionText } from '@/utils/systems';
@@ -164,7 +164,7 @@ function SystemActions({
         />
       </Dropdown>
       {editing && (
-        <SystemManagementModal
+        <LazySystemManagementModal
           system={system}
           onClose={() => setEditing(false)}
           onSaved={() => setEditing(false)}
