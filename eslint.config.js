@@ -30,10 +30,6 @@ export default defineConfig([
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['build/landing-utilities-plugin.mjs'],
-    languageOptions: { globals: globals.node },
-  },
-  {
     // TS 组件使用静态类型，Landing 页尾沿用仓库原有的 JSX 渲染器。
     files: ['src/**/*.{ts,tsx}', 'src/pages/Landing/components/LandingClosing/**/*.jsx'],
     rules: { 'react/prop-types': 'off' },

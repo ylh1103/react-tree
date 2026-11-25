@@ -28,7 +28,7 @@ export interface ListNodeMenuItem {
 }
 
 /** 仅自定义叶子业务菜单，始终保留快速移动；未配置、返回 undefined 或空数组时仅保留移动。 */
-export type ListNodeMenuItems =
+type ListNodeMenuItems =
   readonly ListNodeMenuItem[] | ((node: ListNode) => readonly ListNodeMenuItem[] | undefined);
 
 export interface ListNodeActions {

@@ -19,7 +19,7 @@ const rootReducer = combineReducers({
 });
 
 /** Store 启动选项；业务 API 由各 Slice 直接调用，不参与 Store 装配。 */
-export interface AppStoreOptions {
+interface AppStoreOptions {
   /** 配置读取前的显示主题，不代表配置已经初始化，也不会直接写回服务端。 */
   themeMode?: ThemeMode;
   /** 配置读取前的图标提示，同时作为读取失败时的回退值，不代表服务端配置已初始化。 */

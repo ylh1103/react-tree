@@ -39,7 +39,7 @@ export function flattenTree(tree: TreeNode[], expandedKeys: Set<string>): FlatNo
 }
 
 /** 建立直接父节点映射；根节点的父级为 null，用于校验移动目标和计算目录关系。 */
-export function buildParentMap(tree: TreeNode[]): Map<string, string | null> {
+function buildParentMap(tree: TreeNode[]): Map<string, string | null> {
   const map = new Map<string, string | null>();
 
   const walk = (nodes: TreeNode[], parentKey: string | null) => {
@@ -68,11 +68,7 @@ export function findNode(tree: TreeNode[], key: string): TreeNode | null {
 }
 
 /** 判断目标是否位于给定目录内部；自身不算后代，叶子不能作为祖先。 */
-export function isDescendant(
-  tree: TreeNode[],
-  ancestorKey: string,
-  maybeDescendantKey: string,
-): boolean {
+function isDescendant(tree: TreeNode[], ancestorKey: string, maybeDescendantKey: string): boolean {
   const ancestor = findNode(tree, ancestorKey);
   if (!ancestor || ancestor.type !== 'branch') return false;
 

@@ -9,7 +9,7 @@ import { Outlet, useMatch, useParams } from 'react-router';
 import { mySystemsOptions, systemAccessOptions } from '@/queries/systems';
 import { useAppSelector } from '@/store/hooks';
 import { HttpError } from '@/http/request';
-import { SystemAccessError } from '@/api/systemAccessError';
+import { SystemAccessError } from '@/api/systems';
 import { SystemContext } from '@/contexts/SystemContext';
 import { isAccessDenied } from '@/utils/systems';
 import RouteStatusPage from '@/pages/RouteStatus';

@@ -8,10 +8,10 @@ import {
   loadMySystems,
   loadSystemPage,
   loadSystemByName,
+  SystemAccessError,
   loadFtcSubsystem,
   loadSubsystemMetadata,
 } from '@/api/systems.ts';
-import { SystemAccessError } from '@/api/systemAccessError.ts';
 import { HttpError } from '@/http/request.ts';
 import type { ParameterType, SystemAccessInfo, SystemPageParams } from '@/types/systems.ts';
 import type { LoginUser } from '@/types/user.ts';
@@ -36,7 +36,7 @@ export const mySystemsOptions = (ystId = store.getState().user.userInfo?.ystId ?
   });
 
 /** 页码、条数和所有筛选共同决定缓存；不使用上页占位，避免失败后误展示其他页的数据。 */
-export const systemCatalogKey = ['systems', 'catalog'] as const;
+const systemCatalogKey = ['systems', 'catalog'] as const;
 
 export const systemPageOptions = (
   params: SystemPageParams,

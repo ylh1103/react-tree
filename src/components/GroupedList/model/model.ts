@@ -31,7 +31,7 @@ export function parseGroups(value: string | null): ListNode[] {
 }
 
 /** 清单是叶子数据的唯一来源；分组只负责结构与顺序。 */
-export function mergeGroups(items: ListNode[], groupInfo: string | null): ListNode[] {
+function mergeGroups(items: ListNode[], groupInfo: string | null): ListNode[] {
   const groups = parseGroups(groupInfo);
   const catalog = new Map(items.map((item) => [item.key, item]));
   if (

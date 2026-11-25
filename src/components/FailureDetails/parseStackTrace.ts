@@ -1,5 +1,5 @@
 /** 堆栈展示适配：参考 stacktrace-parser 的多格式分支思路，保留逐行原文，不过滤未知行或改写 eval 上下文。 */
-export type StackTraceLine =
+type StackTraceLine =
   | { kind: 'text'; raw: string }
   | { kind: 'frame'; raw: string; name: string; location: string; project: boolean };
 

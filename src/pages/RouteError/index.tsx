@@ -7,7 +7,7 @@ import SiteLayout from '@/layouts/SiteLayout';
 import { AppFailure } from '@/components/AppFailure';
 import { useRouteError } from 'react-router';
 import { HttpError } from '@/http/request';
-import { SystemAccessError } from '@/api/systemAccessError';
+import { SystemAccessError } from '@/api/systems';
 import RouteStatusPage from '@/pages/RouteStatus';
 import { BootstrapLoadingHandoff } from '@/components/ResourceLoading/BootstrapHandoff';
 import { ResourceLoading } from '@/components/ResourceLoading';

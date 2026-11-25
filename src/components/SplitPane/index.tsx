@@ -22,7 +22,7 @@ import { readSplitPaneLayout } from './model/layout';
 import { ShortcutHint } from '@/components/ShortcutHint';
 import { useActionTooltip } from '@/hooks/useActionTooltip';
 
-export interface SplitPaneProps {
+interface SplitPaneProps {
   sidebar: ReactNode;
   children: ReactNode;
   sidebarLabel?: string;

@@ -50,7 +50,7 @@ const darkAccent = {
 };
 
 /** 保留暗色算法的控件层级，再显式校准文本、表面和交互状态色。 */
-export const darkAppTheme: ThemeConfig = {
+const darkAppTheme: ThemeConfig = {
   ...appTheme,
   algorithm: (seed, map) => ({
     ...theme.darkAlgorithm(seed, map),

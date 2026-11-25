@@ -1,9 +1,4 @@
 /** 落地页只组装各独立模块；后续产品能力、流程等区块在此按顺序接入。 */
-import 'virtual:features-13-utilities.css';
-import 'virtual:landing-core-features-utilities.css';
-import 'virtual:how-it-works-9-utilities.css';
-import 'virtual:stats-4-utilities.css';
-import 'virtual:faq-6-utilities.css';
 import { LazyMotion } from 'motion/react';
 import { theme } from 'antd';
 import type { CSSProperties } from 'react';

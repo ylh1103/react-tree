@@ -27,7 +27,9 @@ test('首屏等待后端布局，读取失败回退默认，重试和保存期�
   });
   t.after(() => vite.close());
   const { default: App } = await vite.ssrLoadModule('/src/App.tsx');
-  const { LayoutSettings } = await vite.ssrLoadModule('/src/components/LayoutSettings/index.tsx');
+  const { LayoutSettings } = await vite.ssrLoadModule(
+    '/src/layouts/UserSettingsDrawer/LayoutSettings/index.tsx',
+  );
   const loading = deferred();
   const saving = deferred();
   let nextLoad = loading.promise;

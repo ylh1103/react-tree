@@ -2,7 +2,7 @@
 import type { LoadingStyleId } from '../../../types/loading.ts';
 
 /** 直接使用持久化标识选择效果，调用方无需区分图标系列或维护额外方案键。 */
-export interface LoadingStyle {
+interface LoadingStyle {
   id: LoadingStyleId;
   name: string;
   description: string;

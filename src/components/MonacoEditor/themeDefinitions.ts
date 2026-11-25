@@ -24,7 +24,7 @@ function assertThemeBase(source: {
 }
 
 /** 仅补齐 YAML/JSON 的配色缺口，不覆盖其他语言及源主题已提供的对应规则。 */
-export function createEditorTheme(theme: CustomEditorTheme): editor.IStandaloneThemeData {
+function createEditorTheme(theme: CustomEditorTheme): editor.IStandaloneThemeData {
   const source = sources[theme.value];
   assertThemeBase(source);
   const hasSourceColor = (token: string) =>

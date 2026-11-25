@@ -13,8 +13,8 @@ import {
   loadSystemPage,
   createSystem,
   requestSystemJoin,
+  SystemAccessError,
 } from '../src/api/systems.ts';
-import { SystemAccessError } from '../src/api/systemAccessError.ts';
 import { loadSystemParameters } from '../src/api/parameters.ts';
 import { createSystemApplicationApi } from '../src/api/applications.ts';
 import { httpClient, requestData } from '../src/http/request.ts';

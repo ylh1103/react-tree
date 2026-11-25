@@ -3,21 +3,18 @@ import { defineConfig, presetWind3, presetIcons } from 'unocss';
 import { themeVariables } from './src/styles/theme.ts';
 import lucideIcons from '@iconify-json/lucide/icons.json' with { type: 'json' };
 
+const wind3 = presetWind3();
+
 export default defineConfig({
-  // 项目使用 React + TypeScript，扫描 TS/TSX 与 HTML 入口，包含路由配置中的完整图标类名。
+  // 扫描 React 源码和 HTML；TS 路由配置也包含完整图标类名。
   content: {
     pipeline: {
-      include: [/\.(tsx?|html)($|\?)/, /\/LandingClosing\/.*\.jsx($|\?)/],
-      // 落地页的这些模块单独生成局部工具类，避免占用后台启动预算。
-      exclude: [
-        /\/LandingCoreFeatures\//,
-        /\/Landing(?:RiskFeatures|ReleaseFlow|AdoptionStats|Faq)\/index\.tsx$/,
-      ],
+      include: [/\.(tsx?|jsx|html)($|\?)/],
     },
   },
   theme: {
-    // 1280px 起显示工具文字；超过 1600px 时放宽系统选择器。
-    breakpoints: { desktop: '1280px', wide: '1601px' },
+    // 落地页使用 Wind3 标准断点，后台的 desktop 和 wide 沿用平台断点。
+    breakpoints: { ...wind3.theme?.breakpoints, desktop: '1280px', wide: '1601px' },
     spacing: { layout: 'var(--layout-gap)' },
     borderRadius: { ui: 'var(--ui-radius)', control: 'var(--control-radius)' },
     colors: Object.fromEntries(
@@ -52,14 +49,13 @@ export default defineConfig({
     'workspace-collection-titlebar':
       'h-48px min-h-48px! py-0! flex-nowrap! gap-x-2! [container-type:inline-size]',
     'workspace-titlebar-frame-edge': '-mt-1px border-t border-t-solid border-border-subtle',
-    'workspace-title-identity': 'flex min-w-0 max-w-full shrink-0 items-center gap-2',
     'layout-focus':
       'focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent focus-visible:outline-offset-[-2px]',
 
     'layout-scroll': 'flex-1 min-w-0 min-h-0 overflow-auto',
   },
   presets: [
-    presetWind3(),
+    wind3,
     presetIcons({
       collections: {
         lucide: () => lucideIcons,

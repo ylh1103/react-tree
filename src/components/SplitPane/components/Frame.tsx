@@ -118,7 +118,9 @@ export function SplitPaneFrame({
           } ${narrowPane ? '[@container_split-pane-content_(max-width:620px)]:h-auto! [@container_split-pane-content_(max-width:620px)]:flex-wrap! [@container_split-pane-content_(max-width:620px)]:gap-y-1 [@container_split-pane-content_(max-width:620px)]:py-1! [@container_split-pane-content_(max-width:620px)]:[&>*+*]:flex-[0_0_100%]! [@container_split-pane-content_(max-width:620px)]:[&>*+*]:ml-0!' : ''}`}
         >
           {/* 标题按内容自然占宽，只限制上限，让短名称释放空间给业务工具栏。 */}
-          <div className="workspace-title-identity max-w-240px!">{titleContent}</div>
+          <div className="flex min-w-0 max-w-240px! shrink-0 items-center gap-2">
+            {titleContent}
+          </div>
           {toolbar}
         </div>
         <div

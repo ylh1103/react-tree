@@ -1,6 +1,6 @@
 /** 分栏尺寸的只读解析规则；骨架和交互容器共用，避免占位阶段写入偏好或引入交互依赖。 */
 import { currentUserStorageKey } from '../../../utils/userStorage.ts';
-export interface SplitPaneLayout {
+interface SplitPaneLayout {
   width: number;
   visible: boolean;
 }

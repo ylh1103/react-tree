@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { useDebounceFn } from 'ahooks';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { saveUserSettings } from '@/store/slices/preferencesSlice';
-import { LayoutSettings } from '@/components/LayoutSettings';
+import { LayoutSettings } from './LayoutSettings';
 import { defaultUserSettings, type UserSettings } from '@/types/preferences';
 
 export function UserSettingsContent() {

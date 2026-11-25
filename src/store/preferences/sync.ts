@@ -7,7 +7,7 @@ import { defaultUserSettings } from '../../types/preferences.ts';
 import { parseThemeMode, type ThemeMode } from '../../types/themeMode.ts';
 import { bootstrapThemeKey } from './themeBootstrap.ts';
 /** 通知通道契约；取消接收与关闭通道分别释放监听和底层资源。 */
-export interface UserSettingsSyncTransport {
+interface UserSettingsSyncTransport {
   publish: () => void;
   subscribe: (listener: () => void) => () => void;
   close: () => void;

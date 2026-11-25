@@ -1,5 +1,5 @@
 /** 滚动位置同步边界：标记程序写入，避免浮动条的延迟 scroll 事件反向打断内容区原生滚动。 */
-export type ScrollAxis = 'scrollTop' | 'scrollLeft';
+type ScrollAxis = 'scrollTop' | 'scrollLeft';
 
 /** 只依赖滚动坐标，允许测试模拟浏览器的边界裁剪及小数像素舍入。 */
 interface ScrollTarget {

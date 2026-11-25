@@ -6,7 +6,7 @@ import { createContext, useContext } from 'react';
 import type { SystemAccessInfo, SystemInfo } from '@/types/systems';
 import type { ParameterPlatform } from '@/router/workspace/paths';
 
-export interface SystemWorkspace {
+interface SystemWorkspace {
   system: SystemAccessInfo;
   systems: SystemInfo[];
   platform: ParameterPlatform;

@@ -55,7 +55,7 @@ Starter 组件使用 `@reactbits-starter/` 加已确认的组件名。CLI 版本
 
 发布与回退预览按参考图展示发布工具栏、快照列表、双栏参数对比和底部提示。宽屏工具栏保留固定控件尺寸和间距，超出卡片右侧直接裁切；窄屏工具栏可换行。对比区保留固定高度，YML 保留固定列宽和字号。整张预览在卡片边界裁切，底部提示位于可见区域之外。
 
-Profile3、风险特性和常见问题中的 Lucide 图标通过 UnoCSS 图标预设生成，使用项目已有的 `@iconify-json/lucide` 集合。
+风险特性和常见问题中的 Lucide 图标通过 UnoCSS 图标预设生成，使用项目已有的 `@iconify-json/lucide` 集合。
 
 ### 历史接入记录（2026-11-06）
 
@@ -63,7 +63,7 @@ Profile3、风险特性和常见问题中的 Lucide 图标通过 UnoCSS 图标�
 
 - shadcn CLI 实际版本 4.23.0。两个授权 URL 用本地密钥直接请求均返回 HTTP 200，没有遇到 401；未替换用户指定的 registry。
 - CLI 直接请求出现 TLS 断连/连接超时；尝试代理及 Node 原生代理后仍失败。将同一地址下载的原始 JSON 交给 CLI，仍被它额外请求的 `ui.shadcn.com/r/colors/neutral.json` 阻塞。因此采用原始 JSON 中的 `files/content` 直接落源码，不声称 CLI add 已成功。
-- 验证组件：`src/components/Profile3/index.tsx`，默认导出 `Profile3`，未挂入现有业务页面。来源：`https://registry.collectui.pro/api/r/reactbits/pro/profile-3.json`；说明：<https://pro.reactbits.dev/docs/blocks/profile/profile-3>。响应未提供 commit/版本，下载日期为 2026-11-06；原始 content SHA-256 为 `e0932fe0c8c9c39d38a73884451f13fa4efbaebeaa4d26053445ecdac80722bd`。
+- 历史验证组件为 Profile3。该样例未接入页面，源码已随闲置代码清理移除。来源：`https://registry.collectui.pro/api/r/reactbits/pro/profile-3.json`；说明：<https://pro.reactbits.dev/docs/blocks/profile/profile-3>。响应未提供 commit/版本，下载日期为 2026-11-06；原始 content SHA-256 为 `e0932fe0c8c9c39d38a73884451f13fa4efbaebeaa4d26053445ecdac80722bd`。
 - 许可：授权 Pro 素材，按所持商业许可使用；响应未附许可全文，不将其作为官方开源 MIT 素材传播。Skill 标记 Proprietary。
 - 依赖沿用现有 `motion` 12.23.21 和 `lucide-react` 0.542.0，不更改 package.json 或锁文件。组件保留上游动画，改用项目主题色、现有 desktop/wide 断点、UnoCSS 渐变和纵横比语法；内容上限改为 1280px。补足上游缺失的头像占位图，关注按钮改为可点击、可键盘操作的本地演示状态。
 - 当时记录未运行 init，也未注入全局主题变量或 `.dark` 激活机制。后续通过 Git diff 和版本历史检查变更。

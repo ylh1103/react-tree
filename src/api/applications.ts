@@ -2,10 +2,6 @@
 import { requestData } from '@/http/request.ts';
 import type { ApplicationDetails, ApplicationItem } from '@/types/applications.ts';
 import { createHttpListApi } from './grouped-list/httpApi.ts';
-export const applicationApi = createHttpListApi<ApplicationItem, 'appGroupInfo'>({
-  items: '/api/applications',
-  groups: '/api/applications/groups',
-});
 export function createSystemApplicationApi(systemName: string) {
   return createHttpListApi<ApplicationItem, 'appGroupInfo'>({
     items: '/api/applications',

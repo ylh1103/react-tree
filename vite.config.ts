@@ -5,58 +5,12 @@ import UnoCSS from 'unocss/vite';
 import { bootstrapPlugin } from './build/bootstrap-plugin.mjs';
 import { startupBudgetPlugin } from './build/startup-budget-plugin.mjs';
 import { monacoLocalePlugin } from './build/monaco-locale-plugin.mjs';
-import { landingUtilitiesPlugin } from './build/landing-utilities-plugin.mjs';
 
 /**
  * 开发与构建共用一个首屏插件，由插件内部统一安排字符集、主题、加载画面和样式交接顺序。
  */
 export default defineConfig({
-  plugins: [
-    react(),
-    UnoCSS(),
-    bootstrapPlugin(),
-    startupBudgetPlugin(),
-    monacoLocalePlugin(),
-    // 只在落地页加载核心功能样式，同时复用平台主题和图标定义。
-    landingUtilitiesPlugin({
-      publicId: 'virtual:landing-core-features-utilities.css',
-      sourceDirectory: fileURLToPath(
-        new URL('./src/pages/Landing/components/LandingCoreFeatures/', import.meta.url),
-      ),
-      selector: '#core-features',
-      useProjectConfig: true,
-    }),
-    landingUtilitiesPlugin({
-      publicId: 'virtual:features-13-utilities.css',
-      sourceDirectory: fileURLToPath(
-        new URL('./src/pages/Landing/components/LandingRiskFeatures/', import.meta.url),
-      ),
-      selector: '#features',
-      useProjectConfig: true,
-    }),
-    landingUtilitiesPlugin({
-      publicId: 'virtual:how-it-works-9-utilities.css',
-      sourceDirectory: fileURLToPath(
-        new URL('./src/pages/Landing/components/LandingReleaseFlow/', import.meta.url),
-      ),
-      selector: '#how-it-works',
-    }),
-    landingUtilitiesPlugin({
-      publicId: 'virtual:stats-4-utilities.css',
-      sourceDirectory: fileURLToPath(
-        new URL('./src/pages/Landing/components/LandingAdoptionStats/', import.meta.url),
-      ),
-      selector: '#landing-adoption',
-    }),
-    landingUtilitiesPlugin({
-      publicId: 'virtual:faq-6-utilities.css',
-      sourceDirectory: fileURLToPath(
-        new URL('./src/pages/Landing/components/LandingFaq/', import.meta.url),
-      ),
-      selector: '#faq',
-      useProjectConfig: true,
-    }),
-  ],
+  plugins: [react(), UnoCSS(), bootstrapPlugin(), startupBudgetPlugin(), monacoLocalePlugin()],
   // 预打包会绕过模块级语言适配；保留 ESM 图，让开发模式与生产构建使用相同翻译。
   optimizeDeps: { entries: ['index.html'], exclude: ['monaco-editor'] },
   worker: { plugins: () => [monacoLocalePlugin()] },

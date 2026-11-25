@@ -1,7 +1,7 @@
 /** 产品页消费全局用户主题，并提供主题保存入口和页面根节点。 */
 import { createContext, type RefObject } from 'react';
 
-export interface LandingContextValue {
+interface LandingContextValue {
   theme: 'dark' | 'light';
   setTheme: (theme: 'dark' | 'light') => void;
   canChangeTheme: boolean;
