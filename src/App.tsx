@@ -1,10 +1,10 @@
 /**
  * 应用根节点：偏好首次读取期间保留启动动画，结束等待后渲染 Outlet；设置面板首次打开再下载。
  * initialized 表示首次等待已经结束，并不保证读取成功；失败时 Slice 提供回退配置，此处展示重试入口。
- * Ant Design 的消息/弹窗上下文在此建立；可展示内容通过交接边界结束 HTML 启动画面。
+ * 可展示内容通过交接边界结束 HTML 启动画面。
  */
 import type { ReactNode } from 'react';
-import { App as AntdApp, Alert, Button } from 'antd';
+import { Alert, Button } from 'antd';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { loadUserSettings, selectWaitingForUserSettings } from '@/store/slices/preferencesSlice';
 import { Outlet, useMatch } from 'react-router';
@@ -21,26 +21,22 @@ export default function App({ children }: { children?: ReactNode }) {
   const settingsError = useAppSelector((state) =>
     state.preferences.status === 'load-error' ? state.preferences.error : null,
   );
-  return (
-    <AntdApp component={false}>
-      {waitingForSettings ? (
-        <ResourceLoading />
-      ) : (
-        <BootstrapLoadingHandoff>
-          <AppViewport documentScroll={Boolean(landingMatch) && children == null}>
-            {settingsError && (
-              <Alert
-                type="warning"
-                showIcon
-                title={settingsError}
-                action={<Button onClick={() => void dispatch(loadUserSettings())}>重新读取</Button>}
-              />
-            )}
-            {children ?? <Outlet />}
-          </AppViewport>
-          <UserSettingsDrawer />
-        </BootstrapLoadingHandoff>
-      )}
-    </AntdApp>
+  return waitingForSettings ? (
+    <ResourceLoading />
+  ) : (
+    <BootstrapLoadingHandoff>
+      <AppViewport documentScroll={Boolean(landingMatch) && children == null}>
+        {settingsError && (
+          <Alert
+            type="warning"
+            showIcon
+            title={settingsError}
+            action={<Button onClick={() => void dispatch(loadUserSettings())}>重新读取</Button>}
+          />
+        )}
+        {children ?? <Outlet />}
+      </AppViewport>
+      <UserSettingsDrawer />
+    </BootstrapLoadingHandoff>
   );
 }

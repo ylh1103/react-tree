@@ -1,9 +1,9 @@
 /**
- * React 运行期间的主题入口：同步 Redux 显示偏好，并统一配置 Ant Design 主题和运行时样式。
+ * React 运行期间的主题入口：同步 Redux 显示偏好，并统一配置 Ant Design 主题、运行时样式和消息/弹窗上下文。
  * HTML 首屏脚本只提前设置画布与文字颜色；此处在首次提交时补齐完整变量，随后响应配置和系统外观变化。
  * 只负责显示同步，主题保存和失败回退由偏好状态机处理，启动缓存由入口订阅维护。
  */
-import { ConfigProvider } from 'antd';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import {
   StyleProvider,
   legacyLogicalPropertiesTransformer,
@@ -49,7 +49,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
   return (
     <StyleProvider hashPriority="high" transformers={styleTransformers}>
       <ConfigProvider theme={appTheme} spin={spinConfig} tooltip={tooltipConfig}>
-        {children}
+        <AntdApp component={false}>{children}</AntdApp>
       </ConfigProvider>
     </StyleProvider>
   );
