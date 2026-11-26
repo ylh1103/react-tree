@@ -13,7 +13,7 @@ import {
   systemListFooter,
   systemEntryGrid,
   type SystemView,
-} from '../model/presentation';
+} from './layout';
 
 export default function SystemsHomeSkeleton({ count, view }: { count: number; view: SystemView }) {
   return (

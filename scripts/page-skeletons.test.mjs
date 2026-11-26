@@ -31,7 +31,7 @@ before(async () => {
   ({ SystemContext } = await vite.ssrLoadModule('/src/contexts/SystemContext.tsx'));
   ({ default: home } = await vite.ssrLoadModule('/src/pages/SystemsHome/index.tsx'));
   ({ default: allSystemsPanel } = await vite.ssrLoadModule(
-    '/src/pages/SystemsHome/components/AllSystemsPanel.tsx',
+    '/src/pages/SystemsHome/AllSystems/index.tsx',
   ));
   ({ default: application } = await vite.ssrLoadModule('/src/pages/SystemApplications/index.tsx'));
   ({ default: database } = await vite.ssrLoadModule('/src/pages/DatabaseParameters/index.tsx'));

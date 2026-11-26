@@ -1,13 +1,14 @@
 /** 系统首页装配页签和弹窗，管理共用的展示模式与分页尺寸。 */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Tabs } from 'antd';
-import { useLocation, useNavigate } from 'react-router';
-import type { AllSystemInfo, MySystemInfo, SystemRole } from '@/types/systems';
-import SystemManagementModal from './components/SystemManagementModal';
-import { SystemDetailsModal, SystemViewSwitch } from './components/SystemPresentation';
-import MySystemsPanel from './components/MySystemsPanel';
-import AllSystemsPanel from './components/AllSystemsPanel';
-import { systemCardContainer, systemCardGrid } from './model/presentation';
+import { useLocation } from 'react-router';
+import type { AllSystemInfo, MySystemInfo, SystemInfo, SystemRole } from '@/types/systems';
+import SystemManagementModal from './SystemManagement';
+import SystemDetailsModal from './SystemDetails';
+import SystemViewSwitch from './SystemList/SystemViewSwitch';
+import MySystemsPanel from './MySystems';
+import AllSystemsPanel from './AllSystems';
+import { systemCardContainer, systemCardGrid } from './SystemList/layout';
 
 const rowsPerPage = 2;
 const tabLabelClassName =
@@ -15,22 +16,30 @@ const tabLabelClassName =
 
 export default function SystemsHomePage() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
+  // 只记录当前 Router 位置上的浅更新，真正导航时直接读取目标查询字符串。
+  const [shallowSearch, setShallowSearch] = useState<{
+    location: typeof location;
+    search: string;
+  }>();
+  const search = shallowSearch?.location === location ? shallowSearch.search : location.search;
+  const params = new URLSearchParams(search);
   const tab = params.get('tab') === 'all' ? 'all' : 'mine';
   const legacyView = params.get(tab === 'all' ? 'allView' : 'mineView');
   const view = (params.get('view') ?? legacyView) === 'list' ? 'list' : 'card';
   const role = params.get('role');
   const myRole: SystemRole | 'all' = role === 'V' || role === 'D' || role === 'R' ? role : 'all';
-  const [creating, setCreating] = useState(false);
+  const [management, setManagement] = useState<SystemInfo | 'create' | null>(null);
   const [createdVersion, setCreatedVersion] = useState(0);
   const [details, setDetails] = useState<MySystemInfo | AllSystemInfo | null>(null);
   const gridMeasureRef = useRef<HTMLDivElement>(null);
   const [defaultPageSize, setDefaultPageSize] = useState(0);
 
-  // 保留另一目录的条件和其他 URL 参数；实时筛选替换历史，显式操作可以前进后退。
-  function updateParams(changes: Record<string, string>, replace = false) {
-    const next = new URLSearchParams(params);
+  // 原地替换查询字符串，保留 Router 写入的历史状态及其他参数。
+  function updateParams(changes: Record<string, string>) {
+    const url = new URL(window.location.href);
+    if (url.pathname !== location.pathname) return;
+    const next = url.searchParams;
+    const previous = next.toString();
     // 旧链接按当前页签恢复展示模式，首次更新 URL 后由两个页签共用。
     if (next.has('mineView') || next.has('allView')) {
       if (view === 'list') next.set('view', view);
@@ -41,12 +50,10 @@ export default function SystemsHomePage() {
       if (value) next.set(key, value);
       else next.delete(key);
     }
-    if (next.toString() !== params.toString()) {
-      void navigate(
-        { search: next.toString(), hash: location.hash },
-        { replace, preventScrollReset: true },
-      );
-    }
+    if (next.toString() === previous) return;
+
+    window.history.replaceState(window.history.state, '', url);
+    setShallowSearch({ location, search: url.search });
   }
 
   useLayoutEffect(() => {
@@ -109,13 +116,14 @@ export default function SystemsHomePage() {
                 key={createdVersion}
                 view={view}
                 search={params.get('mineKeyword') ?? ''}
-                onSearchChange={(value) => updateParams({ mineKeyword: value }, true)}
+                onSearchChange={(value) => updateParams({ mineKeyword: value })}
                 role={myRole}
                 onRoleChange={(value) => updateParams({ role: value === 'all' ? '' : value })}
                 onClearFilters={() => updateParams({ mineKeyword: '', role: '' })}
                 defaultPageSize={defaultPageSize || rowsPerPage}
-                onCreate={() => setCreating(true)}
+                onCreate={() => setManagement('create')}
                 onDetails={setDetails}
+                onManage={setManagement}
               />
             ),
           },
@@ -134,16 +142,20 @@ export default function SystemsHomePage() {
                 onKeywordChange={(value) => updateParams({ allKeyword: value })}
                 defaultPageSize={defaultPageSize}
                 onDetails={setDetails}
+                onManage={setManagement}
               />
             ),
           },
         ]}
       />
-      {creating && (
+      {management && (
         <SystemManagementModal
-          onClose={() => setCreating(false)}
+          key={management === 'create' ? 'create' : `edit:${management.systemName}`}
+          system={management === 'create' ? undefined : management}
+          onClose={() => setManagement(null)}
           onSaved={() => {
-            setCreating(false);
+            setManagement(null);
+            if (management !== 'create') return;
             setCreatedVersion((value) => value + 1);
             updateParams({ tab: '', mineKeyword: '', role: '' });
           }}

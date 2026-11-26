@@ -12,12 +12,12 @@ import {
   systemCardGrid,
   systemListLayout,
   type SystemView,
-} from '../model/presentation';
-import { SystemItem } from './SystemPresentation';
-import CollectionPagination from './CollectionPagination';
-import SystemSearchEmpty from './SystemSearchEmpty';
-import SystemsHomeSkeleton from './SystemsHomeSkeleton';
-import { useSystemQueryError } from '../hooks/useSystemQueryError';
+} from '../SystemList/layout';
+import SystemItem from '../SystemList/SystemItem';
+import CollectionPagination from '../SystemList/CollectionPagination';
+import SystemSearchEmpty from '../SystemList/SystemSearchEmpty';
+import SystemsHomeSkeleton from '../SystemList/SystemsHomeSkeleton';
+import { useSystemQueryError } from '../SystemList/useSystemQueryError';
 
 export default function AllSystemsPanel({
   view,
@@ -25,12 +25,14 @@ export default function AllSystemsPanel({
   onKeywordChange,
   defaultPageSize,
   onDetails,
+  onManage,
 }: {
   view: SystemView;
   keyword: string;
   onKeywordChange: (keyword: string) => void;
   defaultPageSize: number;
   onDetails: (system: AllSystemInfo) => void;
+  onManage: (system: AllSystemInfo) => void;
 }) {
   const ystId = useAppSelector((state) => state.user.userInfo?.ystId ?? null);
   const [pagination, setPagination] = useState({
@@ -105,6 +107,7 @@ export default function AllSystemsPanel({
                   entriesLocked={!isPlatformAdmin && system.userRelation !== true}
                   showDelete={isPlatformAdmin}
                   onDetails={() => onDetails(system)}
+                  onManage={() => onManage(system)}
                 />
               ))}
             </div>

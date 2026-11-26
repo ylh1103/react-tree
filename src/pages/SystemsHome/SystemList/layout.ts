@@ -1,6 +1,4 @@
-/** 系统目录的纯展示映射：只解读接口字段，不推导身份、成员关系或访问权限。 */
-import type { SystemRole } from '@/types/systems';
-
+/** 系统目录正文、加载骨架和页面宽度测量共用的视图布局。 */
 export type SystemView = 'card' | 'list';
 
 export const systemListLayout = 'grid gap-2';
@@ -16,26 +14,6 @@ export const systemListFooter =
 /** 应用和数据库入口在正文与列表占位中使用相同的列宽与分隔线。 */
 export const systemEntryGrid =
   'relative grid grid-cols-2 gap-2 before:pointer-events-none before:absolute before:inset-y-2.5 before:left-1/2 before:border-l before:border-l-solid before:border-l-border-subtle before:content-empty';
-
-export { systemRoleLabels } from '@/utils/systemRoles';
-
-/** 目录展示姓名，完整的姓名/编号串仍在提示与详情中保留。 */
-export function peopleNames(value: string | undefined) {
-  return (
-    value
-      ?.split(',')
-      .map((person) => person.trim().split('/')[0])
-      .filter(Boolean)
-      .join('、') || '暂未配置'
-  );
-}
-
-/** 组织契约为编号/名称；只移除首个编号段，兼容名称本身包含斜线。 */
-export function organizationName(value: string | undefined) {
-  if (!value) return '暂未配置';
-  const separator = value.indexOf('/');
-  return (separator < 0 ? value : value.slice(separator + 1)).trim() || '暂未配置';
-}
 
 /**
  * 原生网格按可用宽度自动填列，每张多列卡片至少保留 360px，窄屏允许缩到容器宽度。
@@ -53,10 +31,3 @@ export const systemCardPadding = 'p-3 @[360px]/system-card:p-3.5';
 export const systemCardDescriptionHeight = 'h-36px';
 export const systemCardFooter =
   '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] min-h-44px rounded-b-[inherit] py-2.5!';
-
-/** 角色标签使用随主题适配的预设色，图标和文字也能独立区分角色。 */
-export const systemRoleTags: Record<SystemRole, { color: string; icon: string }> = {
-  R: { color: 'gold', icon: 'i-lucide-user-round-check' },
-  D: { color: 'blue', icon: 'i-lucide-code-xml' },
-  V: { color: 'cyan', icon: 'i-lucide-eye' },
-};
