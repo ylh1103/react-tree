@@ -44,31 +44,8 @@ export function UserSettingsContent() {
           }}
         />
       </div>
-      <div className="shrink-0 border-t border-t-solid border-divider px-6 py-3">
+      <div className="shrink-0 border-t border-t-solid border-divider bg-sidebar px-6 py-2">
         <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <Popconfirm
-            title="将所有用户设置恢复为默认值？"
-            description={
-              <p className="m-0 text-13px leading-6 whitespace-normal break-words text-text-secondary">
-                外观、布局和编辑器设置将全部重置，并自动保存。
-              </p>
-            }
-            // 限制浮层宽度并允许换行，避免长描述将按钮挤出抽屉或小屏视口。
-            classNames={{
-              root: 'w-320px max-w-[calc(100vw-32px)]',
-              container: 'p-4!',
-              title: 'text-14px! font-600! leading-6! whitespace-normal',
-            }}
-            okText="全部恢复默认"
-            cancelText="保留设置"
-            placement="topLeft"
-            disabled={status === 'idle' || status === 'loading' || status === 'load-error'}
-            onConfirm={() => save(defaultUserSettings)}
-          >
-            <Button disabled={status === 'idle' || status === 'loading' || status === 'load-error'}>
-              恢复全部默认
-            </Button>
-          </Popconfirm>
           <span
             role="status"
             aria-live="polite"
@@ -111,8 +88,44 @@ export function UserSettingsContent() {
                 已保存
               </>
             )}
-            {status === 'ready' && syncedAt === null && '更改后自动保存'}
+            {status === 'ready' && syncedAt === null && (
+              <>
+                <span aria-hidden="true" className="size-6px shrink-0 rounded-full bg-success" />
+                更改后自动保存
+              </>
+            )}
           </span>
+          <Popconfirm
+            title="恢复全部默认设置？"
+            description={
+              <p className="m-0 text-13px leading-6 whitespace-normal break-words text-text-secondary">
+                外观、布局和编辑器将恢复默认值，变更会自动保存。
+              </p>
+            }
+            // 限制浮层宽度并允许换行，避免长描述将按钮挤出抽屉或小屏视口。
+            classNames={{
+              root: 'w-288px max-w-[min(288px,calc(100vw-32px))]!',
+              container: 'p-4!',
+              title: 'text-14px! font-600! leading-6! whitespace-normal',
+            }}
+            okText="恢复默认"
+            okButtonProps={{ danger: true }}
+            cancelText="保留设置"
+            placement="topRight"
+            arrow={false}
+            disabled={status === 'idle' || status === 'loading' || status === 'load-error'}
+            onConfirm={() => save(defaultUserSettings)}
+          >
+            <Button
+              type="text"
+              danger
+              className="ms-auto shrink-0 layout-focus"
+              icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
+              disabled={status === 'idle' || status === 'loading' || status === 'load-error'}
+            >
+              全部恢复默认
+            </Button>
+          </Popconfirm>
         </div>
       </div>
     </>

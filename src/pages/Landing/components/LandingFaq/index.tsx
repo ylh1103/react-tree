@@ -5,7 +5,7 @@ import { m as motion, type Variants } from 'motion/react';
 
 import { useLandingTheme } from '../../hooks/useLandingTheme';
 
-import supportGroupQr from './support-group-qr.jpg';
+import supportGroupQr from '@/assets/support-group-qr.jpg';
 
 const faqs = [
   {

@@ -6,6 +6,7 @@ import SiteLayout from '@/layouts/SiteLayout';
 import RouteErrorPage from '@/pages/RouteError';
 import RouteStatusPage from '@/pages/RouteStatus';
 import { systemJoinRequestRoute } from '@/utils/systemJoinLink';
+import { snapshotReviewRoute, toolboxRoute } from './paths';
 
 function lazyPage(load: () => Promise<{ default: ComponentType }>) {
   return async () => ({ Component: (await load()).default });
@@ -32,6 +33,18 @@ export const siteRoute: RouteObject = {
       HydrateFallback: RouteSkeleton,
       ErrorBoundary: RouteErrorPage,
       lazy: lazyPage(() => import('@/pages/SystemJoinRequest')),
+    },
+    {
+      path: snapshotReviewRoute,
+      HydrateFallback: RouteSkeleton,
+      ErrorBoundary: RouteErrorPage,
+      lazy: lazyPage(() => import('@/pages/SnapshotReview')),
+    },
+    {
+      path: toolboxRoute,
+      HydrateFallback: RouteSkeleton,
+      ErrorBoundary: RouteErrorPage,
+      lazy: lazyPage(() => import('@/pages/Toolbox')),
     },
     { path: '*', Component: RouteStatusPage },
   ],

@@ -14,10 +14,11 @@ import {
   systemListLayout,
   type SystemView,
 } from '../model/presentation';
-import { SystemItem, SystemViewSwitch } from './SystemPresentation';
+import { SystemItem } from './SystemPresentation';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import { useSystemQueryError } from '../hooks/useSystemQueryError';
 import CollectionPagination from './CollectionPagination';
+import SystemSearchEmpty from './SystemSearchEmpty';
 
 function MySystemsSearch({
   search,
@@ -36,6 +37,7 @@ function MySystemsSearch({
 
   return (
     <Input
+      size="large"
       allowClear
       aria-label="筛选我的系统"
       placeholder="系统名称、架构编码、组织或人员"
@@ -58,21 +60,21 @@ function MySystemsSearch({
 
 export default function MySystemsPanel({
   view,
-  onViewChange,
   search,
   onSearchChange,
   role,
   onRoleChange,
+  onClearFilters,
   defaultPageSize,
   onCreate,
   onDetails,
 }: {
   view: SystemView;
-  onViewChange: (view: SystemView) => void;
   search: string;
   onSearchChange: (search: string) => void;
   role: SystemRole | 'all';
   onRoleChange: (role: SystemRole | 'all') => void;
+  onClearFilters: () => void;
   defaultPageSize: number;
   onCreate: () => void;
   onDetails: (system: MySystemInfo) => void;
@@ -112,11 +114,12 @@ export default function MySystemsPanel({
   return (
     <section aria-label="我的系统">
       <div className="@container mb-5">
-        {/* 按可用宽度整组换行，避免中等宽度只把最后一个操作挤到下一行。 */}
-        <div className="grid items-center gap-2.5 @[560px]:gap-3 @[960px]:grid-cols-[minmax(0,1fr)_auto]">
-          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 @[560px]:grid-cols-[minmax(0,420px)_150px_auto] @[560px]:justify-start @[560px]:gap-3">
+        {/* 工具栏达到 780px 时，两组控件可并排，搜索框仍有足够输入空间。 */}
+        <div className="grid items-center gap-2.5 @[560px]:gap-3 @[780px]:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="grid min-w-0 grid-cols-2 items-center gap-2.5 @[560px]:grid-cols-[minmax(0,500px)_150px_auto] @[560px]:justify-start @[560px]:gap-3">
             <MySystemsSearch search={search} onSearchChange={onSearchChange} />
             <Select
+              size="large"
               aria-label="筛选我的系统角色"
               className="w-full! min-w-0!"
               value={role}
@@ -127,6 +130,7 @@ export default function MySystemsPanel({
               ]}
             />
             <Button
+              size="large"
               color="primary"
               variant="outlined"
               loading={refreshing}
@@ -136,29 +140,24 @@ export default function MySystemsPanel({
               刷新
             </Button>
           </div>
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2.5 @[560px]:gap-3 @[960px]:justify-end">
-            <div className="flex flex-wrap gap-2.5 @[560px]:gap-3">
+          <div className="grid grid-cols-2 gap-2.5 @[560px]:flex @[560px]:gap-3">
+            <Button
+              size="large"
+              type="primary"
+              onClick={onCreate}
+              icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
+            >
+              新增系统
+            </Button>
+            {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
+            <Tooltip title="新增记录查询（待接入）">
               <Button
-                type="primary"
-                onClick={onCreate}
-                icon={<span className="i-lucide-plus w-14px h-14px" aria-hidden="true" />}
+                size="large"
+                icon={<span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />}
               >
-                新增系统
+                新增记录
               </Button>
-              {/* 仅预留新增记录查询入口，后续接入弹窗与查询接口。 */}
-              <Tooltip title="新增记录查询（待接入）">
-                <Button
-                  icon={
-                    <span className="i-lucide-clipboard-list w-14px h-14px" aria-hidden="true" />
-                  }
-                >
-                  新增记录
-                </Button>
-              </Tooltip>
-            </div>
-            <div className="ml-auto shrink-0">
-              <SystemViewSwitch label="我的系统展示模式" view={view} onChange={onViewChange} />
-            </div>
+            </Tooltip>
           </div>
         </div>
       </div>
@@ -179,17 +178,20 @@ export default function MySystemsPanel({
             </div>
           </div>
         ) : (
-          !query.error && (
+          !query.error &&
+          (search || role !== 'all' ? (
+            <SystemSearchEmpty
+              description="试试更换关键词或调整角色筛选。"
+              clearLabel="清除筛选"
+              onClear={onClearFilters}
+            />
+          ) : (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className="workspace-panel m-0! py-16"
-              description={
-                search || role !== 'all'
-                  ? '没有匹配的我的系统，请调整筛选条件'
-                  : '暂无已加入的系统，可切换所有系统查看或新增系统'
-              }
+              description="暂无已加入的系统，可切换所有系统查看或新增系统"
             />
-          )
+          ))
         )}
       </Spin>
       <CollectionPagination

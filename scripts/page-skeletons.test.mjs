@@ -80,7 +80,6 @@ function setup(
 function AllSystemsFixture() {
   return createElement(allSystemsPanel, {
     view: 'card',
-    onViewChange: () => {},
     keyword: '',
     onKeywordChange: () => {},
     defaultPageSize: 8,
@@ -91,7 +90,6 @@ function AllSystemsFixture() {
 function AllSystemsListFixture() {
   return createElement(allSystemsPanel, {
     view: 'list',
-    onViewChange: () => {},
     keyword: '',
     onKeywordChange: () => {},
     defaultPageSize: 8,
@@ -126,6 +124,16 @@ test('系统首页从链接恢复页签、关键词、角色和展示模式', as
   );
   assert.match(html, /aria-label="CAC 我的系统"/);
   assert.doesNotMatch(html, /aria-label="(?:DEV|OTHER) 我的系统"/);
+
+  for (const tab of ['', '&tab=all']) {
+    await router.navigate(`/?view=list${tab}`);
+    const sharedView = render();
+    assert.equal([...sharedView.matchAll(/aria-label="系统展示模式"/g)].length, 1);
+    assert.match(
+      sharedView,
+      /ant-segmented-item-selected[^>]*><input[^>]*checked=""[^>]*><div[^>]*title="列表"/,
+    );
+  }
 });
 
 test('所有系统仅锁定未加入的普通成员，平台管理员直接进入', (t) => {

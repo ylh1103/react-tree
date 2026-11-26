@@ -129,7 +129,7 @@ export function EditorSetting({
   const save = (changes: Partial<EditorPreferences>) =>
     onSave({ editor: { ...editor, ...changes } });
   return (
-    <section className="flex flex-col gap-3 pb-4" aria-labelledby={`${id}-theme`}>
+    <section className="flex flex-col gap-3 pb-2" aria-labelledby={`${id}-theme`}>
       <h3 id={`${id}-theme`} className="m-0 text-14px font-600 leading-5 text-text">
         编辑器主题
       </h3>
@@ -247,13 +247,13 @@ export function EditorSetting({
         </div>
       </div>
       <Button
-        block
-        className="mt-1 h-36px! layout-focus"
+        type="text"
+        className="self-end layout-focus"
         icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
         disabled={disabled}
         onClick={() => onSave({ editor: defaultEditorPreferences })}
       >
-        恢复编辑器默认设置
+        重置编辑器
       </Button>
     </section>
   );

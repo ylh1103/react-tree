@@ -95,7 +95,7 @@ export default function SystemsHomeSkeleton({ count, view }: { count: number; vi
                   paragraph={{ rows: 2, width: ['100%', '70%'] }}
                   className={`${systemCardDescriptionHeight} [&_.ant-skeleton-paragraph]:m-0! [&_.ant-skeleton-paragraph>li]:h-12px! [&_.ant-skeleton-paragraph>li+li]:mt-1.5!`}
                 />
-                <div className="mt-auto grid h-96px grid-cols-2 gap-2 pt-1">
+                <div className="mt-auto grid h-92px grid-cols-2 gap-2">
                   {[0, 1].map((entry) => (
                     <div key={entry} className="flex flex-col items-center justify-center gap-2">
                       <Skeleton.Avatar shape="square" size={36} />

@@ -48,11 +48,11 @@ export const systemCardGrid =
 
 /** 正文卡片和加载骨架共用外框与边距，减少加载交接时的布局变化。 */
 export const systemCardFrame =
-  'workspace-panel [container-type:inline-size] [container-name:system-card] flex min-h-268px min-w-0 flex-col overflow-hidden shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
+  'workspace-panel [container-type:inline-size] [container-name:system-card] flex min-h-264px min-w-0 flex-col shadow-[0_3px_12px_var(--color-tree-filter-shadow)]';
 export const systemCardPadding = 'p-3 @[360px]/system-card:p-3.5';
 export const systemCardDescriptionHeight = 'h-36px';
 export const systemCardFooter =
-  '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] min-h-44px py-2.5!';
+  '[background-color:color-mix(in_srgb,var(--color-canvas)_45%,var(--color-surface))] min-h-44px rounded-b-[inherit] py-2.5!';
 
 /** 角色标签使用随主题适配的预设色，图标和文字也能独立区分角色。 */
 export const systemRoleTags: Record<SystemRole, { color: string; icon: string }> = {

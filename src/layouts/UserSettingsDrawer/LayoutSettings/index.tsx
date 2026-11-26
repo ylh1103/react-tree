@@ -369,12 +369,13 @@ function MenuDisplaySetting({
 }) {
   const labelId = useId();
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 py-1">
-      <span id={labelId} className="flex items-center gap-2 text-13px text-text">
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2">
+      <span id={labelId} className="flex items-center gap-2 text-13px font-500 text-text">
         <span aria-hidden="true" className={`${icon} text-15px text-text-secondary`} />
         {label}
       </span>
       <Segmented
+        block
         aria-labelledby={labelId}
         value={value ? 'icon' : 'text'}
         disabled={disabled}
@@ -383,7 +384,13 @@ function MenuDisplaySetting({
           { label: '仅图标', value: 'icon' },
           { label: '图标和文字', value: 'text' },
         ]}
-        className="w-190px p-1! bg-sidebar! text-sidebar-text! rounded-control! [&_.ant-segmented-item-label]:min-h-30px [&_.ant-segmented-item-label]:leading-30px [&_.ant-segmented-item-label]:px-2 [&_.ant-segmented-item-label]:text-12px [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent-text! [&_.ant-segmented-item-selected]:font-500 [&_.ant-segmented-item:focus-within]:outline-2 [&_.ant-segmented-item:focus-within]:outline-solid [&_.ant-segmented-item:focus-within]:outline-accent"
+        className="
+          w-180px max-w-full p-1! bg-sidebar! text-sidebar-text! rounded-control!
+          [&_.ant-segmented-item-label]:flex [&_.ant-segmented-item-label]:min-h-36px
+          [&_.ant-segmented-item-label]:items-center [&_.ant-segmented-item-label]:justify-center [&_.ant-segmented-item-label]:px-1 [&_.ant-segmented-item-label]:text-12px
+          [&_.ant-segmented-item-selected]:bg-surface! [&_.ant-segmented-item-selected]:text-accent-text!
+          [&_.ant-segmented-item-selected]:font-500
+        "
       />
     </div>
   );
@@ -430,16 +437,28 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
           min-h-0 flex-1 [&_.ant-tabs-body-holder]:min-h-0 [&_.ant-tabs-body-holder]:overflow-hidden
           [&_.ant-tabs-nav-list]:w-full [&_.ant-tabs-nav-list]:gap-1
           [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-sidebar
-          [&_.ant-tabs-nav-list]:p-1
+          [&_.ant-tabs-nav-list]:p-3px
         `}
         classNames={{
           header: 'shrink-0! mx-6! pt-3! pb-2! mb-1! before:border-0!',
           body: 'h-full! min-h-0!',
           // 滚动容器铺满抽屉，内容自身两侧留白 24px；右侧 12px 覆盖条因此落在留白内，不遮挡控件。
           content: 'h-full! min-h-0! overflow-hidden!',
-          indicator: 'hidden!',
-          // 设置项与滑块统一使用平台主色，避免局部文字覆盖产生另一套强调色。
-          item: 'm-0! flex-1! justify-center! rounded-control! px-4! py-2! [&_.ant-tabs-tab-btn]:text-sidebar-text [&.ant-tabs-tab-active]:bg-surface! [&.ant-tabs-tab-active]:shadow-sm [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text! [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600 [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!',
+          indicator: 'rounded-control motion-reduce:transition-none!',
+          item: `
+            m-0! min-h-44px min-w-0 flex-1! justify-center! whitespace-nowrap rounded-control!
+            px-1.5! py-2! transition-colors! duration-150! motion-reduce:transition-none!
+            [&_.ant-tabs-tab-btn]:text-text [&_.ant-tabs-tab-btn]:font-600
+            [&:not(.ant-tabs-tab-active):hover_.ant-tabs-tab-btn]:text-accent-hover!
+            [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:text-accent-text!
+            [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:font-600
+            [&.ant-tabs-tab-active_.ant-tabs-tab-btn]:[text-shadow:none]!
+          `,
+        }}
+        styles={{
+          item: { zIndex: 1 },
+          // 与系统切换一致，使用 Tabs 自带的指示器承载滑动底色。
+          indicator: { top: 3, bottom: 3, height: 'auto', background: 'var(--color-hover)' },
         }}
         items={[
           {
@@ -452,7 +471,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             ),
             children: (
               <OverlayScroll direction="vertical" label="外观设置" className="px-6">
-                <section className="flex flex-col gap-3 pb-4" aria-label="主题与外观">
+                <section className="flex flex-col gap-3 pb-2" aria-label="主题与外观">
                   <h3 id={themeLabelId} className="m-0 text-14px font-600 leading-5 text-text">
                     主题模式
                   </h3>
@@ -543,8 +562,8 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                   </Radio.Group>
                   <LoadingStyleSetting disabled={disabled} onSave={onSave} />
                   <Button
-                    block
-                    className="mt-1 h-36px! layout-focus"
+                    type="text"
+                    className="self-end layout-focus"
                     icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
                     disabled={disabled}
                     onClick={() =>
@@ -556,7 +575,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                       })
                     }
                   >
-                    恢复外观默认设置
+                    重置外观
                   </Button>
                 </section>
               </OverlayScroll>
@@ -572,7 +591,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
             ),
             children: (
               <OverlayScroll direction="vertical" label="布局设置" className="px-6">
-                <section className="flex flex-col gap-3 pb-4" aria-labelledby={labelId}>
+                <section className="flex flex-col gap-3 pb-2" aria-labelledby={labelId}>
                   <h3 id={labelId} className="m-0 text-14px font-600 leading-5 text-text">
                     布局模式
                   </h3>
@@ -650,8 +669,8 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                     onChange={(checked) => onSave({ headerToolsIconOnly: checked })}
                   />
                   <Button
-                    block
-                    className="mt-1 h-36px! layout-focus"
+                    type="text"
+                    className="self-end layout-focus"
                     icon={<span aria-hidden="true" className="i-lucide-rotate-ccw text-14px" />}
                     disabled={disabled}
                     onClick={() =>
@@ -666,7 +685,7 @@ export function LayoutSettings({ onSave }: { onSave: (changes: Partial<UserSetti
                       })
                     }
                   >
-                    恢复布局默认设置
+                    重置布局
                   </Button>
                 </section>
               </OverlayScroll>

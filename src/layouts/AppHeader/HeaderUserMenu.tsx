@@ -1,13 +1,19 @@
-/** 页头身份卡片：集中展示头像、姓名和账号，保留分组菜单的键盘操作与入口授权边界。 */
+/** 页头用户菜单：集中展示头像、姓名和账号，保留分组菜单的键盘操作与入口授权边界。 */
 import { App, Button, Dropdown, Modal } from 'antd';
 import { lazy, useState } from 'react';
 import { DeferredPanel } from '../DeferredPanel';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { openUserSettings } from '@/store/slices/preferencesSlice';
 import { logoutUser } from '@/router/middleware/login';
+import { legacyHref, platformManagementHref } from './headerResources';
+import { headerMenuFocusClass } from './headerMenuStyles';
+import { newTabMenuItem } from './newTabMenuItem';
 
 const UserProfileContent = lazy(() => import('./UserProfileContent'));
-const menuItemClass = 'min-h-40px px-3! rounded-control!';
+const menuItemClass = `min-h-40px px-3! rounded-control! ${headerMenuFocusClass}`;
+const newTabIcon = (
+  <span className="i-lucide-arrow-up-right block size-14px text-text-muted" aria-hidden="true" />
+);
 
 /** 共用菜单项外观，退出项继承 Ant Design 的危险操作配色。 */
 function accountMenuItem(key: string, label: string, icon: string, danger = false) {
@@ -31,6 +37,9 @@ export function HeaderUserMenu() {
   // null 表示尚未打开；关闭后保留模块挂载，让 Modal 完成关闭动画。
   const [profileOpen, setProfileOpen] = useState<boolean | null>(null);
   if (!userName) return null;
+  const avatarColors = isPlatformUser
+    ? 'bg-[#d00016]! text-[#ffffff]! [html[data-theme=dark]_&]:bg-[#dc1028]! [html[data-theme=dark]_&]:text-[#ffffff]!'
+    : 'bg-hover! text-accent-text!';
   const roleLabel = isPlatformUser ? '平台人员' : userType === '1' ? '普通用户' : '未提供角色';
 
   return (
@@ -38,27 +47,64 @@ export function HeaderUserMenu() {
       <Dropdown
         trigger={['click']}
         placement="bottomRight"
+        align={{ offset: [0, 12] }}
         menu={{
           selectable: false,
-          // 局部统一操作行尺寸，保留 Ant Design 的键盘导航、焦点及危险操作状态。
-          className: 'bg-transparent! shadow-none! p-2! pt-0!',
+          className: 'w-72 max-w-[calc(100vw-32px)] p-3!',
           items: [
-            { type: 'divider', className: 'mx-3! mt-0! mb-2!' },
-            accountMenuItem('profile', '个人资料', 'i-lucide-user-round'),
-            accountMenuItem('settings', '用户配置', 'i-lucide-settings-2'),
-            accountMenuItem('legacy', '旧版本', 'i-lucide-history'),
-            isPlatformUser
-              ? accountMenuItem('platform-management', '平台管理', 'i-lucide-users-round')
-              : null,
+            {
+              type: 'group',
+              key: 'identity',
+              // 抵消分组列表的默认横向缩进，让组内操作与退出登录对齐。
+              className: '[&>ul]:mx-0! [&>div]:p-0!',
+              label: (
+                <div className="mb-2 flex items-center gap-3 rounded-control bg-sidebar px-3 py-3">
+                  <span
+                    aria-hidden="true"
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-full text-lg font-600 ${avatarColors}`}
+                  >
+                    {userName.slice(0, 1)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="break-all text-15px font-600 text-text leading-22px">
+                      {userName}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-12px leading-18px">
+                      <span className="break-all text-text-secondary tabular-nums">
+                        {ystId || '—'}
+                      </span>
+                      {isPlatformUser && (
+                        <span className={`rounded-full px-1.5 font-500 ${avatarColors}`}>
+                          {roleLabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ),
+              children: [
+                accountMenuItem('profile', '个人资料', 'i-lucide-user-round'),
+                accountMenuItem('settings', '用户配置', 'i-lucide-settings-2'),
+                {
+                  ...accountMenuItem('legacy', '旧版本', 'i-lucide-history'),
+                  ...newTabMenuItem('旧版本', legacyHref),
+                  extra: newTabIcon,
+                },
+                isPlatformUser
+                  ? {
+                      ...accountMenuItem('platform-management', '平台管理', 'i-lucide-users-round'),
+                      ...newTabMenuItem('平台管理', platformManagementHref),
+                      extra: newTabIcon,
+                    }
+                  : null,
+              ],
+            },
             { type: 'divider', className: 'mx-3! my-2!' },
             accountMenuItem('logout', '退出登录', 'i-lucide-log-out', true),
           ],
           onClick: ({ key }) => {
             if (key === 'profile') setProfileOpen(true);
             if (key === 'settings') dispatch(openUserSettings());
-            if (key === 'legacy') void message.info('暂无可用的旧版本入口');
-            if (key === 'platform-management' && isPlatformUser)
-              void message.info('暂无可用的平台管理入口');
             if (key === 'logout') {
               try {
                 const { pathname, search, hash } = window.location;
@@ -69,25 +115,6 @@ export function HeaderUserMenu() {
             }
           },
         }}
-        popupRender={(menu) => (
-          <div className="w-72 rounded-ui border border-solid border-border-subtle bg-settings-surface text-popover-text shadow-xl">
-            <div className="flex items-center gap-2.5 px-5 py-3">
-              <span
-                aria-hidden="true"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-hover text-lg font-600 text-accent-text"
-              >
-                {userName.slice(0, 1)}
-              </span>
-              <div className="min-w-0">
-                <div className="break-all text-14px font-600 leading-20px">{userName}</div>
-                <div className="mt-0.5 break-all text-13px leading-20px tabular-nums [color:color-mix(in_srgb,var(--color-text-secondary)_80%,var(--color-text))]">
-                  {ystId || '—'}
-                </div>
-              </div>
-            </div>
-            {menu}
-          </div>
-        )}
       >
         <Button
           type="text"
@@ -95,10 +122,10 @@ export function HeaderUserMenu() {
           aria-label={`${userName}，${roleLabel}，用户菜单`}
           title={isPlatformUser ? `${userName}（平台人员）` : userName}
           // 头像本身也是菜单按钮，直接复用 Button 的圆形外观和交互，保持首屏依赖轻量。
-          className={`h-32px! w-32px! min-w-32px! p-0! text-14px! font-600 layout-focus ${
+          className={`h-32px! w-32px! min-w-32px! p-0! text-14px! font-600 layout-focus ${avatarColors} ${
             isPlatformUser
-              ? 'bg-red-100! text-red-800! hover:bg-red-200! [html[data-theme=dark]_&]:bg-red-950! [html[data-theme=dark]_&]:text-red-200! [html[data-theme=dark]_&]:hover:bg-red-900!'
-              : 'bg-hover! text-accent-text! hover:bg-accent-bg-hover!'
+              ? 'hover:bg-[#b50013]! [html[data-theme=dark]_&]:hover:bg-[#c5001a]!'
+              : 'hover:bg-accent-bg-hover!'
           }`}
         >
           {userName.slice(0, 1)}

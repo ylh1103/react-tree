@@ -13,21 +13,20 @@ import {
   systemListLayout,
   type SystemView,
 } from '../model/presentation';
-import { SystemItem, SystemViewSwitch } from './SystemPresentation';
+import { SystemItem } from './SystemPresentation';
 import CollectionPagination from './CollectionPagination';
+import SystemSearchEmpty from './SystemSearchEmpty';
 import SystemsHomeSkeleton from './SystemsHomeSkeleton';
 import { useSystemQueryError } from '../hooks/useSystemQueryError';
 
 export default function AllSystemsPanel({
   view,
-  onViewChange,
   keyword,
   onKeywordChange,
   defaultPageSize,
   onDetails,
 }: {
   view: SystemView;
-  onViewChange: (view: SystemView) => void;
   keyword: string;
   onKeywordChange: (keyword: string) => void;
   defaultPageSize: number;
@@ -71,12 +70,13 @@ export default function AllSystemsPanel({
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;
   return (
     <section className="@container" aria-label="所有系统">
-      <div className="mb-5 grid min-w-0 items-center gap-2 @[360px]:grid-cols-[minmax(0,1fr)_auto] @[560px]:gap-3">
+      <div className="mb-5">
         <Input.Search
+          size="large"
           allowClear
           aria-label="筛选所有系统"
           placeholder="系统名称、架构编码、组织或人员"
-          className="w-full! min-w-0! @[640px]:max-w-420px"
+          className="w-full! min-w-0! @[640px]:max-w-500px"
           loading={searching}
           value={draft.keyword === keyword ? draft.value : keyword}
           onChange={(event) => setDraft({ keyword, value: event.target.value })}
@@ -90,9 +90,6 @@ export default function AllSystemsPanel({
             />
           }
         />
-        <div className="justify-self-end">
-          <SystemViewSwitch label="所有系统展示模式" view={view} onChange={onViewChange} />
-        </div>
       </div>
       <Spin spinning={searching && query.data !== undefined} delay={200} size="large">
         {query.isPending ? (
@@ -113,13 +110,20 @@ export default function AllSystemsPanel({
             </div>
           </div>
         ) : (
-          !query.error && (
+          !query.error &&
+          (params.keyword ? (
+            <SystemSearchEmpty
+              description="试试用系统名称或架构编码重新搜索。"
+              clearLabel="清除搜索"
+              onClear={() => search('')}
+            />
+          ) : (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               className="workspace-panel m-0! py-16"
-              description={params.keyword ? '没有匹配的系统，请调整筛选条件' : '暂无系统'}
+              description="暂无系统"
             />
-          )
+          ))
         )}
       </Spin>
       {/* 后端回传有效页码，刷新后总量缩小也不会把当前页误当作全量清单再次切片。 */}

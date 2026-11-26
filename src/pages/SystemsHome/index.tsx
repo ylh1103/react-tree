@@ -1,24 +1,25 @@
-/** 系统首页装配页签和弹窗，管理各目录的展示模式与共用分页尺寸。 */
+/** 系统首页装配页签和弹窗，管理共用的展示模式与分页尺寸。 */
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Tabs } from 'antd';
 import { useLocation, useNavigate } from 'react-router';
 import type { AllSystemInfo, MySystemInfo, SystemRole } from '@/types/systems';
-import LazySystemManagementModal from './components/LazySystemManagementModal';
-import { SystemDetailsModal } from './components/SystemPresentation';
+import SystemManagementModal from './components/SystemManagementModal';
+import { SystemDetailsModal, SystemViewSwitch } from './components/SystemPresentation';
 import MySystemsPanel from './components/MySystemsPanel';
 import AllSystemsPanel from './components/AllSystemsPanel';
 import { systemCardContainer, systemCardGrid } from './model/presentation';
 
 const rowsPerPage = 2;
-const tabLabelClassName = 'flex h-40px items-center gap-2 rounded-control px-3.5 font-600';
+const tabLabelClassName =
+  'flex h-40px items-center gap-2 rounded-control px-2.5 font-600 min-[360px]:px-3.5';
 
 export default function SystemsHomePage() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const tab = params.get('tab') === 'all' ? 'all' : 'mine';
-  const myView = params.get('mineView') === 'list' ? 'list' : 'card';
-  const allView = params.get('allView') === 'list' ? 'list' : 'card';
+  const legacyView = params.get(tab === 'all' ? 'allView' : 'mineView');
+  const view = (params.get('view') ?? legacyView) === 'list' ? 'list' : 'card';
   const role = params.get('role');
   const myRole: SystemRole | 'all' = role === 'V' || role === 'D' || role === 'R' ? role : 'all';
   const [creating, setCreating] = useState(false);
@@ -30,6 +31,12 @@ export default function SystemsHomePage() {
   // 保留另一目录的条件和其他 URL 参数；实时筛选替换历史，显式操作可以前进后退。
   function updateParams(changes: Record<string, string>, replace = false) {
     const next = new URLSearchParams(params);
+    // 旧链接按当前页签恢复展示模式，首次更新 URL 后由两个页签共用。
+    if (next.has('mineView') || next.has('allView')) {
+      if (view === 'list') next.set('view', view);
+      next.delete('mineView');
+      next.delete('allView');
+    }
     for (const [key, value] of Object.entries(changes)) {
       if (value) next.set(key, value);
       else next.delete(key);
@@ -67,9 +74,18 @@ export default function SystemsHomePage() {
       <Tabs
         activeKey={tab}
         onChange={(key) => updateParams({ tab: key === 'all' ? key : '' })}
+        tabBarExtraContent={{
+          right: (
+            <SystemViewSwitch
+              label="系统展示模式"
+              view={view}
+              onChange={(nextView) => updateParams({ view: nextView === 'list' ? nextView : '' })}
+            />
+          ),
+        }}
         classNames={{
           header:
-            'before:hidden [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-surface [&_.ant-tabs-nav-list]:p-3px motion-reduce:[&_[role=tab]]:transition-none!',
+            'before:hidden [&_.ant-tabs-extra-content]:ms-2 [&_.ant-tabs-extra-content]:flex [&_.ant-tabs-extra-content]:items-center [&_.ant-tabs-nav-list]:rounded-control [&_.ant-tabs-nav-list]:bg-surface [&_.ant-tabs-nav-list]:p-3px motion-reduce:[&_[role=tab]]:transition-none!',
           item: 'p-0! [&+.ant-tabs-tab]:ms-1!',
           // 沿用 Tabs 自带的指示器定位和动画，将下划线扩展为选中项底色。
           indicator: 'rounded-control motion-reduce:transition-none!',
@@ -91,12 +107,12 @@ export default function SystemsHomePage() {
             children: (
               <MySystemsPanel
                 key={createdVersion}
-                view={myView}
-                onViewChange={(view) => updateParams({ mineView: view === 'list' ? view : '' })}
+                view={view}
                 search={params.get('mineKeyword') ?? ''}
                 onSearchChange={(value) => updateParams({ mineKeyword: value }, true)}
                 role={myRole}
                 onRoleChange={(value) => updateParams({ role: value === 'all' ? '' : value })}
+                onClearFilters={() => updateParams({ mineKeyword: '', role: '' })}
                 defaultPageSize={defaultPageSize || rowsPerPage}
                 onCreate={() => setCreating(true)}
                 onDetails={setDetails}
@@ -107,14 +123,13 @@ export default function SystemsHomePage() {
             key: 'all',
             label: (
               <span className={`${tabLabelClassName} ${tab === 'all' ? 'text-accent-text' : ''}`}>
-                <span aria-hidden="true" className="i-lucide-layout-grid text-16px" />
+                <span aria-hidden="true" className="i-lucide-layers text-16px" />
                 所有系统
               </span>
             ),
             children: defaultPageSize > 0 && (
               <AllSystemsPanel
-                view={allView}
-                onViewChange={(view) => updateParams({ allView: view === 'list' ? view : '' })}
+                view={view}
                 keyword={params.get('allKeyword')?.trim() ?? ''}
                 onKeywordChange={(value) => updateParams({ allKeyword: value })}
                 defaultPageSize={defaultPageSize}
@@ -125,7 +140,7 @@ export default function SystemsHomePage() {
         ]}
       />
       {creating && (
-        <LazySystemManagementModal
+        <SystemManagementModal
           onClose={() => setCreating(false)}
           onSaved={() => {
             setCreating(false);

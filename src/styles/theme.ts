@@ -117,6 +117,11 @@ const darkAppTheme: ThemeConfig = {
       colorPrimaryHover: '#2876c0',
       colorPrimaryActive: '#20598f',
       primaryColor: '#fff',
+      // 危险按钮使用独立的深红填充，确保白字在悬停和按下时也清晰可读。
+      colorError: '#b4232c',
+      colorErrorHover: '#c62d38',
+      colorErrorActive: '#94212a',
+      dangerColor: '#fff',
       defaultHoverColor: darkAccent.hover,
       defaultHoverBorderColor: darkAccent.hover,
       defaultActiveColor: darkAccent.active,
