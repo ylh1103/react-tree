@@ -22,7 +22,7 @@ export type SystemJoinTarget = Pick<
   'systemName' | 'systemChineseName' | 'systemCharges'
 >;
 
-/** 系统关系由接口明确返回，只用于目录展示，不替代工作区访问校验。 */
+/** 系统关系由接口明确返回，用于目录展示和管理入口，不替代工作区访问校验。 */
 export type SystemRole = 'V' | 'D' | 'R';
 
 /** 我的系统包含本系统的关系资料；不据此构造登录身份或全局权限。 */

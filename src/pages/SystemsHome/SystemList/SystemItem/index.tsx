@@ -27,6 +27,7 @@ export default function SystemItem({
   onManage,
   entriesLocked = false,
   showDelete = false,
+  canManage,
   view,
 }: {
   system: MySystemInfo | AllSystemInfo;
@@ -34,6 +35,7 @@ export default function SystemItem({
   onManage: () => void;
   entriesLocked?: boolean;
   showDelete?: boolean;
+  canManage: boolean;
   view: SystemView;
 }) {
   const compact = view === 'list';
@@ -44,6 +46,7 @@ export default function SystemItem({
       system={system}
       isMember={isMine || system.userRelation === true}
       showDelete={showDelete}
+      canManage={canManage}
       onDetails={onDetails}
       onManage={onManage}
     />

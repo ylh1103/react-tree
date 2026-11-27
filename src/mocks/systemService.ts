@@ -217,8 +217,8 @@ export function updateSystem(
 ) {
   if (!user) return fail(401, '请先登录');
   const system = accessSystem(name, fail);
-  if (user.userType !== '0' && !Object.hasOwn(relations(), name))
-    return fail(403, '无系统管理权限');
+  // 模拟写入端也校验当前关系角色，避免只依赖菜单可见性。
+  if (user.userType !== '0' && relations()[name]?.role !== 'R') return fail(403, '无系统管理权限');
   if (typeof input?.systemArchNo !== 'string' || typeof input?.systemDesc !== 'string')
     return fail(400, '系统管理参数无效');
   const list = records();

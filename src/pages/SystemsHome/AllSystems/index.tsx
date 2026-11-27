@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Empty, Input, Spin } from 'antd';
-import { systemPageOptions } from '@/queries/systems';
+import { mySystemsOptions, systemPageOptions } from '@/queries/systems';
 import type { AllSystemInfo, SystemPageParams } from '@/types/systems';
 import { isAccessDenied } from '@/utils/systems';
 import { useAppSelector } from '@/store/hooks';
@@ -55,6 +55,16 @@ export default function AllSystemsPanel({
 
   const isPlatformAdmin = useAppSelector((state) => state.user.userInfo?.userType === '0');
   const query = useQuery(systemPageOptions(params, ystId));
+  // 分页目录仅提供加入状态，负责人角色复用当前用户的「我的系统」查询。
+  const mySystems = useQuery({
+    ...mySystemsOptions(ystId),
+    enabled: ystId !== null && !isPlatformAdmin,
+  });
+  const ownedSystems = new Set(
+    mySystems.isSuccess
+      ? mySystems.data.filter((system) => system.role === 'R').map((system) => system.systemName)
+      : [],
+  );
   const [submittedKeyword, setSubmittedKeyword] = useState<string | null>(null);
   const searching = submittedKeyword === keyword && query.isFetching;
   // 关键词先写入 URL，再由目标查询接管加载状态；分页主动清除搜索标记。
@@ -106,6 +116,12 @@ export default function AllSystemsPanel({
                   view={view}
                   entriesLocked={!isPlatformAdmin && system.userRelation !== true}
                   showDelete={isPlatformAdmin}
+                  canManage={
+                    isPlatformAdmin ||
+                    (ystId !== null &&
+                      system.userRelation === true &&
+                      ownedSystems.has(system.systemName))
+                  }
                   onDetails={() => onDetails(system)}
                   onManage={() => onManage(system)}
                 />

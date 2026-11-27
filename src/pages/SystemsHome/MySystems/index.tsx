@@ -2,6 +2,7 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Empty, Input, Select, Spin, Tooltip } from 'antd';
+import { useAppSelector } from '@/store/hooks';
 import { mySystemsOptions } from '@/queries/systems';
 import { filterSystems, isAccessDenied } from '@/utils/systems';
 import type { MySystemInfo, SystemRole } from '@/types/systems';
@@ -42,7 +43,9 @@ export default function MySystemsPanel({
   onDetails: (system: MySystemInfo) => void;
   onManage: (system: MySystemInfo) => void;
 }) {
-  const query = useQuery(mySystemsOptions());
+  const ystId = useAppSelector((state) => state.user.userInfo?.ystId ?? null);
+  const isPlatformAdmin = useAppSelector((state) => state.user.userInfo?.userType === '0');
+  const query = useQuery(mySystemsOptions(ystId));
   const resultSearch = useDeferredValue(search);
   const [refreshing, setRefreshing] = useState(false);
   async function refresh() {
@@ -75,6 +78,7 @@ export default function MySystemsPanel({
   }, [query.data, role, resultSearch]);
   const current = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
   // 搜索框立即更新时复用上一帧的卡片，等延后的关键词到达再重建。
+  const canUseSystemRole = ystId !== null && query.isSuccess;
   const items = useMemo(
     () =>
       filtered
@@ -84,11 +88,12 @@ export default function MySystemsPanel({
             key={system.systemName}
             system={system}
             view={view}
+            canManage={isPlatformAdmin || (canUseSystemRole && system.role === 'R')}
             onDetails={() => onDetails(system)}
             onManage={() => onManage(system)}
           />
         )),
-    [current, filtered, onDetails, onManage, pageSize, view],
+    [canUseSystemRole, current, filtered, isPlatformAdmin, onDetails, onManage, pageSize, view],
   );
   useSystemQueryError(query.error, query.errorUpdatedAt, '我的系统加载失败');
   if (isAccessDenied(query.error)) return <RouteStatusPage forbidden />;

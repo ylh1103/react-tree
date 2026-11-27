@@ -1,11 +1,11 @@
-import { App, Avatar, Button, Popover } from 'antd';
+import { Avatar, Button, Popover } from 'antd';
 import { useId, useRef, useState } from 'react';
+import PersonChatButton from '@/components/PersonChatButton';
 import { peopleList } from '@/utils/systemPeople';
 import { systemAvatarTone } from '../../systemAppearance';
 
 /** 整组头像共用一个可容纳交互内容的浮层，负责人编号供后续会话入口使用。 */
 export default function SystemOwners({ value }: { value: string | undefined }) {
-  const { message } = App.useApp();
   const [open, setOpen] = useState(false);
   const listId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -68,37 +68,16 @@ export default function SystemOwners({ value }: { value: string | undefined }) {
             id={listId}
             ref={listRef}
             inert={!open}
-            className="m-0 grid max-h-[min(18rem,38dvh)] w-224px max-w-[calc(100vw-48px)] list-none gap-1 overflow-y-auto overscroll-contain p-0.5 [scrollbar-width:thin]"
+            className="m-0 grid max-h-[min(18rem,38dvh)] w-232px max-w-[calc(100vw-48px)] list-none gap-1 overflow-y-auto overscroll-contain p-0.5 [scrollbar-width:thin]"
           >
             {people.map((person) => (
               <li key={person.key} className="min-w-0">
-                <Button
-                  type="text"
-                  block
-                  className="h-auto! min-h-44px justify-start! gap-2.5! px-2! py-1! layout-focus focus-visible:outline-offset-[-2px]!"
-                  aria-label={`模拟打开与 ${person.name}${person.id ? `（${person.id}）` : ''} 的会话`}
-                  onClick={() => void message.info(`模拟打开与 ${person.name} 的会话`)}
-                >
-                  <Avatar
-                    size={28}
-                    className={`${ownerAvatarClassName} shrink-0`}
-                    aria-hidden="true"
-                  >
-                    {person.initial}
-                  </Avatar>
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-                    <span className="truncate text-sm font-600 leading-5">{person.name}</span>
-                    {person.id && (
-                      <span className="truncate text-12px leading-4 text-text-secondary tabular-nums">
-                        {person.id}
-                      </span>
-                    )}
-                  </span>
-                  <span
-                    className="i-lucide-message-circle size-14px shrink-0 text-text-muted"
-                    aria-hidden="true"
-                  />
-                </Button>
+                <PersonChatButton
+                  compact
+                  name={person.name}
+                  id={person.id}
+                  initial={person.initial}
+                />
               </li>
             ))}
           </ul>

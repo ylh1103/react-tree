@@ -1,10 +1,11 @@
-import { Avatar, Button, Input, Modal, theme } from 'antd';
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { Button, Input, Modal, theme } from 'antd';
+import { useState, type ReactNode } from 'react';
 import type { AllSystemInfo, MySystemInfo } from '@/types/systems';
+import PersonChatButton from '@/components/PersonChatButton';
 import { peopleList } from '@/utils/systemPeople';
 import { descriptionText } from '@/utils/systems';
 import { systemRoleLabels } from '@/utils/systemRoles';
-import { riskLevelAppearance, systemAvatarTone, systemRoleTags } from '../systemAppearance';
+import { riskLevelAppearance, systemRoleTags } from '../systemAppearance';
 
 /** 系统详情以身份、规模、归属和人员四组 Bento 卡片展示。 */
 export default function SystemDetailsModal({
@@ -175,8 +176,6 @@ export default function SystemDetailsModal({
   );
 }
 
-const peopleItemAppearance = 'rounded-ui! bg-[var(--people-item-bg)]! hover:bg-hover!';
-
 /** 逐人展示姓名及编号，便于区分同名人员。 */
 function DetailPeople({
   value,
@@ -189,7 +188,6 @@ function DetailPeople({
   className: string;
   twoColumns?: boolean;
 }) {
-  const { token } = theme.useToken();
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
   const people = peopleList(value);
@@ -219,13 +217,16 @@ function DetailPeople({
             size="small"
             className="rounded-control! bg-sidebar! text-accent-text! hover:bg-hover!"
             aria-expanded={expanded}
-            onClick={() => setExpanded(!expanded)}
+            onClick={() => {
+              setExpanded(!expanded);
+              setQuery('');
+            }}
           >
             {expanded ? '收起' : `展开全部 ${people.length} 人`}
           </Button>
         )}
       </div>
-      {twoColumns && people.length > 12 && (
+      {twoColumns && people.length > previewLimit && (
         <Input
           aria-label="按姓名或工号搜索负责人"
           placeholder="按姓名或工号搜索"
@@ -243,29 +244,11 @@ function DetailPeople({
         <p className="m-0 py-4 text-center text-13px text-text-secondary">没有找到匹配的负责人</p>
       ) : (
         <ul
-          style={{ '--people-item-bg': token.controlItemBgHover } as CSSProperties}
-          className={`m-0 grid list-none gap-2 p-0 ${showAll ? 'max-h-236px overflow-y-auto overscroll-contain' : ''} ${twoColumns ? 'min-[480px]:grid-cols-2' : ''}`}
+          className={`m-0 grid list-none gap-2 p-0 ${showAll ? 'max-h-264px overflow-y-auto overscroll-contain pr-1' : ''} ${twoColumns ? 'min-[480px]:grid-cols-2' : ''}`}
         >
           {visiblePeople.map(({ key, name, id, initial }) => (
-            <li
-              key={key}
-              className={`flex min-w-0 items-center gap-2 p-2 pr-3 ${peopleItemAppearance}`}
-            >
-              <Avatar
-                size={36}
-                className={`${systemAvatarTone} shrink-0 text-14px!`}
-                aria-hidden="true"
-              >
-                {initial}
-              </Avatar>
-              <span className="min-w-0 break-words">
-                <span className="block text-14px font-700 leading-5">{name}</span>
-                {id && (
-                  <span className="block text-12px leading-4 text-text-secondary tabular-nums">
-                    {id}
-                  </span>
-                )}
-              </span>
+            <li key={key} className="min-w-0 max-w-full">
+              <PersonChatButton name={name} id={id} initial={initial} />
             </li>
           ))}
         </ul>
